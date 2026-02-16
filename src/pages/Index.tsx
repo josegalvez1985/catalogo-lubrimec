@@ -4,15 +4,21 @@ import { Search, Droplets, Phone, MapPin } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import ProductModal from "@/components/ProductModal";
 import { products, type Product } from "@/data/products";
+import { useRubros } from "@/hooks/useRubros";
 import heroBanner from "@/assets/hero-banner.jpg";
-
-const categories = ["Todos", ...Array.from(new Set(products.map((p) => p.category)))];
 
 const Index = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [search, setSearch] = useState("");
+  const [activeRubroId, setActiveRubroId] = useState<number | null>(null);
+  const [showMoreRubros, setShowMoreRubros] = useState(false);
+  const { rubros, loading: rubrosLoading, error: rubrosError } = useRubros();
+
+  const TOP_RUBROS_IDS = [1, 7, 8, 13];
+  const topRubros = rubros.filter((r) => TOP_RUBROS_IDS.includes(r.id_rubro));
+  const otherRubros = rubros.filter((r) => !TOP_RUBROS_IDS.includes(r.id_rubro));
 
   const filtered = products.filter((p) => {
     const matchesCategory = activeCategory === "Todos" || p.category === activeCategory;
@@ -62,19 +68,68 @@ const Index = () => {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeCategory === cat
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+            <button
+              onClick={() => {
+                setActiveCategory("Todos");
+                setActiveRubroId(null);
+                setShowMoreRubros(false);
+              }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                activeCategory === "Todos" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              Todos
+            </button>
+            {rubrosLoading && <span className="text-muted-foreground">Cargando rubros...</span>}
+            {rubrosError && <span className="text-destructive">Error al cargar rubros</span>}
+
+            {!rubrosLoading && !rubrosError && (
+              <>
+                {topRubros.map((rubro) => (
+                  <button
+                    key={rubro.id_rubro}
+                    onClick={() => {
+                      setActiveRubroId(rubro.id_rubro);
+                      setActiveCategory(rubro.descripcion_rubro);
+                    }}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      activeCategory === rubro.descripcion_rubro
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    }`}
+                  >
+                    {rubro.descripcion_rubro}
+                  </button>
+                ))}
+
+                {!showMoreRubros && otherRubros.length > 0 && (
+                  <button
+                    onClick={() => setShowMoreRubros(true)}
+                    className="px-4 py-2 rounded-full text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  >
+                    {"M\u00E1s"}
+                  </button>
+                )}
+
+                {showMoreRubros &&
+                  otherRubros.map((rubro) => (
+                    <button
+                      key={rubro.id_rubro}
+                      onClick={() => {
+                        setActiveRubroId(rubro.id_rubro);
+                        setActiveCategory(rubro.descripcion_rubro);
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        activeCategory === rubro.descripcion_rubro
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {rubro.descripcion_rubro}
+                    </button>
+                  ))}
+              </>
+            )}
           </div>
         </div>
 
