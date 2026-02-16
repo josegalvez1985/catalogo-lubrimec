@@ -18,7 +18,7 @@ const ProductModal = ({ product, open, onClose }: ProductModalProps) => {
     new Intl.NumberFormat("es-PY", { style: "currency", currency: "PYG", maximumFractionDigits: 0 }).format(price);
 
   const whatsappMessage = encodeURIComponent(
-    `¡Hola Lubrimec! 🛢️ Estoy interesado en: *${product.name}* (${formatPrice(product.price)}). ¿Está disponible?`
+    `¡Hola Lubrimec! Estoy interesado en: *${product.name}* (${formatPrice(product.price)}). ¿Está disponible?`
   );
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappMessage}`;
 

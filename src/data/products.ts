@@ -72,4 +72,4 @@ export const products: Product[] = [
   },
 ];
 
-export const WHATSAPP_NUMBER = "595981123456"; // Reemplazar con nÃºmero real
+export const WHATSAPP_NUMBER = "595974759037"; // Número actualizado
