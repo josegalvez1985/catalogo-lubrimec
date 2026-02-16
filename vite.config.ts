@@ -10,6 +10,15 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    // Proxy para desarrollo: reenvía /ords/* a oracleapex para evitar problemas CORS
+    proxy: {
+      '/ords': {
+        target: 'https://oracleapex.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/ords/, '/ords')
+      }
+    }
   },
   plugins: [react()],
   resolve: {

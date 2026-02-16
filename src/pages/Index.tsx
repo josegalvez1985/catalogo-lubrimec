@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Droplets, Phone, MapPin } from "lucide-react";
-import ProductCard from "@/components/ProductCard";
-import ProductModal from "@/components/ProductModal";
-import { products, type Product } from "@/data/products";
+// local product fixtures removed
+import { useArticulos } from "@/hooks/useArticulos";
+import ArticleCard from "@/components/ArticleCard";
 import { useRubros } from "@/hooks/useRubros";
 import heroBanner from "@/assets/hero-banner.jpg";
 
 const Index = () => {
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [search, setSearch] = useState("");
   const [activeRubroId, setActiveRubroId] = useState<number | null>(null);
@@ -20,16 +19,19 @@ const Index = () => {
   const topRubros = rubros.filter((r) => TOP_RUBROS_IDS.includes(r.id_rubro));
   const otherRubros = rubros.filter((r) => !TOP_RUBROS_IDS.includes(r.id_rubro));
 
-  const filtered = products.filter((p) => {
-    const matchesCategory = activeCategory === "Todos" || p.category === activeCategory;
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    return matchesCategory && matchesSearch;
+  const filtered = [];
+
+  const { articulos, loading: articulosLoading, error: articulosError } = useArticulos();
+  const q = search.toLowerCase().trim();
+  // Mostrar todos los artículos que devuelve la API, filtrando solo por el texto de búsqueda
+  const displayedArticulos = articulos.filter((a) => {
+    const descripcion = (a.descripcion_articulo || "").toLowerCase();
+    const matchesSearch = q === "" ? true : descripcion.includes(q);
+    const matchesRubro = activeRubroId ? a.id_rubro === activeRubroId : true;
+    return matchesSearch && matchesRubro;
   });
 
-  const openModal = (product: Product) => {
-    setSelectedProduct(product);
-    setModalOpen(true);
-  };
+  
 
   return (
     <div className="min-h-screen bg-background">
@@ -85,22 +87,25 @@ const Index = () => {
 
             {!rubrosLoading && !rubrosError && (
               <>
-                {topRubros.map((rubro) => (
-                  <button
-                    key={rubro.id_rubro}
-                    onClick={() => {
-                      setActiveRubroId(rubro.id_rubro);
-                      setActiveCategory(rubro.descripcion_rubro);
-                    }}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      activeCategory === rubro.descripcion_rubro
-                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    {rubro.descripcion_rubro}
-                  </button>
-                ))}
+                {topRubros.map((rubro) => {
+                      return (
+                        <button
+                          key={rubro.id_rubro}
+                          onClick={() => {
+                            console.debug("rubros: clicked", rubro.id_rubro, rubro.descripcion_rubro);
+                            setActiveRubroId(rubro.id_rubro);
+                            setActiveCategory(rubro.descripcion_rubro);
+                          }}
+                          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                            activeCategory === rubro.descripcion_rubro
+                              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          }`}
+                        >
+                          {rubro.descripcion_rubro}
+                        </button>
+                      );
+                    })}
 
                 {!showMoreRubros && otherRubros.length > 0 && (
                   <button
@@ -133,18 +138,20 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Product Grid */}
+        {/* Product Grid - ahora mostramos artículos de la API (incluye filtro por rubro y búsqueda) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((product, i) => (
-            <ProductCard key={product.id} product={product} onClick={() => openModal(product)} index={i} />
-          ))}
+          {articulosLoading ? (
+            <div className="col-span-3 text-center">{"Cargando art\u00EDculos..."}</div>
+          ) : (
+            displayedArticulos.length > 0 ? (
+              displayedArticulos.map((art) => <ArticleCard key={art.id_articulo} articulo={art as any} />)
+            ) : (
+              <div className="col-span-3 text-center">{"No se encontraron art\u00EDculos."}</div>
+            )
+          )}
         </div>
 
-        {filtered.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg">No se encontraron productos.</p>
-          </div>
-        )}
+        
       </main>
 
       {/* Footer */}
@@ -155,15 +162,14 @@ const Index = () => {
             <span className="text-2xl font-bold tracking-wider text-foreground">LUBRIMEC</span>
           </div>
           <div className="flex items-center gap-6 text-muted-foreground text-sm">
-            <span className="flex items-center gap-1"><Phone className="w-4 h-4" /> +595 981 123 456</span>
-            <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> AsunciÃ³n, Paraguay</span>
+            <span className="flex items-center gap-1"><Phone className="w-4 h-4" /> +595 984 759 037</span>
+            <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Capiata Ruta 2 Km 20, Paraguay</span>
           </div>
           <p className="text-xs text-muted-foreground">Â© 2026 Lubrimec. Todos los derechos reservados.</p>
         </div>
       </footer>
 
-      {/* Modal */}
-      <ProductModal product={selectedProduct} open={modalOpen} onClose={() => setModalOpen(false)} />
+      {/* Modal removed (no local product modal used) */}
     </div>
   );
 };

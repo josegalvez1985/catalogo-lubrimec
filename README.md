@@ -70,4 +70,29 @@ Yes, you can!
 
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
+## Configuración de la API
+
+La base URL de la API se centraliza en `src/lib/config.ts` mediante la constante `API_BASE`.
+
+- En desarrollo la configuración por defecto apunta a `/ords` para aprovechar el proxy de Vite y evitar problemas de CORS.
+- En producción la configuración por defecto apunta a `https://oracleapex.com/ords`.
+
+Puedes sobrescribir la base URL mediante la variable de entorno `VITE_API_BASE`. Ejemplos:
+
+`.env` (desarrollo, usa proxy):
+```
+VITE_API_BASE=/ords
+```
+
+`.env` (producción):
+```
+VITE_API_BASE=https://oracleapex.com/ords
+```
+
+Ejemplo de uso en el código:
+```ts
+import { API_BASE } from '@/lib/config';
+fetch(`${API_BASE}/josegalvez/paginaweb/articulos`);
+```
+
 
