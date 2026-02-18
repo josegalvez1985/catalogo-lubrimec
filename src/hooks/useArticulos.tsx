@@ -13,12 +13,13 @@ export function useArticulos() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const all: any[] = [];
-        let url: string | null = `${API_BASE}/josegalvez/paginaweb/articulos`;
+        let url: string | null = `${API_BASE}/josegalvez/paginaweb/articulossinimg`;
         while (url) {
           const res = await fetch(url);
           if (!res.ok) {
@@ -38,33 +39,21 @@ export function useArticulos() {
           for (const it of pageItems) {
             const rawIdRubro = it.id_rubro ?? it.ID_RUBRO ?? it.rubro_id ?? it.idrubro ?? it.id_rub ?? it.id_rub__c ?? null;
             const id_rubro = rawIdRubro != null ? Number(rawIdRubro) : null;
-            const rawImagen = it.archivo_imagen || it.archivo || it.imagen || it.imagen_url || it.foto || null;
-            const mime = (it.mime_type || it.MIME_TYPE || it.mimetype) ?? 'image/jpeg';
-            // Detectar si la API devuelve: data URI completo, payload base64, URL absoluta o nada.
             let imagen: string | null = null;
-            if (rawImagen && typeof rawImagen === 'string') {
-              const s = rawImagen.trim();
-              if (s.startsWith('data:')) {
-                // ya es un data URI completo
-                imagen = s;
-              } else if (/^[A-Za-z0-9+\/=\s]+$/.test(s) && s.length > 100) {
-                // parece ser un payload base64 -> construir data URI usando mime
-                imagen = `data:${mime};base64,${s}`;
-              } else if (s.startsWith('http')) {
-                // URL absoluta
-                imagen = s;
-              } else if (it.id_articulo) {
-                // puede ser nombre de archivo o relativo: usar endpoint que sirve imagen
-                imagen = `${API_BASE}/josegalvez/paginaweb/articulos/${it.id_articulo}/imagen`;
-              } else {
+            if (it.id_articulo) {
+              try {
+                const imgRes = await fetch(`${API_BASE}/josegalvez/paginaweb/articulosimg?id_articulo=${it.id_articulo}`);
+                if (imgRes.ok) {
+                  const imgData = await imgRes.json();
+                  const imgItem = imgData.items && imgData.items[0];
+                  if (imgItem && imgItem.content && imgItem.content_type) {
+                    imagen = `data:${imgItem.content_type};base64,${imgItem.content}`;
+                  }
+                }
+              } catch (e) {
                 imagen = null;
               }
-            } else if (it.id_articulo) {
-              imagen = `${API_BASE}/josegalvez/paginaweb/articulos/${it.id_articulo}/imagen`;
-            } else {
-              imagen = null;
             }
-
             all.push({
               id_articulo: it.id_articulo,
               descripcion_articulo: it.descripcion_articulo,

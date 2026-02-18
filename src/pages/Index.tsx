@@ -8,10 +8,30 @@ import { useRubros } from "@/hooks/useRubros";
 import heroBanner from "@/assets/hero-banner.jpg";
 
 const Index = () => {
+    // Estado para paginaciÃ³n
+    const [page, setPage] = useState(1);
+    const pageSize = 50;
   
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [search, setSearch] = useState("");
   const [activeRubroId, setActiveRubroId] = useState<number | null>(null);
+
+  // Reiniciar pÃ¡gina cuando cambian los filtros
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
+  const handleCategoryClick = (categoria: string) => {
+    setActiveCategory(categoria);
+    setActiveRubroId(null);
+    setShowMoreRubros(false);
+    setPage(1);
+  };
+  const handleRubroClick = (rubroId: number, descripcion: string) => {
+    setActiveRubroId(rubroId);
+    setActiveCategory(descripcion);
+    setPage(1);
+  };
   const [showMoreRubros, setShowMoreRubros] = useState(false);
   const { rubros, loading: rubrosLoading, error: rubrosError } = useRubros();
 
@@ -23,13 +43,17 @@ const Index = () => {
 
   const { articulos, loading: articulosLoading, error: articulosError } = useArticulos();
   const q = search.toLowerCase().trim();
-  // Mostrar todos los artículos que devuelve la API, filtrando solo por el texto de búsqueda
+  // Mostrar todos los artï¿½culos que devuelve la API, filtrando solo por el texto de bï¿½squeda
   const displayedArticulos = articulos.filter((a) => {
     const descripcion = (a.descripcion_articulo || "").toLowerCase();
     const matchesSearch = q === "" ? true : descripcion.includes(q);
     const matchesRubro = activeRubroId ? a.id_rubro === activeRubroId : true;
     return matchesSearch && matchesRubro;
   });
+
+  // PaginaciÃ³n: solo mostrar los artÃ­culos de la pÃ¡gina actual
+  const paginatedArticulos = displayedArticulos.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.ceil(displayedArticulos.length / pageSize);
 
   
 
@@ -65,17 +89,13 @@ const Index = () => {
               type="text"
               placeholder="Buscar productos..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full bg-card border border-border rounded-xl py-3 pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
             />
           </div>
           <div className="flex gap-2 flex-wrap">
             <button
-              onClick={() => {
-                setActiveCategory("Todos");
-                setActiveRubroId(null);
-                setShowMoreRubros(false);
-              }}
+              onClick={() => handleCategoryClick("Todos")}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 activeCategory === "Todos" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
               }`}
@@ -91,11 +111,7 @@ const Index = () => {
                       return (
                         <button
                           key={rubro.id_rubro}
-                          onClick={() => {
-                            console.debug("rubros: clicked", rubro.id_rubro, rubro.descripcion_rubro);
-                            setActiveRubroId(rubro.id_rubro);
-                            setActiveCategory(rubro.descripcion_rubro);
-                          }}
+                          onClick={() => handleRubroClick(rubro.id_rubro, rubro.descripcion_rubro)}
                           className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                             activeCategory === rubro.descripcion_rubro
                               ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
@@ -120,10 +136,7 @@ const Index = () => {
                   otherRubros.map((rubro) => (
                     <button
                       key={rubro.id_rubro}
-                      onClick={() => {
-                        setActiveRubroId(rubro.id_rubro);
-                        setActiveCategory(rubro.descripcion_rubro);
-                      }}
+                      onClick={() => handleRubroClick(rubro.id_rubro, rubro.descripcion_rubro)}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         activeCategory === rubro.descripcion_rubro
                           ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
@@ -138,18 +151,39 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Product Grid - ahora mostramos artículos de la API (incluye filtro por rubro y búsqueda) */}
+        {/* Product Grid - ahora mostramos artï¿½culos de la API (incluye filtro por rubro y bï¿½squeda) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {articulosLoading ? (
             <div className="col-span-3 text-center">{"Cargando art\u00EDculos..."}</div>
           ) : (
-            displayedArticulos.length > 0 ? (
-              displayedArticulos.map((art) => <ArticleCard key={art.id_articulo} articulo={art as any} />)
+            paginatedArticulos.length > 0 ? (
+              paginatedArticulos.map((art) => <ArticleCard key={art.id_articulo} articulo={art as any} />)
             ) : (
               <div className="col-span-3 text-center">{"No se encontraron art\u00EDculos."}</div>
             )
           )}
         </div>
+
+        {/* PaginaciÃ³n */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <button
+              className="px-4 py-2 rounded bg-secondary text-secondary-foreground disabled:opacity-50"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Anterior
+            </button>
+            <span>PÃ¡gina {page} de {totalPages}</span>
+            <button
+              className="px-4 py-2 rounded bg-secondary text-secondary-foreground disabled:opacity-50"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
 
         
       </main>
