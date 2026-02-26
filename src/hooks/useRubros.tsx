@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "@/lib/config";
+import RUBROS_FIXTURE from "@/data/rubros";
 
 export interface Rubro {
   id_rubro: number;
@@ -27,7 +28,9 @@ export function useRubros() {
             } catch (e) {
               /* ignore */
             }
-            console.error("useRubros - fetch error", { url, status: res.status, statusText: res.statusText, headers: headersObj, body: text });
+            const errorDetail = { url, status: res.status, statusText: res.statusText, headers: headersObj, body: text, timestamp: new Date().toISOString(), endpoint: 'rubros' };
+            try { localStorage.setItem('api_error_log', JSON.stringify(errorDetail)); } catch (e) { /* ignore storage errors */ }
+            console.error(`useRubros - fetch error ${res.status} ${res.statusText} ${url}\nHeaders: ${JSON.stringify(headersObj)}\nBody: ${text}`);
             throw new Error(`Fetch error ${res.status}`);
           }
           const data = await res.json();
@@ -42,7 +45,17 @@ export function useRubros() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError("Error al cargar rubros");
+          try {
+            const caught = { message: String(err), stack: (err as any)?.stack || null, timestamp: new Date().toISOString(), context: 'useRubros' };
+            localStorage.setItem('api_error_log', JSON.stringify(caught));
+          } catch (e) { /* ignore */ }
+          // Fallback a datos locales para que la UI siga funcionando cuando la API remota falla
+          try {
+            setRubros(RUBROS_FIXTURE);
+            setError("Error al cargar rubros (usando datos locales)");
+          } catch (e) {
+            setError("Error al cargar rubros");
+          }
           setLoading(false);
         }
       }
