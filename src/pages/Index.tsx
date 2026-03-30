@@ -195,9 +195,40 @@ const Index = () => {
             <Droplets className="w-6 h-6 text-primary" />
             <span className="text-2xl font-bold tracking-wider text-foreground">LUBRIMEC</span>
           </div>
-          <div className="flex items-center gap-6 text-muted-foreground text-sm">
-            <span className="flex items-center gap-1"><Phone className="w-4 h-4" /> +595 984 759 037</span>
-            <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Capiata Ruta 2 Km 20, Paraguay</span>
+          <div className="flex flex-col items-center gap-1 text-muted-foreground text-sm sm:flex-row sm:gap-6">
+            <span className="flex items-center gap-2 text-center">
+              <Phone className="w-4 h-4" />
+              <span className="block">+595 974 759 037</span>
+              <a
+                href="https://wa.me/595974759037"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Abrir chat de WhatsApp"
+                title="Abrir WhatsApp"
+                className="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white hover:opacity-90"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-4 h-4">
+                  <path fill="#fff" d="M16.03 3C9.22 3 3.98 8.24 3.98 15.05c0 2.65.86 5.1 2.34 7.11L3 29l6.18-3.29c1.86 1.03 3.98 1.59 6.85 1.59 6.81 0 12.05-5.24 12.05-12.05S22.84 3 16.03 3zm6.87 18.22c-.26.73-1.49 1.39-2.07 1.47-.54.08-1.2.12-2.98-.44-2.57-.86-4.23-2.98-4.36-3.13-.13-.16-1.04-1.22-1.04-2.33 0-1.11.64-1.66.87-1.89.23-.23.5-.26.68-.26.17 0 .35 0 .5.01.16.01.38-.06.59.45.21.51.71 1.76.77 1.9.06.14.1.3.02.48-.08.18-.12.3-.24.46-.12.16-.26.36-.36.49-.12.16-.24.34-.1.57.14.23.62 1.02 1.33 1.65.92.82 1.69 1.2 2.01 1.34.32.14.51.12.7-.07.19-.19.83-.98 1.05-1.32.22-.34.43-.28.72-.17.29.11 1.83.86 2.14 1.01.31.15.52.23.6.36.08.13.08.76-.18 1.49z"/>
+                </svg>
+              </a>
+            </span>
+
+            <span className="flex items-center gap-2 text-center">
+              <MapPin className="w-4 h-4" />
+              <span className="block">Capiata Ruta 2 Km 20, Paraguay</span>
+              <a
+                href="https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Abrir ubicación en Google Maps"
+                title="Abrir en Google Maps"
+                className="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-secondary/20 text-muted-foreground hover:opacity-90"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4">
+                  <path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>
+                </svg>
+              </a>
+            </span>
           </div>
           <p className="text-xs text-muted-foreground">Â© 2026 Lubrimec. Todos los derechos reservados.</p>
         </div>

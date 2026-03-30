@@ -19,7 +19,7 @@ export function useRubros() {
         const all: any[] = [];
         let url: string | null = `${API_BASE}/josegalvez/paginaweb/rubros`;
         while (url) {
-          const res = await fetch(url);
+          const res = await fetch(url, { headers: { Accept: "application/json" }, redirect: 'follow' });
           if (!res.ok) {
             const text = await res.text().catch(() => null);
             const headersObj: Record<string, string> = {};
@@ -33,7 +33,15 @@ export function useRubros() {
             console.error(`useRubros - fetch error ${res.status} ${res.statusText} ${url}\nHeaders: ${JSON.stringify(headersObj)}\nBody: ${text}`);
             throw new Error(`Fetch error ${res.status}`);
           }
-          const data = await res.json();
+          let data: any;
+          try {
+            data = await res.json();
+          } catch (e) {
+            // respuesta no-JSON; leer como texto para ayudar al diagnóstico
+            const fallbackText = await res.text().catch(() => null);
+            console.warn('useRubros - response not JSON', { url, fallbackText });
+            data = {};
+          }
           const pageItems = data.items || [];
           for (const it of pageItems) all.push(it);
           const nextRef = data.next && data.next.$ref ? data.next.$ref : null;
