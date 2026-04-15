@@ -15,7 +15,12 @@ export default defineConfig(({ mode }) => ({
       '/ords': {
         target: 'https://oracleapex.com',
         changeOrigin: true,
-        secure: true,
+        // Some ORDS deployments are strict about TLS/Origin; allow insecure TLS and
+        // force Origin header to the target to reduce chance of server-side rejects.
+        secure: false,
+        headers: {
+          origin: 'https://oracleapex.com'
+        },
         rewrite: (path) => path.replace(/^\/ords/, '/ords')
       }
     }

@@ -26,7 +26,9 @@ export function useArticulos(rubroId?: number | null) {
     (async () => {
       try {
         const all: Articulo[] = [];
-        let url: string | null = `${API_BASE}/josegalvez/paginaweb/articulossinimg`;
+        // Enviar parámetros por defecto cod_empresa=24 y es_activo=N (GET)
+        const params = new URLSearchParams({ cod_empresa: '24', es_activo: 'N' });
+        let url: string | null = `${API_BASE}/josegalvez/paginaweb/articulossinimg?${params.toString()}`;
         while (url) {
           const res = await fetch(url, { headers: { Accept: "application/json" }, redirect: "follow" });
           if (!res.ok) {
@@ -54,7 +56,16 @@ export function useArticulos(rubroId?: number | null) {
 
           // manejar distintos formatos: { items: [...] } o [] directamente
           const pageItems: any[] = Array.isArray(data) ? data : (data.items || []);
-          for (const it of pageItems) all.push(it);
+          for (const it of pageItems) {
+            // Normalizar la respuesta: la API devuelve `descripcion`, mapeamos a `descripcion_articulo`
+            const mapped: any = {
+              ...it,
+              id_articulo: typeof it.id_articulo === 'number' ? it.id_articulo : Number(it.id_articulo),
+              descripcion_articulo: it.descripcion || it.descripcion_articulo || "",
+              imagen: it.nombre_imagen || it.imagen || null,
+            };
+            all.push(mapped);
+          }
 
           const nextRef = data.next && data.next.$ref ? data.next.$ref : null;
           url = nextRef;

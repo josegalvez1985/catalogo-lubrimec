@@ -1,98 +1,106 @@
+﻿# Catálogo Lubrimec
 
+Aplicación web de catálogo de productos para **LUBRIMEC**.
 
-## Project info
+## Descripción
 
+Esta app muestra un catálogo de artículos con búsqueda y filtros por rubro. Consume datos remotos desde una API de Oracle APEX y usa un fallback local de rubros cuando la API no está disponible.
 
+## Tecnologías
 
-## How can I edit this code?
+- Vite
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn-ui
+- React Router
+- React Query
+- Framer Motion
+- Lucide Icons
 
-There are several ways of editing your application.
+## Estructura principal
 
+- `src/App.tsx` — Router principal y proveedor de React Query
+- `src/pages/Index.tsx` — Página de catálogo con búsqueda y filtros
+- `src/hooks/useRubros.tsx` — Hook para cargar rubros/categorías
+- `src/hooks/useArticulos.tsx` — Hook para cargar artículos
+- `src/lib/config.ts` — Configuración de la base URL de la API
+- `src/data/rubros.ts` — Datos locales de rubros para fallback
 
+## Cómo ejecutar el proyecto
 
-
-
-
-
-**Use your preferred IDE**
-
-
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Instala dependencias:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Inicia el servidor de desarrollo:
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Compila para producción:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-
-
-
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-## Configuraci�n de la API
-
-La base URL de la API se centraliza en `src/lib/config.ts` mediante la constante `API_BASE`.
-
-- En desarrollo la configuraci�n por defecto apunta a `/ords` para aprovechar el proxy de Vite y evitar problemas de CORS.
-- En producci�n la configuraci�n por defecto apunta a `https://oracleapex.com/ords`.
-
-Puedes sobrescribir la base URL mediante la variable de entorno `VITE_API_BASE`. Ejemplos:
-
-`.env` (desarrollo, usa proxy):
+```sh
+npm run build
 ```
+
+Lanza una vista previa del build:
+
+```sh
+npm run preview
+```
+
+Ejecuta tests:
+
+```sh
+npm run test
+```
+
+## Configuración de la API
+
+La base URL de la API se define en `src/lib/config.ts` con la constante `API_BASE`.
+
+- En desarrollo se usa por defecto `/ords` para aprovechar el proxy de Vite y evitar CORS.
+- En producción se usa por defecto `https://oracleapex.com/ords`.
+
+Puedes sobrescribir la URL mediante la variable de entorno `VITE_API_BASE`.
+
+Ejemplos:
+
+`.env` (desarrollo):
+
+```env
 VITE_API_BASE=/ords
 ```
 
-`.env` (producci�n):
-```
+`.env.production` (producción):
+
+```env
 VITE_API_BASE=https://oracleapex.com/ords
 ```
 
-Ejemplo de uso en el c�digo:
-```ts
-import { API_BASE } from '@/lib/config';
-fetch(`${API_BASE}/josegalvez/paginaweb/articulos`);
-```
+### Endpoints usados
 
+- `GET ${API_BASE}/josegalvez/paginaweb/rubros`
+- `GET ${API_BASE}/josegalvez/paginaweb/articulossinimg`
 
+## Comportamiento de la app
+
+- Muestra un hero con información del lubricentro.
+- Permite buscar productos por texto.
+- Permite filtrar artículos por rubro.
+- Tiene paginación local con 50 artículos por página.
+- Si el endpoint de rubros falla, usa el fixture local `src/data/rubros.ts`.
+
+## Notas adicionales
+
+- La app usa `BrowserRouter` de React Router.
+- El listado de productos se renderiza mediante el componente `ArticleCard`.
+- El archivo `src/lib/config.ts` centraliza la configuración del backend.
+
+---
+
+© 2026 Lubrimec

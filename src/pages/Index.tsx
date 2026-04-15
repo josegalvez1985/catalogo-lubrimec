@@ -10,7 +10,7 @@ import heroBanner from "@/assets/hero-banner.jpg";
 const Index = () => {
     // Estado para paginación
     const [page, setPage] = useState(1);
-    const pageSize = 50;
+  const pageSize = 24;
   
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [search, setSearch] = useState("");
@@ -43,7 +43,7 @@ const Index = () => {
 
   const { articulos, loading: articulosLoading, error: articulosError } = useArticulos();
   const q = search.toLowerCase().trim();
-  // Mostrar todos los art�culos que devuelve la API, filtrando solo por el texto de b�squeda
+  // Mostrar todos los artículos que devuelve la API, filtrando solo por el texto de búsqueda
   const displayedArticulos = articulos.filter((a) => {
     const descripcion = (a.descripcion_articulo || "").toLowerCase();
     const matchesSearch = q === "" ? true : descripcion.includes(q);
@@ -151,10 +151,10 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Product Grid - ahora mostramos art�culos de la API (incluye filtro por rubro y b�squeda) */}
+        {/* Product Grid - ahora mostramos artículos de la API (incluye filtro por rubro y búsqueda) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {articulosLoading ? (
-            <div className="col-span-3 text-center">{"Cargando art\u00EDculos..."}</div>
+            <div className="col-span-3 text-center">{"Cargando artículos..."}</div>
           ) : (
             paginatedArticulos.length > 0 ? (
               paginatedArticulos.map((art) => <ArticleCard key={art.id_articulo} articulo={art as any} />)
@@ -220,7 +220,7 @@ const Index = () => {
                 href="https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Abrir ubicaci�n en Google Maps"
+                aria-label="Abrir ubicación en Google Maps"
                 title="Abrir en Google Maps"
                 className="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-secondary/20 text-muted-foreground hover:opacity-90"
               >
