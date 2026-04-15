@@ -4,14 +4,13 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: '/catalogo-lubrimec/',
   server: {
     host: "::",
     port: 8080,
     hmr: {
       overlay: false,
     },
-    // Proxy para desarrollo: reenv�a /ords/* a oracleapex para evitar problemas CORS
+    // Proxy para desarrollo: reenv韆 /ords/* a oracleapex para evitar problemas CORS
     proxy: {
       '/ords': {
         target: 'https://oracleapex.com',
@@ -33,3 +32,20 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload entire repository
+          path: './dist'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
