@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Phone, MapPin } from "lucide-react";
+import { ArrowUp, Search, Phone, MapPin } from "lucide-react";
 // local product fixtures removed
 import { useArticulos } from "@/hooks/useArticulos";
 import { useViscosidades } from "@/hooks/useViscosidades";
@@ -21,6 +21,7 @@ const Index = () => {
   const [activeRubroId, setActiveRubroId] = useState<number | null>(null);
   const [activeViscosidadId, setActiveViscosidadId] = useState<number | null>(null);
   const [selectedArticulo, setSelectedArticulo] = useState<Articulo | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Reiniciar página cuando cambian los filtros
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,6 +53,18 @@ const Index = () => {
 
   const { articulos, loading: articulosLoading, error: articulosError } = useArticulos();
   const { viscosidades, loading: viscosidadesLoading, error: viscosidadesError } = useViscosidades();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY || window.pageYOffset;
+      setShowScrollTop(scrollY > 360);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Artículos del rubro activo que tienen viscosidad
   const articulosDelRubro = activeRubroId
@@ -94,8 +107,11 @@ const Index = () => {
           transition={{ duration: 0.8 }}
           className="relative z-10 text-center px-4"
         >
-          <div className="flex flex-col items-center gap-4 mb-4">
-            <img src={lubrimecLogo} alt="Lubrimec" className="w-28 h-28 object-contain drop-shadow-lg" />
+          <div className="text-center">
+            <div className="relative inline-flex items-center justify-center mb-4">
+              <div className="absolute h-32 w-32 rounded-[32px] bg-white/95 border border-white/70 shadow-lg shadow-slate-900/10" />
+              <img src={lubrimecLogo} alt="Lubrimec" className="relative z-10 w-28 h-28 object-contain drop-shadow-2xl" />
+            </div>
             <h1 className="text-5xl md:text-7xl font-bold text-foreground tracking-wider">LUBRIMEC</h1>
           </div>
           <p className="text-xl md:text-2xl text-muted-foreground font-sans font-light tracking-wide">
@@ -251,6 +267,28 @@ const Index = () => {
 
         
       </main>
+
+      {showScrollTop && (
+        <motion.button
+          initial={{ opacity: 0, y: 24, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          whileHover={{ y: -2, scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          aria-label="Volver arriba"
+          title="Volver al inicio"
+          className="fixed right-5 bottom-6 z-50 flex items-center gap-3 rounded-full bg-gradient-to-r from-primary to-secondary px-4 py-3 text-primary-foreground shadow-2xl shadow-primary/30 ring-1 ring-primary/20 transition duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 shadow-sm">
+            <ArrowUp className="h-5 w-5" />
+          </div>
+          <div className="flex flex-col text-left leading-none">
+            <span className="text-xs uppercase tracking-[0.18em] text-primary-foreground/80">Desplaza</span>
+            <span className="text-sm font-semibold">Arriba</span>
+          </div>
+        </motion.button>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border py-10 mt-12">
