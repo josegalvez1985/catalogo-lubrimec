@@ -1,20 +1,26 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Droplets, Phone, MapPin } from "lucide-react";
+import { Search, Phone, MapPin } from "lucide-react";
 // local product fixtures removed
 import { useArticulos } from "@/hooks/useArticulos";
+import { useViscosidades } from "@/hooks/useViscosidades";
 import ArticleCard from "@/components/ArticleCard";
+import ProductModal from "@/components/ProductModal";
 import { useRubros } from "@/hooks/useRubros";
+import type { Articulo } from "@/hooks/useArticulos";
 import heroBanner from "@/assets/hero-banner.jpg";
+import lubrimecLogo from "@/assets/lubrimec-logo.png";
 
 const Index = () => {
     // Estado para paginación
     const [page, setPage] = useState(1);
-  const pageSize = 24;
+  const pageSize = 16;
   
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [search, setSearch] = useState("");
   const [activeRubroId, setActiveRubroId] = useState<number | null>(null);
+  const [activeViscosidadId, setActiveViscosidadId] = useState<number | null>(null);
+  const [selectedArticulo, setSelectedArticulo] = useState<Articulo | null>(null);
 
   // Reiniciar página cuando cambian los filtros
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,12 +30,17 @@ const Index = () => {
   const handleCategoryClick = (categoria: string) => {
     setActiveCategory(categoria);
     setActiveRubroId(null);
-    setShowMoreRubros(false);
+    setActiveViscosidadId(null);
     setPage(1);
   };
   const handleRubroClick = (rubroId: number, descripcion: string) => {
     setActiveRubroId(rubroId);
     setActiveCategory(descripcion);
+    setActiveViscosidadId(null);
+    setPage(1);
+  };
+  const handleViscosidadClick = (id_viscosidad: number) => {
+    setActiveViscosidadId(id_viscosidad);
     setPage(1);
   };
   const [showMoreRubros, setShowMoreRubros] = useState(false);
@@ -39,16 +50,30 @@ const Index = () => {
   const topRubros = rubros.filter((r) => TOP_RUBROS_IDS.includes(r.id_rubro));
   const otherRubros = rubros.filter((r) => !TOP_RUBROS_IDS.includes(r.id_rubro));
 
-  const filtered = [];
-
   const { articulos, loading: articulosLoading, error: articulosError } = useArticulos();
+  const { viscosidades, loading: viscosidadesLoading, error: viscosidadesError } = useViscosidades();
+
+  // Artículos del rubro activo que tienen viscosidad
+  const articulosDelRubro = activeRubroId
+    ? articulos.filter(a => a.id_rubro === activeRubroId && a.id_viscosidad != null)
+    : [];
+
+  // IDs de viscosidad presentes en artículos del rubro seleccionado
+  const viscosidadIdsDelRubro = new Set(articulosDelRubro.map(a => a.id_viscosidad!));
+
+  // Solo mostrar viscosidades que existan en los artículos del rubro activo
+  const viscosidadesDisponibles = activeRubroId
+    ? viscosidades.filter(v => viscosidadIdsDelRubro.has(v.id_viscosidad))
+    : [];
+
   const q = search.toLowerCase().trim();
-  // Mostrar todos los artículos que devuelve la API, filtrando solo por el texto de búsqueda
+  // Mostrar todos los artículos, filtrando por texto, rubro y viscosidad seleccionada
   const displayedArticulos = articulos.filter((a) => {
     const descripcion = (a.descripcion_articulo || "").toLowerCase();
     const matchesSearch = q === "" ? true : descripcion.includes(q);
     const matchesRubro = activeRubroId ? a.id_rubro === activeRubroId : true;
-    return matchesSearch && matchesRubro;
+    const matchesViscosidad = activeViscosidadId ? a.id_viscosidad === activeViscosidadId : true;
+    return matchesSearch && matchesRubro && matchesViscosidad;
   });
 
   // Paginación: solo mostrar los artículos de la página actual
@@ -60,7 +85,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
-      <header className="relative h-[70vh] min-h-[400px] flex items-center justify-center overflow-hidden">
+      <header className="relative h-[50vh] min-h-[350px] flex items-center justify-center overflow-hidden">
         <img src={heroBanner} alt="Lubrimec taller" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/50 to-background" />
         <motion.div
@@ -69,10 +94,9 @@ const Index = () => {
           transition={{ duration: 0.8 }}
           className="relative z-10 text-center px-4"
         >
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Droplets className="w-10 h-10 text-primary" />
-            <h1 className="text-7xl md:text-8xl font-bold text-foreground tracking-wider">LUBRIMEC</h1>
-            <Droplets className="w-10 h-10 text-primary" />
+          <div className="flex flex-col items-center gap-4 mb-4">
+            <img src={lubrimecLogo} alt="Lubrimec" className="w-28 h-28 object-contain drop-shadow-lg" />
+            <h1 className="text-5xl md:text-7xl font-bold text-foreground tracking-wider">LUBRIMEC</h1>
           </div>
           <p className="text-xl md:text-2xl text-muted-foreground font-sans font-light tracking-wide">
             Tu lubricentro de confianza — Catálogo de productos
@@ -151,13 +175,53 @@ const Index = () => {
           </div>
         </div>
 
+        {viscosidadesDisponibles.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Viscosidad:</span>
+            <button
+              onClick={() => { setActiveViscosidadId(null); setPage(1); }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                !activeViscosidadId
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              Todas
+            </button>
+            {viscosidadesDisponibles.map((v) => (
+              <button
+                key={v.id_viscosidad}
+                onClick={() => handleViscosidadClick(v.id_viscosidad)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeViscosidadId === v.id_viscosidad
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
+              >
+                {v.descripcion}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {viscosidadesLoading && (
+          <div className="mb-4 text-sm text-muted-foreground">Cargando viscosidades...</div>
+        )}
+        {viscosidadesError && (
+          <div className="mb-4 text-sm text-destructive">{viscosidadesError}</div>
+        )}
+
         {/* Product Grid - ahora mostramos artículos de la API (incluye filtro por rubro y búsqueda) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {articulosLoading ? (
             <div className="col-span-3 text-center">{"Cargando artículos..."}</div>
           ) : (
             paginatedArticulos.length > 0 ? (
-              paginatedArticulos.map((art) => <ArticleCard key={art.id_articulo} articulo={art as any} />)
+              paginatedArticulos.map((art) => (
+                <div key={art.id_articulo} className="cursor-pointer" onClick={() => setSelectedArticulo(art)}>
+                  <ArticleCard articulo={art as any} />
+                </div>
+              ))
             ) : (
               <div className="col-span-3 text-center">{"No se encontraron art\u00EDculos."}</div>
             )
@@ -191,8 +255,8 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border py-10 mt-12">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Droplets className="w-6 h-6 text-primary" />
+          <div className="flex items-center gap-3">
+            <img src={lubrimecLogo} alt="Lubrimec" className="w-10 h-10 object-contain" />
             <span className="text-2xl font-bold tracking-wider text-foreground">LUBRIMEC</span>
           </div>
           <div className="flex flex-col items-center gap-1 text-muted-foreground text-sm sm:flex-row sm:gap-6">
@@ -234,7 +298,11 @@ const Index = () => {
         </div>
       </footer>
 
-      {/* Modal removed (no local product modal used) */}
+      <ProductModal
+        articulo={selectedArticulo}
+        isOpen={selectedArticulo !== null}
+        onClose={() => setSelectedArticulo(null)}
+      />
     </div>
   );
 };

@@ -9,12 +9,16 @@ export interface Articulo {
   descripcion_rubro?: string | null;
   id_marca?: number | null;
   descripcion_marca?: string | null;
-  imagen?: string | null;
+  id_viscosidad?: number | null;
+  moto_caja?: string | null;
+  tiene_imagen?: number;
+  stock?: number | null;
+  precio?: number | null;
 }
 
 // Hook que consulta la API de articulos (sin imagenes) y filtra por rubro.
-// Si se pasa `rubroId`, devuelve sólo artículos de ese rubro.
-// Además filtra artículos cuyo `id_rubro` no exista en la lista de rubros remota.
+// Si se pasa `rubroId`, devuelve solo articulos de ese rubro.
+// Ademas filtra articulos cuyo `id_rubro` no exista en la lista de rubros remota.
 export function useArticulos(rubroId?: number | null) {
   const { rubros } = useRubros();
   const [articulos, setArticulos] = useState<Articulo[]>([]);
@@ -26,7 +30,7 @@ export function useArticulos(rubroId?: number | null) {
     (async () => {
       try {
         const all: Articulo[] = [];
-        // Enviar parámetros por defecto cod_empresa=24 y es_activo=N (GET)
+        // Enviar parametros por defecto cod_empresa=24 y es_activo=N (GET)
         const params = new URLSearchParams({ cod_empresa: '24', es_activo: 'N' });
         let url: string | null = `${API_BASE}/josegalvez/paginaweb/articulossinimg?${params.toString()}`;
         while (url) {
@@ -62,7 +66,9 @@ export function useArticulos(rubroId?: number | null) {
               ...it,
               id_articulo: typeof it.id_articulo === 'number' ? it.id_articulo : Number(it.id_articulo),
               descripcion_articulo: it.descripcion || it.descripcion_articulo || "",
-              imagen: it.nombre_imagen || it.imagen || null,
+              id_viscosidad: typeof it.id_viscosidad === 'number' ? it.id_viscosidad : it.id_viscosidad ? Number(it.id_viscosidad) : null,
+              moto_caja: it.moto_caja ?? it.motor_caja ?? null,
+              tiene_imagen: it.tiene_imagen ?? 0,
             };
             all.push(mapped);
           }
@@ -72,7 +78,7 @@ export function useArticulos(rubroId?: number | null) {
         }
 
         if (!cancelled) {
-          // Si tenemos la lista de rubros, filtrar para incluir sólo artículos con id_rubro válido
+          // Si tenemos la lista de rubros, filtrar para incluir solo articulos con id_rubro valido
           const validRubroIds = Array.isArray(rubros) ? rubros.map((r: Rubro) => r.id_rubro) : [];
           let filtered = all.filter(a => a && (a.id_rubro == null ? false : validRubroIds.length ? validRubroIds.includes(a.id_rubro) : true));
           if (typeof rubroId === 'number') filtered = filtered.filter(a => a.id_rubro === rubroId);
@@ -85,7 +91,7 @@ export function useArticulos(rubroId?: number | null) {
             const caught = { message: String(err), stack: (err as any)?.stack || null, timestamp: new Date().toISOString(), context: 'useArticulos' };
             localStorage.setItem('api_error_log', JSON.stringify(caught));
           } catch (e) { /* ignore */ }
-          setError('Error al cargar artículos');
+          setError('Error al cargar articulos');
           setLoading(false);
         }
       }
