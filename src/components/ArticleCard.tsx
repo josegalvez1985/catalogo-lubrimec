@@ -118,7 +118,7 @@ const ArticleCard: React.FC<Props> = ({ articulo }) => {
       if (articulo.precio != null) {
         ctx.fillStyle = "#3b82f6";
         ctx.font = "bold 70px sans-serif";
-        ctx.fillText(`Gs. ${articulo.precio.toLocaleString("es-PY")}`, pad, y);
+        ctx.fillText(`Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)}`, pad, y);
       }
 
       // Stock (Verde o Rojo)
@@ -158,7 +158,7 @@ const ArticleCard: React.FC<Props> = ({ articulo }) => {
   };
 
   return (
-    <div ref={cardRef} className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition">
+    <div ref={cardRef} className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-primary/30 hover:scale-[1.02] transition-all duration-200">
       <div className="w-full aspect-square bg-white rounded-md mb-3 flex items-center justify-center overflow-hidden">
         <img
           src={imgSrc}
@@ -173,7 +173,7 @@ const ArticleCard: React.FC<Props> = ({ articulo }) => {
         <div>
           {articulo.precio != null && (
             <p className="text-lg font-bold text-primary">
-              Gs. {articulo.precio.toLocaleString("es-PY")}
+              Gs. {new Intl.NumberFormat("es-PY").format(articulo.precio)}
             </p>
           )}
           {articulo.stock != null && articulo.stock > 0 ? (

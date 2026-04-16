@@ -12,6 +12,19 @@ interface ProductModalProps {
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({ articulo, isOpen, onClose }) => {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEscape);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
+  }, [isOpen, onClose]);
+
   if (!articulo) return null;
 
   const hasImage = articulo.tiene_imagen === 1;
@@ -34,7 +47,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ articulo, isOpen, onClose }
 
           {/* Modal */}
           <motion.div
-            className="relative z-10 bg-card border border-border rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+            className="relative z-10 bg-card border border-border rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
             initial={{ scale: 0.85, opacity: 0, y: 30 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.85, opacity: 0, y: 30 }}
@@ -76,7 +89,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ articulo, isOpen, onClose }
               <div className="flex items-end justify-between gap-4">
                 {articulo.precio != null ? (
                   <p className="text-2xl font-bold text-primary">
-                    Gs. {articulo.precio.toLocaleString("es-PY")}
+                    Gs. {new Intl.NumberFormat("es-PY").format(articulo.precio)}
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">Precio no disponible</p>

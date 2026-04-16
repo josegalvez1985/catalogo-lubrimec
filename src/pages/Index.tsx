@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowUp, Search, Phone, MapPin } from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowUp, Search, Phone, MapPin, ChevronDown, ChevronUp, PackageSearch } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 // local product fixtures removed
 import { useArticulos } from "@/hooks/useArticulos";
 import { useViscosidades } from "@/hooks/useViscosidades";
@@ -18,18 +19,25 @@ const Index = () => {
   
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeRubroId, setActiveRubroId] = useState<number | null>(null);
   const [activeViscosidadId, setActiveViscosidadId] = useState<number | null>(null);
   const [selectedArticulo, setSelectedArticulo] = useState<Articulo | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [scrollButtonPos, setScrollButtonPos] = useState({ x: 0, y: 0 });
-  const isDraggingRef = useRef(false);
 
   // Reiniciar página cuando cambian los filtros
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
-    setPage(1);
   };
+
+  // Debounce: retrasa el filtrado 300ms tras dejar de escribir
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
   const handleCategoryClick = (categoria: string) => {
     setActiveCategory(categoria);
     setActiveRubroId(null);
@@ -68,8 +76,6 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const dragConstraintsRef = useRef<HTMLDivElement | null>(null);
-
   // Artículos del rubro activo que tienen viscosidad
   const articulosDelRubro = activeRubroId
     ? articulos.filter(a => a.id_rubro === activeRubroId && a.id_viscosidad != null)
@@ -83,7 +89,7 @@ const Index = () => {
     ? viscosidades.filter(v => viscosidadIdsDelRubro.has(v.id_viscosidad))
     : [];
 
-  const q = search.toLowerCase().trim();
+  const q = debouncedSearch.toLowerCase().trim();
   // Mostrar todos los artículos, filtrando por texto, rubro y viscosidad seleccionada
   const displayedArticulos = articulos.filter((a) => {
     const descripcion = (a.descripcion_articulo || "").toLowerCase();
@@ -170,9 +176,10 @@ const Index = () => {
                 {!showMoreRubros && otherRubros.length > 0 && (
                   <button
                     onClick={() => setShowMoreRubros(true)}
-                    className="px-4 py-2 rounded-full text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    className="px-4 py-2 rounded-full text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center gap-1"
                   >
-                    {"M\u00E1s"}
+                    Ver más ({otherRubros.length})
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </button>
                 )}
 
@@ -190,6 +197,16 @@ const Index = () => {
                       {rubro.descripcion_rubro}
                     </button>
                   ))}
+
+                {showMoreRubros && (
+                  <button
+                    onClick={() => setShowMoreRubros(false)}
+                    className="px-4 py-2 rounded-full text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center gap-1"
+                  >
+                    Menos
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -231,10 +248,30 @@ const Index = () => {
           <div className="mb-4 text-sm text-destructive">{viscosidadesError}</div>
         )}
 
-        {/* Product Grid - ahora mostramos artículos de la API (incluye filtro por rubro y búsqueda) */}
+        {/* Contador de resultados */}
+        {!articulosLoading && displayedArticulos.length > 0 && (
+          <p className="text-sm text-muted-foreground mb-4">
+            Mostrando {Math.min(paginatedArticulos.length, displayedArticulos.length)} de {displayedArticulos.length} productos
+          </p>
+        )}
+
+        {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {articulosLoading ? (
-            <div className="col-span-3 text-center">{"Cargando artículos..."}</div>
+            Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-card border border-border rounded-xl p-4">
+                <Skeleton className="w-full aspect-square rounded-md mb-3" />
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2 mb-3" />
+                <div className="flex justify-between items-end">
+                  <div>
+                    <Skeleton className="h-5 w-24 mb-1" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                </div>
+              </div>
+            ))
           ) : (
             paginatedArticulos.length > 0 ? (
               paginatedArticulos.map((art) => (
@@ -243,24 +280,62 @@ const Index = () => {
                 </div>
               ))
             ) : (
-              <div className="col-span-3 text-center">{"No se encontraron art\u00EDculos."}</div>
+              <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                <PackageSearch className="w-16 h-16 text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-1">No se encontraron productos</h3>
+                <p className="text-sm text-muted-foreground mb-4">Intenta buscar otra cosa o explora otras categorías</p>
+                <button
+                  onClick={() => { setSearch(""); setDebouncedSearch(""); setActiveCategory("Todos"); setActiveRubroId(null); setActiveViscosidadId(null); setPage(1); }}
+                  className="px-4 py-2 rounded-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                >
+                  Limpiar filtros
+                </button>
+              </div>
             )
           )}
         </div>
 
         {/* Paginación */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-8">
+          <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
             <button
-              className="px-4 py-2 rounded bg-secondary text-secondary-foreground disabled:opacity-50"
+              className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground disabled:opacity-50 text-sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
             >
               Anterior
             </button>
-            <span>Página {page} de {totalPages}</span>
+            {(() => {
+              const pages: (number | string)[] = [];
+              if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+              } else {
+                pages.push(1);
+                if (page > 3) pages.push("...");
+                for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
+                if (page < totalPages - 2) pages.push("...");
+                pages.push(totalPages);
+              }
+              return pages.map((p, idx) =>
+                typeof p === "string" ? (
+                  <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground select-none">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
+                      page === p
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              );
+            })()}
             <button
-              className="px-4 py-2 rounded bg-secondary text-secondary-foreground disabled:opacity-50"
+              className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground disabled:opacity-50 text-sm"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
             >
@@ -272,42 +347,24 @@ const Index = () => {
         
       </main>
 
-      {showScrollTop && (
-        <div ref={dragConstraintsRef} className="fixed inset-0 z-50 pointer-events-none">
+      <AnimatePresence>
+        {showScrollTop && (
           <motion.button
-            initial={{ opacity: 0, y: 24, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            whileHover={{ y: -2, scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            drag
-            dragConstraints={dragConstraintsRef}
-            dragMomentum={false}
-            dragElastic={0.2}
-            onDragStart={() => {
-              isDraggingRef.current = true;
-            }}
-            onDragEnd={(_, info) => {
-              setScrollButtonPos((prev) => ({
-                x: prev.x + info.offset.x,
-                y: prev.y + info.offset.y,
-              }));
-              isDraggingRef.current = false;
-            }}
-            onClick={() => {
-              if (!isDraggingRef.current) {
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }
-            }}
-            style={{ x: scrollButtonPos.x, y: scrollButtonPos.y }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             type="button"
-            aria-label="Mover y volver arriba"
-            title="Arrastra para mover / Haz clic para subir"
-            className="absolute right-5 bottom-6 z-50 pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-2xl shadow-primary/30 ring-1 ring-primary/20 transition duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            aria-label="Volver arriba"
+            title="Volver arriba"
+            className="fixed right-5 bottom-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-2xl shadow-primary/30 ring-1 ring-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             <ArrowUp className="h-5 w-5" />
           </motion.button>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className="border-t border-border py-10 mt-12">
@@ -320,19 +377,20 @@ const Index = () => {
             <span className="flex items-center gap-2 text-center">
               <Phone className="w-4 h-4" />
               <span className="block">+595 974 759 037</span>
-              <a
-                href="https://wa.me/595974759037"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Abrir chat de WhatsApp"
-                title="Abrir WhatsApp"
-                className="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white hover:opacity-90"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-4 h-4">
-                  <path fill="#fff" d="M16.03 3C9.22 3 3.98 8.24 3.98 15.05c0 2.65.86 5.1 2.34 7.11L3 29l6.18-3.29c1.86 1.03 3.98 1.59 6.85 1.59 6.81 0 12.05-5.24 12.05-12.05S22.84 3 16.03 3zm6.87 18.22c-.26.73-1.49 1.39-2.07 1.47-.54.08-1.2.12-2.98-.44-2.57-.86-4.23-2.98-4.36-3.13-.13-.16-1.04-1.22-1.04-2.33 0-1.11.64-1.66.87-1.89.23-.23.5-.26.68-.26.17 0 .35 0 .5.01.16.01.38-.06.59.45.21.51.71 1.76.77 1.9.06.14.1.3.02.48-.08.18-.12.3-.24.46-.12.16-.26.36-.36.49-.12.16-.24.34-.1.57.14.23.62 1.02 1.33 1.65.92.82 1.69 1.2 2.01 1.34.32.14.51.12.7-.07.19-.19.83-.98 1.05-1.32.22-.34.43-.28.72-.17.29.11 1.83.86 2.14 1.01.31.15.52.23.6.36.08.13.08.76-.18 1.49z"/>
-                </svg>
-              </a>
             </span>
+            <a
+              href="https://wa.me/595974759037"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Abrir chat de WhatsApp"
+              title="Abrir WhatsApp"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition-colors shadow-md"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-5 h-5">
+                <path fill="#fff" d="M16.03 3C9.22 3 3.98 8.24 3.98 15.05c0 2.65.86 5.1 2.34 7.11L3 29l6.18-3.29c1.86 1.03 3.98 1.59 6.85 1.59 6.81 0 12.05-5.24 12.05-12.05S22.84 3 16.03 3zm6.87 18.22c-.26.73-1.49 1.39-2.07 1.47-.54.08-1.2.12-2.98-.44-2.57-.86-4.23-2.98-4.36-3.13-.13-.16-1.04-1.22-1.04-2.33 0-1.11.64-1.66.87-1.89.23-.23.5-.26.68-.26.17 0 .35 0 .5.01.16.01.38-.06.59.45.21.51.71 1.76.77 1.9.06.14.1.3.02.48-.08.18-.12.3-.24.46-.12.16-.26.36-.36.49-.12.16-.24.34-.1.57.14.23.62 1.02 1.33 1.65.92.82 1.69 1.2 2.01 1.34.32.14.51.12.7-.07.19-.19.83-.98 1.05-1.32.22-.34.43-.28.72-.17.29.11 1.83.86 2.14 1.01.31.15.52.23.6.36.08.13.08.76-.18 1.49z"/>
+              </svg>
+              Chateá con nosotros
+            </a>
 
             <span className="flex items-center gap-2 text-center">
               <MapPin className="w-4 h-4" />
