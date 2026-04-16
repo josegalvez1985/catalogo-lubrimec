@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowUp, Search, Phone, MapPin } from "lucide-react";
 // local product fixtures removed
@@ -22,6 +22,8 @@ const Index = () => {
   const [activeViscosidadId, setActiveViscosidadId] = useState<number | null>(null);
   const [selectedArticulo, setSelectedArticulo] = useState<Articulo | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [scrollButtonPos, setScrollButtonPos] = useState({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
 
   // Reiniciar página cuando cambian los filtros
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +67,8 @@ const Index = () => {
 
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const dragConstraintsRef = useRef<HTMLDivElement | null>(null);
 
   // Artículos del rubro activo que tienen viscosidad
   const articulosDelRubro = activeRubroId
@@ -269,25 +273,40 @@ const Index = () => {
       </main>
 
       {showScrollTop && (
-        <motion.button
-          initial={{ opacity: 0, y: 24, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          whileHover={{ y: -2, scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          aria-label="Volver arriba"
-          title="Volver al inicio"
-          className="fixed right-5 bottom-6 z-50 flex items-center gap-3 rounded-full bg-gradient-to-r from-primary to-secondary px-4 py-3 text-primary-foreground shadow-2xl shadow-primary/30 ring-1 ring-primary/20 transition duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 shadow-sm">
+        <div ref={dragConstraintsRef} className="fixed inset-0 z-50 pointer-events-none">
+          <motion.button
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            whileHover={{ y: -2, scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            drag
+            dragConstraints={dragConstraintsRef}
+            dragMomentum={false}
+            dragElastic={0.2}
+            onDragStart={() => {
+              isDraggingRef.current = true;
+            }}
+            onDragEnd={(_, info) => {
+              setScrollButtonPos((prev) => ({
+                x: prev.x + info.offset.x,
+                y: prev.y + info.offset.y,
+              }));
+              isDraggingRef.current = false;
+            }}
+            onClick={() => {
+              if (!isDraggingRef.current) {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+            style={{ x: scrollButtonPos.x, y: scrollButtonPos.y }}
+            type="button"
+            aria-label="Mover y volver arriba"
+            title="Arrastra para mover / Haz clic para subir"
+            className="absolute right-5 bottom-6 z-50 pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-2xl shadow-primary/30 ring-1 ring-primary/20 transition duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
             <ArrowUp className="h-5 w-5" />
-          </div>
-          <div className="flex flex-col text-left leading-none">
-            <span className="text-xs uppercase tracking-[0.18em] text-primary-foreground/80">Desplaza</span>
-            <span className="text-sm font-semibold">Arriba</span>
-          </div>
-        </motion.button>
+          </motion.button>
+        </div>
       )}
 
       {/* Footer */}
