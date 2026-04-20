@@ -1,29 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Search, Phone, MapPin, ChevronDown, ChevronUp, PackageSearch } from "lucide-react";
+import { ArrowUp, Search, Phone, MapPin, ChevronDown, ChevronUp, PackageSearch, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-// local product fixtures removed
 import { useArticulos } from "@/hooks/useArticulos";
 import { useViscosidades } from "@/hooks/useViscosidades";
 import ArticleCard from "@/components/ArticleCard";
 import ProductModal from "@/components/ProductModal";
 import { useRubros } from "@/hooks/useRubros";
+import { useMarcas } from "@/hooks/useMarcas";
 import type { Articulo } from "@/hooks/useArticulos";
 import heroBanner from "@/assets/hero-banner.jpg";
 import lubrimecLogo from "@/assets/lubrimec-logo.png";
 
 const Index = () => {
-    // Estado para paginación
-    const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Estado para paginación ("Cargar más")
+  const [page, setPage] = useState(1);
   const pageSize = 16;
-  
-  const [activeCategory, setActiveCategory] = useState("Todos");
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [activeRubroId, setActiveRubroId] = useState<number | null>(null);
-  const [activeViscosidadId, setActiveViscosidadId] = useState<number | null>(null);
+
+  // Inicializar desde URL params
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") || "");
+  const [activeRubroId, setActiveRubroId] = useState<number | null>(
+    searchParams.get("rubro") ? Number(searchParams.get("rubro")) : null
+  );
+  const [activeViscosidadId, setActiveViscosidadId] = useState<number | null>(
+    searchParams.get("viscosidad") ? Number(searchParams.get("viscosidad")) : null
+  );
+  const [activeMarcaId, setActiveMarcaId] = useState<number | null>(
+    searchParams.get("marca") ? Number(searchParams.get("marca")) : null
+  );
   const [selectedArticulo, setSelectedArticulo] = useState<Articulo | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showMoreMarcas, setShowMoreMarcas] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Reiniciar página cuando cambian los filtros
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,16 +50,29 @@ const Index = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
-  const handleCategoryClick = (categoria: string) => {
-    setActiveCategory(categoria);
+
+  // Sincronizar filtros con URL params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set("q", debouncedSearch);
+    if (activeRubroId) params.set("rubro", String(activeRubroId));
+    if (activeViscosidadId) params.set("viscosidad", String(activeViscosidadId));
+    if (activeMarcaId) params.set("marca", String(activeMarcaId));
+    setSearchParams(params, { replace: true });
+  }, [debouncedSearch, activeRubroId, activeViscosidadId, activeMarcaId, setSearchParams]);
+
+  const handleCategoryClick = () => {
     setActiveRubroId(null);
     setActiveViscosidadId(null);
+    setActiveMarcaId(null);
+    setShowMoreMarcas(false);
     setPage(1);
   };
-  const handleRubroClick = (rubroId: number, descripcion: string) => {
+  const handleRubroClick = (rubroId: number) => {
     setActiveRubroId(rubroId);
-    setActiveCategory(descripcion);
     setActiveViscosidadId(null);
+    setActiveMarcaId(null);
+    setShowMoreMarcas(false);
     setPage(1);
   };
   const handleViscosidadClick = (id_viscosidad: number) => {
@@ -63,11 +88,13 @@ const Index = () => {
 
   const { articulos, loading: articulosLoading, error: articulosError } = useArticulos();
   const { viscosidades, loading: viscosidadesLoading, error: viscosidadesError } = useViscosidades();
+  const { marcas, loading: marcasLoading, error: marcasError } = useMarcas();
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY || window.pageYOffset;
       setShowScrollTop(scrollY > 360);
+      setIsScrolled(scrollY > 10);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -76,40 +103,113 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Artículos del rubro activo que tienen viscosidad
-  const articulosDelRubro = activeRubroId
-    ? articulos.filter(a => a.id_rubro === activeRubroId && a.id_viscosidad != null)
-    : [];
-
-  // IDs de viscosidad presentes en artículos del rubro seleccionado
-  const viscosidadIdsDelRubro = new Set(articulosDelRubro.map(a => a.id_viscosidad!));
-
-  // Solo mostrar viscosidades que existan en los artículos del rubro activo
-  const viscosidadesDisponibles = activeRubroId
-    ? viscosidades.filter(v => viscosidadIdsDelRubro.has(v.id_viscosidad))
-    : [];
+  // Artículos del rubro activo que tienen viscosidad (filtrados también por marca si aplica)
+  const viscosidadesDisponibles = useMemo(() => {
+    if (!activeRubroId) return [];
+    let subset = articulos.filter(a => a.id_rubro === activeRubroId && a.id_viscosidad != null);
+    if (activeMarcaId) subset = subset.filter(a => a.id_marca === activeMarcaId);
+    const ids = new Set(subset.map(a => a.id_viscosidad!));
+    return viscosidades.filter(v => ids.has(v.id_viscosidad));
+  }, [articulos, activeRubroId, activeMarcaId, viscosidades]);
 
   const q = debouncedSearch.toLowerCase().trim();
-  // Mostrar todos los artículos, filtrando por texto, rubro y viscosidad seleccionada
+
+  // Marcas disponibles: filtradas por rubro y viscosidad activos
+  const availableMarcas = useMemo(() => {
+    let subset = activeRubroId
+      ? articulos.filter(a => a.id_rubro === activeRubroId)
+      : articulos;
+    if (activeViscosidadId) subset = subset.filter(a => a.id_viscosidad === activeViscosidadId);
+    const marcaIdsEnUso = new Set(subset.map(a => a.id_marca).filter(Boolean) as number[]);
+    return marcas
+      .filter(m => marcaIdsEnUso.has(m.id_marca))
+      .sort((a, b) => a.descripcion_marca.localeCompare(b.descripcion_marca));
+  }, [articulos, activeRubroId, activeViscosidadId, marcas]);
+
+  // Limpiar marca si ya no está disponible tras cambiar viscosidad/rubro
+  useEffect(() => {
+    if (activeMarcaId && availableMarcas.length > 0 && !availableMarcas.some(m => m.id_marca === activeMarcaId)) {
+      setActiveMarcaId(null);
+    }
+  }, [activeMarcaId, availableMarcas]);
+
+  // Limpiar viscosidad si ya no está disponible tras cambiar marca/rubro
+  useEffect(() => {
+    if (activeViscosidadId && viscosidadesDisponibles.length > 0 && !viscosidadesDisponibles.some(v => v.id_viscosidad === activeViscosidadId)) {
+      setActiveViscosidadId(null);
+    }
+  }, [activeViscosidadId, viscosidadesDisponibles]);
+
+  // Mostrar todos los artículos, filtrando por texto, rubro, viscosidad y marca
   const displayedArticulos = articulos.filter((a) => {
     const descripcion = (a.descripcion_articulo || "").toLowerCase();
-    const matchesSearch = q === "" ? true : descripcion.includes(q);
+    const marca = (a.descripcion_marca || "").toLowerCase();
+    const rubro = (a.descripcion_rubro || "").toLowerCase();
+    const matchesSearch = q === "" ? true : descripcion.includes(q) || marca.includes(q) || rubro.includes(q);
     const matchesRubro = activeRubroId ? a.id_rubro === activeRubroId : true;
     const matchesViscosidad = activeViscosidadId ? a.id_viscosidad === activeViscosidadId : true;
-    return matchesSearch && matchesRubro && matchesViscosidad;
+    const matchesMarca = activeMarcaId ? a.id_marca === activeMarcaId : true;
+    return matchesSearch && matchesRubro && matchesViscosidad && matchesMarca;
   });
 
-  // Paginación: solo mostrar los artículos de la página actual
-  const paginatedArticulos = displayedArticulos.slice((page - 1) * pageSize, page * pageSize);
-  const totalPages = Math.ceil(displayedArticulos.length / pageSize);
+  // "Cargar más": mostrar artículos acumulados hasta la página actual
+  const paginatedArticulos = displayedArticulos.slice(0, page * pageSize);
+  const hasMore = paginatedArticulos.length < displayedArticulos.length;
+
+  // Navegación de modal
+  const selectedIndex = selectedArticulo
+    ? displayedArticulos.findIndex(a => a.id_articulo === selectedArticulo.id_articulo)
+    : -1;
+  const handlePrevArticulo = () => {
+    if (selectedIndex > 0) setSelectedArticulo(displayedArticulos[selectedIndex - 1]);
+  };
+  const handleNextArticulo = () => {
+    if (selectedIndex < displayedArticulos.length - 1) setSelectedArticulo(displayedArticulos[selectedIndex + 1]);
+  };
+
+  // Nombre del rubro activo para botones
+  const activeCategory = useMemo(() => {
+    if (!activeRubroId) return "Todos";
+    const r = rubros.find(r => r.id_rubro === activeRubroId);
+    return r?.descripcion_rubro ?? "Todos";
+  }, [activeRubroId, rubros]);
+
+  // Nombre de la viscosidad activa para chips
+  const activeViscosidadName = useMemo(() => {
+    if (!activeViscosidadId) return null;
+    return viscosidades.find(v => v.id_viscosidad === activeViscosidadId)?.descripcion ?? null;
+  }, [activeViscosidadId, viscosidades]);
+
+  // Nombre de la marca activa para chips
+  const activeMarcaName = useMemo(() => {
+    if (!activeMarcaId) return null;
+    return marcas.find(m => m.id_marca === activeMarcaId)?.descripcion_marca ?? null;
+  }, [activeMarcaId, marcas]);
+
+  const hasActiveFilters = activeRubroId != null || activeViscosidadId != null || activeMarcaId != null || debouncedSearch !== "";
 
   
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Skip to content */}
+      <a
+        href="#product-grid"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm"
+      >
+        Saltar al contenido
+      </a>
+
       {/* Hero */}
       <header className="relative h-[50vh] min-h-[350px] flex items-center justify-center overflow-hidden">
-        <img src={heroBanner} alt="Lubrimec taller" className="absolute inset-0 w-full h-full object-cover" />
+        <img
+          src={heroBanner}
+          alt="Lubrimec taller"
+          className="absolute inset-0 w-full h-full object-cover"
+          width={1920}
+          height={1080}
+          fetchPriority="high"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/50 to-background" />
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -130,28 +230,40 @@ const Index = () => {
         </motion.div>
       </header>
 
-      {/* Filters */}
+      {/* Filters — sticky */}
       <main className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Buscar productos..."
-              value={search}
-              onChange={handleSearchChange}
-              className="w-full bg-card border border-border rounded-xl py-3 pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
-            />
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => handleCategoryClick("Todos")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                activeCategory === "Todos" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              }`}
-            >
-              Todos
-            </button>
+        <div className={`sticky top-0 z-40 bg-background pb-4 -mx-4 px-4 pt-2 transition-shadow ${isScrolled ? "shadow-md shadow-background/80" : ""}`}>
+          <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Buscar productos..."
+                value={search}
+                onChange={handleSearchChange}
+                aria-label="Buscar productos"
+                className="w-full bg-card border border-border rounded-xl py-3 pl-12 pr-10 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
+              />
+              {search && (
+                <button
+                  onClick={() => { setSearch(""); setDebouncedSearch(""); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition"
+                  aria-label="Limpiar búsqueda"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => handleCategoryClick()}
+                aria-pressed={activeCategory === "Todos"}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeCategory === "Todos" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
+              >
+                Todos
+              </button>
             {rubrosLoading && <span className="text-muted-foreground">Cargando rubros...</span>}
             {rubrosError && <span className="text-destructive">Error al cargar rubros</span>}
 
@@ -161,7 +273,8 @@ const Index = () => {
                       return (
                         <button
                           key={rubro.id_rubro}
-                          onClick={() => handleRubroClick(rubro.id_rubro, rubro.descripcion_rubro)}
+                          onClick={() => handleRubroClick(rubro.id_rubro)}
+                          aria-pressed={activeRubroId === rubro.id_rubro}
                           className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                             activeCategory === rubro.descripcion_rubro
                               ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
@@ -187,7 +300,8 @@ const Index = () => {
                   otherRubros.map((rubro) => (
                     <button
                       key={rubro.id_rubro}
-                      onClick={() => handleRubroClick(rubro.id_rubro, rubro.descripcion_rubro)}
+                      onClick={() => handleRubroClick(rubro.id_rubro)}
+                      aria-pressed={activeRubroId === rubro.id_rubro}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         activeCategory === rubro.descripcion_rubro
                           ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
@@ -213,10 +327,11 @@ const Index = () => {
         </div>
 
         {viscosidadesDisponibles.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-2 mb-4">
             <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Viscosidad:</span>
             <button
               onClick={() => { setActiveViscosidadId(null); setPage(1); }}
+              aria-pressed={!activeViscosidadId}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 !activeViscosidadId
                   ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
@@ -229,6 +344,7 @@ const Index = () => {
               <button
                 key={v.id_viscosidad}
                 onClick={() => handleViscosidadClick(v.id_viscosidad)}
+                aria-pressed={activeViscosidadId === v.id_viscosidad}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   activeViscosidadId === v.id_viscosidad
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
@@ -241,6 +357,105 @@ const Index = () => {
           </div>
         )}
 
+        {/* Filtro por marca */}
+        {marcasLoading && <span className="text-sm text-muted-foreground">Cargando marcas...</span>}
+        {marcasError && <span className="text-sm text-destructive">{marcasError}</span>}
+        {availableMarcas.length > 1 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Marca:</span>
+            <button
+              onClick={() => { setActiveMarcaId(null); setPage(1); }}
+              aria-pressed={!activeMarcaId}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                !activeMarcaId
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              Todas
+            </button>
+            {(showMoreMarcas ? availableMarcas : availableMarcas.slice(0, 6)).map((marca) => (
+              <button
+                key={marca.id_marca}
+                onClick={() => { setActiveMarcaId(marca.id_marca); setPage(1); }}
+                aria-pressed={activeMarcaId === marca.id_marca}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeMarcaId === marca.id_marca
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
+              >
+                {marca.descripcion_marca}
+              </button>
+            ))}
+            {availableMarcas.length > 6 && (
+              <button
+                onClick={() => setShowMoreMarcas(!showMoreMarcas)}
+                className="px-4 py-2 rounded-full text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center gap-1"
+              >
+                {showMoreMarcas ? "Menos" : `Ver más (${availableMarcas.length - 6})`}
+                {showMoreMarcas ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+        )}
+        {availableMarcas.length === 1 && (
+          <p className="text-sm text-muted-foreground mb-4">
+            Marca: <span className="font-medium text-foreground">{availableMarcas[0].descripcion_marca}</span>
+          </p>
+        )}
+        </div>
+
+        {/* Chips de filtros activos */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {debouncedSearch && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
+                Búsqueda: “{debouncedSearch}”
+                <button onClick={() => { setSearch(""); setDebouncedSearch(""); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar búsqueda">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {activeRubroId && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
+                Rubro: {activeCategory}
+                <button onClick={() => { setActiveRubroId(null); setActiveViscosidadId(null); setActiveMarcaId(null); setPage(1); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar rubro">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {activeViscosidadName && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
+                Viscosidad: {activeViscosidadName}
+                <button onClick={() => { setActiveViscosidadId(null); setPage(1); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar viscosidad">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {activeMarcaName && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
+                Marca: {activeMarcaName}
+                <button onClick={() => { setActiveMarcaId(null); setPage(1); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar marca">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            <button
+              onClick={() => { setSearch(""); setDebouncedSearch(""); setActiveRubroId(null); setActiveViscosidadId(null); setActiveMarcaId(null); setPage(1); }}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Limpiar todo
+            </button>
+          </div>
+        )}
+
+        {(articulosLoading || marcasLoading || rubrosLoading) && (
+          <div className="mb-4 overflow-hidden rounded-full h-1 bg-secondary">
+            <div className="h-full w-1/3 bg-primary rounded-full animate-[indeterminate_1.5s_ease-in-out_infinite]" />
+          </div>
+        )}
+
         {viscosidadesLoading && (
           <div className="mb-4 text-sm text-muted-foreground">Cargando viscosidades...</div>
         )}
@@ -249,14 +464,17 @@ const Index = () => {
         )}
 
         {/* Contador de resultados */}
-        {!articulosLoading && displayedArticulos.length > 0 && (
+        {!articulosLoading && (
           <p className="text-sm text-muted-foreground mb-4">
-            Mostrando {Math.min(paginatedArticulos.length, displayedArticulos.length)} de {displayedArticulos.length} productos
+            {displayedArticulos.length > 0
+              ? `Mostrando ${Math.min(paginatedArticulos.length, displayedArticulos.length)} de ${displayedArticulos.length} productos`
+              : "0 productos encontrados"}
           </p>
         )}
 
         {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div id="product-grid" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <AnimatePresence mode="popLayout">
           {articulosLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="bg-card border border-border rounded-xl p-4">
@@ -275,9 +493,21 @@ const Index = () => {
           ) : (
             paginatedArticulos.length > 0 ? (
               paginatedArticulos.map((art) => (
-                <div key={art.id_articulo} className="cursor-pointer" onClick={() => setSelectedArticulo(art)}>
-                  <ArticleCard articulo={art as any} />
-                </div>
+                <motion.div
+                  key={art.id_articulo}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl"
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Ver detalles de ${art.descripcion_articulo}`}
+                  onClick={() => setSelectedArticulo(art)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedArticulo(art); } }}
+                >
+                  <ArticleCard articulo={art} searchQuery={debouncedSearch} />
+                </motion.div>
               ))
             ) : (
               <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
@@ -285,7 +515,7 @@ const Index = () => {
                 <h3 className="text-lg font-semibold text-foreground mb-1">No se encontraron productos</h3>
                 <p className="text-sm text-muted-foreground mb-4">Intenta buscar otra cosa o explora otras categorías</p>
                 <button
-                  onClick={() => { setSearch(""); setDebouncedSearch(""); setActiveCategory("Todos"); setActiveRubroId(null); setActiveViscosidadId(null); setPage(1); }}
+                  onClick={() => { setSearch(""); setDebouncedSearch(""); setActiveRubroId(null); setActiveViscosidadId(null); setActiveMarcaId(null); setPage(1); }}
                   className="px-4 py-2 rounded-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                 >
                   Limpiar filtros
@@ -293,53 +523,17 @@ const Index = () => {
               </div>
             )
           )}
+          </AnimatePresence>
         </div>
 
-        {/* Paginación */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
+        {/* Cargar más */}
+        {hasMore && !articulosLoading && (
+          <div className="flex justify-center mt-8">
             <button
-              className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground disabled:opacity-50 text-sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
+              onClick={() => setPage((p) => p + 1)}
+              className="px-6 py-3 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-all"
             >
-              Anterior
-            </button>
-            {(() => {
-              const pages: (number | string)[] = [];
-              if (totalPages <= 7) {
-                for (let i = 1; i <= totalPages; i++) pages.push(i);
-              } else {
-                pages.push(1);
-                if (page > 3) pages.push("...");
-                for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
-                if (page < totalPages - 2) pages.push("...");
-                pages.push(totalPages);
-              }
-              return pages.map((p, idx) =>
-                typeof p === "string" ? (
-                  <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground select-none">…</span>
-                ) : (
-                  <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
-                      page === p
-                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    {p}
-                  </button>
-                )
-              );
-            })()}
-            <button
-              className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground disabled:opacity-50 text-sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              Siguiente
+              Cargar más productos ({displayedArticulos.length - paginatedArticulos.length} restantes)
             </button>
           </div>
         )}
@@ -417,6 +611,10 @@ const Index = () => {
         articulo={selectedArticulo}
         isOpen={selectedArticulo !== null}
         onClose={() => setSelectedArticulo(null)}
+        onPrev={handlePrevArticulo}
+        onNext={handleNextArticulo}
+        hasPrev={selectedIndex > 0}
+        hasNext={selectedIndex < displayedArticulos.length - 1}
       />
     </div>
   );

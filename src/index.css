@@ -62,3 +62,8 @@
     letter-spacing: 0.05em;
   }
 }
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}

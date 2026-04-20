@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
-import { API_BASE } from "@/lib/config";
+import { X, Copy, Check, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MessageCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { API_BASE, WHATSAPP_NUMBER } from "@/lib/config";
 import placeholder from "@/assets/lubrimec-logo.png";
 import type { Articulo } from "@/hooks/useArticulos";
 
@@ -9,21 +10,41 @@ interface ProductModalProps {
   articulo: Articulo | null;
   isOpen: boolean;
   onClose: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ articulo, isOpen, onClose }) => {
+const ProductModal: React.FC<ProductModalProps> = ({
+  articulo, isOpen, onClose, onPrev, onNext, hasPrev, hasNext,
+}) => {
+  const [zoomed, setZoomed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   React.useEffect(() => {
     if (!isOpen) return;
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (zoomed) setZoomed(false);
+        else onClose();
+      }
+      if (e.key === "ArrowLeft" && hasPrev) onPrev?.();
+      if (e.key === "ArrowRight" && hasNext) onNext?.();
     };
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, onPrev, onNext, hasPrev, hasNext, zoomed]);
+
+  // Reset zoom/copied on article change
+  React.useEffect(() => {
+    setZoomed(false);
+    setCopied(false);
+  }, [articulo?.id_articulo]);
 
   if (!articulo) return null;
 
@@ -31,6 +52,27 @@ const ProductModal: React.FC<ProductModalProps> = ({ articulo, isOpen, onClose }
   const imgSrc = hasImage
     ? `${API_BASE}/josegalvez/paginaweb/articulosimg/${articulo.id_articulo}`
     : placeholder;
+
+  const handleCopy = async () => {
+    try {
+      const text = [
+        articulo.descripcion_articulo,
+        articulo.descripcion_marca ? `Marca: ${articulo.descripcion_marca}` : "",
+        articulo.precio != null ? `Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)}` : "",
+        articulo.stock != null && articulo.stock > 0 ? `${articulo.stock} en stock` : "Sin stock",
+      ].filter(Boolean).join(" — ");
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // silent fail
+    }
+  };
+
+  const whatsappMsg = encodeURIComponent(
+    `Hola, consulto por: ${articulo.descripcion_articulo}${articulo.precio != null ? ` (Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)})` : ""}`
+  );
+  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappMsg}`;
 
   return (
     <AnimatePresence>
@@ -41,9 +83,32 @@ const ProductModal: React.FC<ProductModalProps> = ({ articulo, isOpen, onClose }
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="product-modal-title"
         >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+
+          {/* Prev/Next navigation */}
+          {hasPrev && (
+            <button
+              onClick={onPrev}
+              className="absolute left-2 sm:left-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-background/80 hover:bg-background text-foreground transition"
+              aria-label="Producto anterior"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
+          {hasNext && (
+            <button
+              onClick={onNext}
+              className="absolute right-2 sm:right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-background/80 hover:bg-background text-foreground transition"
+              aria-label="Producto siguiente"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          )}
 
           {/* Modal */}
           <motion.div
@@ -62,8 +127,12 @@ const ProductModal: React.FC<ProductModalProps> = ({ articulo, isOpen, onClose }
               <X className="w-5 h-5" />
             </button>
 
-            {/* Image */}
-            <div className="w-full bg-white flex items-center justify-center p-6" style={{ maxHeight: "50vh" }}>
+            {/* Image with zoom toggle */}
+            <div
+              className="relative w-full bg-white flex items-center justify-center p-6 cursor-zoom-in"
+              style={{ maxHeight: "50vh" }}
+              onClick={() => setZoomed(true)}
+            >
               <img
                 src={imgSrc}
                 alt={articulo.descripcion_articulo}
@@ -72,11 +141,18 @@ const ProductModal: React.FC<ProductModalProps> = ({ articulo, isOpen, onClose }
                   (e.target as HTMLImageElement).src = placeholder;
                 }}
               />
+              <button
+                className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-white/80 hover:bg-black/60 transition"
+                onClick={(e) => { e.stopPropagation(); setZoomed(true); }}
+                aria-label="Ampliar imagen"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Details */}
             <div className="p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-white font-sans leading-snug">
+              <h2 id="product-modal-title" className="text-lg font-semibold text-white font-sans leading-snug">
                 {articulo.descripcion_articulo}
               </h2>
 
@@ -113,8 +189,66 @@ const ProductModal: React.FC<ProductModalProps> = ({ articulo, isOpen, onClose }
                   Rubro: {articulo.descripcion_rubro}
                 </p>
               )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleCopy}
+                      aria-label="Copiar información del producto"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors"
+                    >
+                      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copied ? "¡Copiado!" : "Copiar"}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Copiar datos del producto al portapapeles</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Consultar por este producto
+                </a>
+              </div>
             </div>
           </motion.div>
+
+          {/* Fullscreen zoom overlay */}
+          <AnimatePresence>
+            {zoomed && (
+              <motion.div
+                className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 cursor-zoom-out"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setZoomed(false)}
+              >
+                <button
+                  className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+                  onClick={() => setZoomed(false)}
+                  aria-label="Cerrar zoom"
+                >
+                  <ZoomOut className="w-5 h-5" />
+                </button>
+                <img
+                  src={imgSrc}
+                  alt={articulo.descripcion_articulo}
+                  className="max-w-[95vw] max-h-[95vh] object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = placeholder;
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>

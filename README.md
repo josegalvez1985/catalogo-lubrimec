@@ -86,14 +86,28 @@ VITE_API_BASE=https://oracleapex.com/ords
 
 - `GET ${API_BASE}/josegalvez/paginaweb/rubros`
 - `GET ${API_BASE}/josegalvez/paginaweb/articulossinimg`
+- `GET ${API_BASE}/josegalvez/paginaweb/marcas`
+- `GET ${API_BASE}/josegalvez/paginaweb/viscosidades`
 
 ## Comportamiento de la app
 
 - Muestra un hero con información del lubricentro.
-- Permite buscar productos por texto.
-- Permite filtrar artículos por rubro.
-- Tiene paginación local con 50 artículos por página.
+- Permite buscar productos por texto, marca y rubro.
+- Permite filtrar artículos por rubro, viscosidad y marca.
+- Tiene paginación local con 16 artículos por carga.
 - Si el endpoint de rubros falla, usa el fixture local `src/data/rubros.ts`.
+
+## Cambios recientes (20 de abril de 2026)
+
+- Se agregó soporte de filtro de marcas usando la API de `marcas`.
+- La lista de marcas y viscosidades ahora se actualiza de forma cruzada: al seleccionar una viscosidad solo se muestran marcas válidas, y viceversa.
+- El buscador ahora indexa también nombre de marca y rubro.
+- Se añadió un botón "X" en el campo de búsqueda para limpiar rápidamente la búsqueda.
+- Se incorporó una barra de progreso indeterminada mientras se cargan las APIs remotas.
+- Se mejoró el comportamiento del copiado de producto con un spinner y estado de carga.
+- Se movió el número de WhatsApp a `src/lib/config.ts` para configuración centralizada.
+- Se agregó un `meta name="theme-color"` para mejorar la experiencia móvil.
+- Se corrigieron bugs en el resaltado de texto de búsqueda (`HighlightText`) y en la navegación 404.
 
 ## Notas adicionales
 

@@ -5,5 +5,4 @@ const DEFAULT_BASE = import.meta.env.MODE === "development" ? "/ords" : "https:/
 
 export const API_BASE = (import.meta.env.VITE_API_BASE as string) || DEFAULT_BASE;
 
-// Uso ejemplo:
-// fetch(`${API_BASE}/josegalvez/paginaweb/articulos`)
+export const WHATSAPP_NUMBER = "595974759037";
