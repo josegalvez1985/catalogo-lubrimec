@@ -36,6 +36,7 @@ const Index = () => {
   const [selectedArticulo, setSelectedArticulo] = useState<Articulo | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showMoreMarcas, setShowMoreMarcas] = useState(false);
+  const [showMoreViscosidades, setShowMoreViscosidades] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Reiniciar página cuando cambian los filtros
@@ -67,6 +68,7 @@ const Index = () => {
     setActiveViscosidadId(null);
     setActiveMarcaId(null);
     setShowMoreMarcas(false);
+    setShowMoreViscosidades(false);
     setPage(1);
   };
   const handleRubroClick = (rubroId: number) => {
@@ -74,10 +76,12 @@ const Index = () => {
     setActiveViscosidadId(null);
     setActiveMarcaId(null);
     setShowMoreMarcas(false);
+    setShowMoreViscosidades(false);
     setPage(1);
   };
   const handleViscosidadClick = (id_viscosidad: number) => {
     setActiveViscosidadId(id_viscosidad);
+    setShowMoreViscosidades(false);
     setPage(1);
   };
   const [showMoreRubros, setShowMoreRubros] = useState(false);
@@ -292,88 +296,116 @@ const Index = () => {
                 </button>
               )}
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => handleCategoryClick()}
-                aria-pressed={activeCategory === "Todos"}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeCategory === "Todos" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-              >
+            <div className="flex gap-2 flex-wrap" role="radiogroup" aria-label="Filtrar por rubro">
+              <label className={rubroButtonClass(activeCategory === "Todos") + " cursor-pointer"}>
+                <input
+                  type="radio"
+                  name="rubro"
+                  checked={!activeRubroId}
+                  onChange={() => handleCategoryClick()}
+                  className="sr-only"
+                />
                 Todos
-              </button>
-            {rubrosLoading && <span className="text-muted-foreground">Cargando rubros...</span>}
-            {rubrosError && <span className="text-destructive">Error al cargar rubros</span>}
+              </label>
+              {rubrosLoading && <span className="text-muted-foreground">Cargando rubros...</span>}
+              {rubrosError && <span className="text-destructive">Error al cargar rubros</span>}
 
-            {!rubrosLoading && !rubrosError && (
-              <>
-                {visibleRubros.map((rubro) => (
-                  <button
-                    key={rubro.id_rubro}
-                    onClick={() => handleRubroClick(rubro.id_rubro)}
-                    aria-pressed={activeRubroId === rubro.id_rubro}
-                    className={rubroButtonClass(activeCategory === rubro.descripcion_rubro)}
-                  >
-                    {rubro.descripcion_rubro}
-                  </button>
-                ))}
-
-                {!activeRubroId && !showMoreRubros && otherRubros.length > 0 && (
-                  <button
-                    onClick={() => setShowMoreRubros(true)}
-                    className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1"
-                  >
-                    Ver más ({otherRubros.length})
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </button>
-                )}
-
-                {!activeRubroId && showMoreRubros &&
-                  otherRubros.map((rubro) => (
-                    <button
+              {!rubrosLoading && !rubrosError && (
+                <>
+                  {visibleRubros.map((rubro) => (
+                    <label
                       key={rubro.id_rubro}
-                      onClick={() => handleRubroClick(rubro.id_rubro)}
-                      aria-pressed={activeRubroId === rubro.id_rubro}
-                      className={rubroButtonClass(activeCategory === rubro.descripcion_rubro)}
+                      className={rubroButtonClass(activeCategory === rubro.descripcion_rubro) + " cursor-pointer"}
                     >
+                      <input
+                        type="radio"
+                        name="rubro"
+                        checked={activeRubroId === rubro.id_rubro}
+                        onChange={() => handleRubroClick(rubro.id_rubro)}
+                        className="sr-only"
+                      />
                       {rubro.descripcion_rubro}
-                    </button>
+                    </label>
                   ))}
 
-                {!activeRubroId && showMoreRubros && (
-                  <button
-                    onClick={() => setShowMoreRubros(false)}
-                    className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1"
-                  >
-                    Menos
-                    <ChevronUp className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+                  {!activeRubroId && !showMoreRubros && otherRubros.length > 0 && (
+                    <button
+                      onClick={() => setShowMoreRubros(true)}
+                      className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1"
+                    >
+                      Ver más ({otherRubros.length})
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  {!activeRubroId && showMoreRubros &&
+                    otherRubros.map((rubro) => (
+                      <label
+                        key={rubro.id_rubro}
+                        className={rubroButtonClass(activeCategory === rubro.descripcion_rubro) + " cursor-pointer"}
+                      >
+                        <input
+                          type="radio"
+                          name="rubro"
+                          checked={activeRubroId === rubro.id_rubro}
+                          onChange={() => handleRubroClick(rubro.id_rubro)}
+                          className="sr-only"
+                        />
+                        {rubro.descripcion_rubro}
+                      </label>
+                    ))}
+
+                  {!activeRubroId && showMoreRubros && (
+                    <button
+                      onClick={() => setShowMoreRubros(false)}
+                      className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1"
+                    >
+                      Menos
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
         </div>
 
         {visibleViscosidades.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4" role="radiogroup" aria-label="Filtrar por viscosidad">
             <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Viscosidad:</span>
-            <button
-              onClick={() => { setActiveViscosidadId(null); setPage(1); }}
-              aria-pressed={!activeViscosidadId}
-              className={viscosidadButtonClass(!activeViscosidadId)}
-            >
+            <label className={viscosidadButtonClass(!activeViscosidadId) + " cursor-pointer"}>
+              <input
+                type="radio"
+                name="viscosidad"
+                checked={!activeViscosidadId}
+                onChange={() => { setActiveViscosidadId(null); setShowMoreViscosidades(false); setPage(1); }}
+                className="sr-only"
+              />
               Todas
-            </button>
-            {visibleViscosidades.slice(0, 4).map((v) => (
-              <button
+            </label>
+            {(showMoreViscosidades && !activeViscosidadId ? viscosidadesDisponibles : visibleViscosidades.slice(0, 4)).map((v) => (
+              <label
                 key={v.id_viscosidad}
-                onClick={() => handleViscosidadClick(v.id_viscosidad)}
-                aria-pressed={activeViscosidadId === v.id_viscosidad}
-                className={viscosidadButtonClass(activeViscosidadId === v.id_viscosidad)}
+                className={viscosidadButtonClass(activeViscosidadId === v.id_viscosidad) + " cursor-pointer"}
               >
+                <input
+                  type="radio"
+                  name="viscosidad"
+                  checked={activeViscosidadId === v.id_viscosidad}
+                  onChange={() => handleViscosidadClick(v.id_viscosidad)}
+                  className="sr-only"
+                />
                 {v.descripcion}
-              </button>
+              </label>
             ))}
+            {!activeViscosidadId && viscosidadesDisponibles.length > 4 && (
+              <button
+                onClick={() => setShowMoreViscosidades(!showMoreViscosidades)}
+                className="px-4 py-2 rounded-full text-sm font-medium bg-accent/10 text-accent hover:bg-accent/20 inline-flex items-center gap-1"
+              >
+                {showMoreViscosidades ? "Menos" : `Ver más (${viscosidadesDisponibles.length - 4})`}
+                {showMoreViscosidades ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )}
           </div>
         )}
 
@@ -381,24 +413,32 @@ const Index = () => {
         {marcasLoading && <span className="text-sm text-muted-foreground">Cargando marcas...</span>}
         {marcasError && <span className="text-sm text-destructive">{marcasError}</span>}
         {visibleMarcas.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4" role="radiogroup" aria-label="Filtrar por marca">
             <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Marca:</span>
-            <button
-              onClick={() => { setActiveMarcaId(null); setPage(1); }}
-              aria-pressed={!activeMarcaId}
-              className={marcaButtonClass(!activeMarcaId)}
-            >
+            <label className={marcaButtonClass(!activeMarcaId) + " cursor-pointer"}>
+              <input
+                type="radio"
+                name="marca"
+                checked={!activeMarcaId}
+                onChange={() => { setActiveMarcaId(null); setPage(1); }}
+                className="sr-only"
+              />
               Todas
-            </button>
+            </label>
             {(showMoreMarcas && !activeMarcaId ? availableMarcas : visibleMarcas.slice(0, 4)).map((marca) => (
-              <button
+              <label
                 key={marca.id_marca}
-                onClick={() => { setActiveMarcaId(marca.id_marca); setPage(1); }}
-                aria-pressed={activeMarcaId === marca.id_marca}
-                className={marcaButtonClass(activeMarcaId === marca.id_marca)}
+                className={marcaButtonClass(activeMarcaId === marca.id_marca) + " cursor-pointer"}
               >
+                <input
+                  type="radio"
+                  name="marca"
+                  checked={activeMarcaId === marca.id_marca}
+                  onChange={() => { setActiveMarcaId(marca.id_marca); setPage(1); }}
+                  className="sr-only"
+                />
                 {marca.descripcion_marca}
-              </button>
+              </label>
             ))}
             {!activeMarcaId && availableMarcas.length > 4 && (
               <button
