@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CloudDownload, Share2 } from "lucide-react";
+import { CloudDownload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -58,22 +58,7 @@ const PwaInstallButton = () => {
     }
   };
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast({
-        title: "Enlace copiado",
-        description: "Página web compartida",
-      });
-    } catch {
-      toast({
-        title: "No se pudo copiar",
-        description: "Intenta copiar manualmente el enlace",
-        variant: "destructive",
-      });
-    }
-  };
+
 
   if (!visible) {
     return null;
@@ -89,14 +74,6 @@ const PwaInstallButton = () => {
         >
           <CloudDownload className="h-4 w-4" />
           {deferredPrompt ? "Instalar app" : "Añadir a pantalla de inicio"}
-        </button>
-        <button
-          type="button"
-          onClick={handleShare}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-secondary px-5 py-3 text-sm font-semibold text-foreground shadow-lg shadow-slate-900/10 transition hover:bg-secondary/90"
-        >
-          <Share2 className="h-4 w-4" />
-          Compartir enlace
         </button>
       </div>
       {isIosInstallAvailable && showInstructions && (
