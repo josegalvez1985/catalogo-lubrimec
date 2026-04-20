@@ -12,6 +12,7 @@ import { useMarcas } from "@/hooks/useMarcas";
 import type { Articulo } from "@/hooks/useArticulos";
 import heroBanner from "@/assets/hero-banner.jpg";
 import lubrimecLogo from "@/assets/lubrimec-logo.png";
+import PwaInstallButton from "@/components/PwaInstallButton";
 
 const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -126,6 +127,20 @@ const Index = () => {
       .sort((a, b) => a.descripcion_marca.localeCompare(b.descripcion_marca));
   }, [articulos, activeRubroId, activeViscosidadId, marcas]);
 
+  const visibleViscosidades = activeViscosidadId
+    ? viscosidadesDisponibles.filter(v => v.id_viscosidad === activeViscosidadId)
+    : viscosidadesDisponibles;
+
+  const visibleMarcas = activeMarcaId
+    ? availableMarcas.filter(m => m.id_marca === activeMarcaId)
+    : availableMarcas;
+
+  const visibleRubros = activeRubroId
+    ? rubros.filter(r => r.id_rubro === activeRubroId)
+    : topRubros;
+
+  const visibleOtherRubros = activeRubroId ? [] : otherRubros;
+
   // Limpiar marca si ya no está disponible tras cambiar viscosidad/rubro
   useEffect(() => {
     if (activeMarcaId && availableMarcas.length > 0 && !availableMarcas.some(m => m.id_marca === activeMarcaId)) {
@@ -174,6 +189,27 @@ const Index = () => {
     return r?.descripcion_rubro ?? "Todos";
   }, [activeRubroId, rubros]);
 
+  const rubroButtonClass = (active: boolean) =>
+    `px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+      active
+        ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-lg shadow-emerald-500/20"
+        : "bg-slate-950 text-emerald-300 border-slate-800 hover:text-emerald-100"
+    }`;
+
+  const viscosidadButtonClass = (active: boolean) =>
+    `px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+      active
+        ? "bg-amber-400 text-slate-950 border-amber-400 shadow-lg shadow-amber-400/20"
+        : "bg-slate-950 text-amber-300 border-slate-800 hover:text-amber-100"
+    }`;
+
+  const marcaButtonClass = (active: boolean) =>
+    `px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+      active
+        ? "bg-sky-500 text-slate-950 border-sky-500 shadow-lg shadow-sky-500/20"
+        : "bg-slate-950 text-sky-300 border-slate-800 hover:text-sky-100"
+    }`;
+
   // Nombre de la viscosidad activa para chips
   const activeViscosidadName = useMemo(() => {
     if (!activeViscosidadId) return null;
@@ -208,7 +244,6 @@ const Index = () => {
           className="absolute inset-0 w-full h-full object-cover"
           width={1920}
           height={1080}
-          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/50 to-background" />
         <motion.div
@@ -227,12 +262,15 @@ const Index = () => {
           <p className="text-xl md:text-2xl text-muted-foreground font-sans font-light tracking-wide">
             Tu lubricentro de confianza — Catálogo de productos
           </p>
+          <div className="mt-8 flex justify-center">
+            <PwaInstallButton />
+          </div>
         </motion.div>
       </header>
 
       {/* Filters — sticky */}
       <main className="max-w-7xl mx-auto px-4 py-12">
-        <div className={`sticky top-0 z-40 bg-background pb-4 -mx-4 px-4 pt-2 transition-shadow ${isScrolled ? "shadow-md shadow-background/80" : ""}`}>
+        <div className={`sm:sticky sm:top-0 z-40 bg-background pb-4 -mx-4 px-4 pt-2 transition-shadow ${isScrolled ? "shadow-md shadow-background/80" : ""}`}>
           <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -269,53 +307,43 @@ const Index = () => {
 
             {!rubrosLoading && !rubrosError && (
               <>
-                {topRubros.map((rubro) => {
-                      return (
-                        <button
-                          key={rubro.id_rubro}
-                          onClick={() => handleRubroClick(rubro.id_rubro)}
-                          aria-pressed={activeRubroId === rubro.id_rubro}
-                          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                            activeCategory === rubro.descripcion_rubro
-                              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                          }`}
-                        >
-                          {rubro.descripcion_rubro}
-                        </button>
-                      );
-                    })}
+                {visibleRubros.map((rubro) => (
+                  <button
+                    key={rubro.id_rubro}
+                    onClick={() => handleRubroClick(rubro.id_rubro)}
+                    aria-pressed={activeRubroId === rubro.id_rubro}
+                    className={rubroButtonClass(activeCategory === rubro.descripcion_rubro)}
+                  >
+                    {rubro.descripcion_rubro}
+                  </button>
+                ))}
 
-                {!showMoreRubros && otherRubros.length > 0 && (
+                {!activeRubroId && !showMoreRubros && otherRubros.length > 0 && (
                   <button
                     onClick={() => setShowMoreRubros(true)}
-                    className="px-4 py-2 rounded-full text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center gap-1"
+                    className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1"
                   >
                     Ver más ({otherRubros.length})
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
                 )}
 
-                {showMoreRubros &&
+                {!activeRubroId && showMoreRubros &&
                   otherRubros.map((rubro) => (
                     <button
                       key={rubro.id_rubro}
                       onClick={() => handleRubroClick(rubro.id_rubro)}
                       aria-pressed={activeRubroId === rubro.id_rubro}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        activeCategory === rubro.descripcion_rubro
-                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
+                      className={rubroButtonClass(activeCategory === rubro.descripcion_rubro)}
                     >
                       {rubro.descripcion_rubro}
                     </button>
                   ))}
 
-                {showMoreRubros && (
+                {!activeRubroId && showMoreRubros && (
                   <button
                     onClick={() => setShowMoreRubros(false)}
-                    className="px-4 py-2 rounded-full text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center gap-1"
+                    className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1"
                   >
                     Menos
                     <ChevronUp className="w-3.5 h-3.5" />
@@ -326,30 +354,22 @@ const Index = () => {
           </div>
         </div>
 
-        {viscosidadesDisponibles.length > 0 && (
+        {visibleViscosidades.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Viscosidad:</span>
             <button
               onClick={() => { setActiveViscosidadId(null); setPage(1); }}
               aria-pressed={!activeViscosidadId}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                !activeViscosidadId
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              }`}
+              className={viscosidadButtonClass(!activeViscosidadId)}
             >
               Todas
             </button>
-            {viscosidadesDisponibles.map((v) => (
+            {visibleViscosidades.slice(0, 4).map((v) => (
               <button
                 key={v.id_viscosidad}
                 onClick={() => handleViscosidadClick(v.id_viscosidad)}
                 aria-pressed={activeViscosidadId === v.id_viscosidad}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeViscosidadId === v.id_viscosidad
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
+                className={viscosidadButtonClass(activeViscosidadId === v.id_viscosidad)}
               >
                 {v.descripcion}
               </button>
@@ -360,40 +380,32 @@ const Index = () => {
         {/* Filtro por marca */}
         {marcasLoading && <span className="text-sm text-muted-foreground">Cargando marcas...</span>}
         {marcasError && <span className="text-sm text-destructive">{marcasError}</span>}
-        {availableMarcas.length > 1 && (
+        {visibleMarcas.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Marca:</span>
             <button
               onClick={() => { setActiveMarcaId(null); setPage(1); }}
               aria-pressed={!activeMarcaId}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                !activeMarcaId
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              }`}
+              className={marcaButtonClass(!activeMarcaId)}
             >
               Todas
             </button>
-            {(showMoreMarcas ? availableMarcas : availableMarcas.slice(0, 6)).map((marca) => (
+            {(showMoreMarcas && !activeMarcaId ? availableMarcas : visibleMarcas.slice(0, 4)).map((marca) => (
               <button
                 key={marca.id_marca}
                 onClick={() => { setActiveMarcaId(marca.id_marca); setPage(1); }}
                 aria-pressed={activeMarcaId === marca.id_marca}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeMarcaId === marca.id_marca
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
+                className={marcaButtonClass(activeMarcaId === marca.id_marca)}
               >
                 {marca.descripcion_marca}
               </button>
             ))}
-            {availableMarcas.length > 6 && (
+            {!activeMarcaId && availableMarcas.length > 4 && (
               <button
                 onClick={() => setShowMoreMarcas(!showMoreMarcas)}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center gap-1"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-accent/10 text-accent hover:bg-accent/20 inline-flex items-center gap-1"
               >
-                {showMoreMarcas ? "Menos" : `Ver más (${availableMarcas.length - 6})`}
+                {showMoreMarcas ? "Menos" : `Ver más (${availableMarcas.length - 4})`}
                 {showMoreMarcas ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
             )}
