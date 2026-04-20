@@ -1,4 +1,4 @@
-const CACHE_NAME = "lubrimec-pwa-cache-v1";
+const CACHE_NAME = "lubrimec-pwa-cache-v2";
 const PRECACHE_URLS = ["./", "./manifest.webmanifest", "./favicon.svg"];
 
 self.addEventListener("install", (event) => {
