@@ -3,6 +3,7 @@ import { Copy, Check, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import placeholder from "@/assets/lubrimec-logo.png";
 import { API_BASE } from "@/lib/config";
+import { buildProductCanvas } from "@/lib/productCanvas";
 
 interface Props {
   articulo: {
@@ -71,104 +72,16 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
     if (copying) return;
     setCopying(true);
     try {
-      // 1. Descargar la imagen del producto
-      const imgRes = await fetch(imgSrc);
-      if (!imgRes.ok) throw new Error("Error descargando imagen");
-      const imgBlob = await imgRes.blob();
+      const blob = await buildProductCanvas(imgSrc, articulo);
 
-      // Convertir a DataURL para evitar bloqueos de seguridad de Blob URLs en HTTP
-      const dataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(imgBlob);
-      });
-
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-      });
-
-      // 2. Configurar Canvas en Alta Resolución (900x1200) para nitidez absoluta
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d", { alpha: false })!;
-      canvas.width = 900;
-      canvas.height = 1200;
-
-      // Fondo oscuro de la tarjeta (#1a1a1a)
-      ctx.fillStyle = "#1a1a1a";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Dibujar borde decorativo
-      ctx.strokeStyle = "#333333";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-
-      // Área blanca para la imagen (esquinas redondeadas manuales)
-      const pad = 40;
-      const imgAreaSize = canvas.width - pad * 2;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(pad, pad, imgAreaSize, imgAreaSize);
-
-      // Dibujar imagen del producto escalada y centrada
-      const scale = Math.min(imgAreaSize / img.naturalWidth, imgAreaSize / img.naturalHeight);
-      const sw = img.naturalWidth * scale;
-      const sh = img.naturalHeight * scale;
-      ctx.drawImage(img, pad + (imgAreaSize - sw) / 2, pad + (imgAreaSize - sh) / 2, sw, sh);
-
-      // 3. Escribir Textos (Descripción, Precio, Stock)
-      ctx.textAlign = "left";
-      
-      // Descripción (Blanco, Negrita)
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 44px sans-serif";
-      const words = articulo.descripcion_articulo.split(" ");
-      let line = "";
-      let y = pad + imgAreaSize + 80;
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + " ";
-        if (ctx.measureText(testLine).width > (canvas.width - pad * 2) && n > 0) {
-          ctx.fillText(line, pad, y);
-          line = words[n] + " ";
-          y += 60;
-        } else {
-          line = testLine;
-        }
-      }
-      ctx.fillText(line, pad, y);
-
-      // Precio (Naranja/dorado de la marca Lubrimec)
-      y += 120;
-      if (articulo.precio != null) {
-        ctx.fillStyle = "#d97706";
-        ctx.font = "bold 70px sans-serif";
-        ctx.fillText(`Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)}`, pad, y);
-      }
-
-      // Stock (Verde o Rojo)
-      y += 80;
-      const isStock = articulo.stock != null && articulo.stock > 0;
-      ctx.fillStyle = isStock ? "#10b981" : "#ef4444";
-      ctx.font = "bold 38px sans-serif";
-      ctx.fillText(isStock ? `✔ ${articulo.stock} en stock` : "Sin stock", pad, y);
-
-      // 4. COPIAR AL PORTAPAPELES COMO PNG
-      // Nota: navigator.clipboard.write requiere que el sitio esté en HTTPS o localhost.
-      // Si estás en una IP local (192.168...), algunos navegadores bloquean 'write'.
-      const blob = await new Promise<Blob>((resolve) => canvas.toBlob(b => resolve(b!), "image/png"));
-      
       if (navigator.clipboard && typeof ClipboardItem !== "undefined") {
-        const data = [new ClipboardItem({ "image/png": blob })];
-        await navigator.clipboard.write(data);
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
         setCopied(true);
       } else {
-        throw new Error("Clipboard API no soportada en esta conexión (requiere HTTPS)");
+        throw new Error("Clipboard API no disponible (requiere HTTPS)");
       }
-
     } catch (err) {
       console.error(err);
-      // Fallback: copiar solo el texto descriptivo al portapapeles
       try {
         const text = [
           articulo.descripcion_articulo,

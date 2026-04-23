@@ -1,10 +1,11 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Copy, Check, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MessageCircle } from "lucide-react";
+import { X, Copy, Check, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MessageCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { API_BASE, WHATSAPP_NUMBER } from "@/lib/config";
 import placeholder from "@/assets/lubrimec-logo.png";
 import type { Articulo } from "@/hooks/useArticulos";
+import { buildProductCanvas } from "@/lib/productCanvas";
 
 interface ProductModalProps {
   articulo: Articulo | null;
@@ -21,6 +22,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
 }) => {
   const [zoomed, setZoomed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
   // Swipe táctil
@@ -81,6 +83,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   React.useEffect(() => {
     setZoomed(false);
     setCopied(false);
+    setCopying(false);
     setImgLoaded(false);
   }, [articulo?.id_articulo]);
 
@@ -92,18 +95,34 @@ const ProductModal: React.FC<ProductModalProps> = ({
     : placeholder;
 
   const handleCopy = async () => {
+    if (copying) return;
+    setCopying(true);
     try {
-      const text = [
-        articulo.descripcion_articulo,
-        articulo.descripcion_marca ? `Marca: ${articulo.descripcion_marca}` : "",
-        articulo.precio != null ? `Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)}` : "",
-        articulo.stock != null && articulo.stock > 0 ? `${articulo.stock} en stock` : "Sin stock",
-      ].filter(Boolean).join(" — ");
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
+      const blob = await buildProductCanvas(imgSrc, articulo);
+
+      if (navigator.clipboard && typeof ClipboardItem !== "undefined") {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        setCopied(true);
+      } else {
+        throw new Error("Clipboard API no disponible (requiere HTTPS)");
+      }
+    } catch (err) {
+      console.error(err);
+      try {
+        const text = [
+          articulo.descripcion_articulo,
+          articulo.descripcion_marca ? `Marca: ${articulo.descripcion_marca}` : "",
+          articulo.precio != null ? `Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)}` : "",
+          articulo.stock != null && articulo.stock > 0 ? `${articulo.stock} en stock` : "Sin stock",
+        ].filter(Boolean).join(" — ");
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+      } catch {
+        alert("No se pudo copiar. Revisa que la conexión sea segura (HTTPS).");
+      }
+    } finally {
+      setCopying(false);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // silent fail
     }
   };
 
@@ -252,15 +271,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   <TooltipTrigger asChild>
                     <button
                       onClick={handleCopy}
-                      aria-label="Copiar información del producto"
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors"
+                      disabled={copying}
+                      aria-label="Copiar imagen del producto"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors disabled:opacity-50"
                     >
-                      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                      {copied ? "¡Copiado!" : "Copiar"}
+                      {copying ? <Loader2 className="w-4 h-4 animate-spin" /> : copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copying ? "Copiando..." : copied ? "¡Copiado!" : "Copiar imagen"}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p>Copiar datos del producto al portapapeles</p>
+                    <p>Copiar imagen del producto al portapapeles</p>
                   </TooltipContent>
                 </Tooltip>
 
