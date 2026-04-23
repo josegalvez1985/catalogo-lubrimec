@@ -241,7 +241,7 @@ const Index = () => {
       </a>
 
       {/* Hero */}
-      <header className="relative h-[50vh] min-h-[350px] flex items-center justify-center overflow-hidden">
+      <header className="relative h-[38vh] min-h-[280px] flex items-center justify-center overflow-hidden">
         <img
           src={heroBanner}
           alt="Lubrimec taller"
@@ -274,7 +274,7 @@ const Index = () => {
 
       {/* Filters — sticky */}
       <main className="max-w-7xl mx-auto px-4 py-12">
-        <div className={`sm:sticky sm:top-0 z-40 bg-background pb-4 -mx-4 px-4 pt-2 transition-shadow ${isScrolled ? "shadow-md shadow-background/80" : ""}`}>
+        <div className={`sticky top-0 z-40 bg-background pb-4 -mx-4 px-4 pt-2 transition-shadow ${isScrolled ? "shadow-md shadow-background/80" : ""}`}>
           <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -456,14 +456,13 @@ const Index = () => {
             Marca: <span className="font-medium text-foreground">{availableMarcas[0].descripcion_marca}</span>
           </p>
         )}
-        </div>
 
-        {/* Chips de filtros activos */}
+        {/* Chips de filtros activos — dentro del sticky para que siempre sean visibles */}
         {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             {debouncedSearch && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
-                Búsqueda: “{debouncedSearch}”
+                Búsqueda: "{debouncedSearch}"
                 <button onClick={() => { setSearch(""); setDebouncedSearch(""); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar búsqueda">
                   <X className="w-3 h-3" />
                 </button>
@@ -502,18 +501,15 @@ const Index = () => {
           </div>
         )}
 
-        {(articulosLoading || marcasLoading || rubrosLoading) && (
-          <div className="mb-4 overflow-hidden rounded-full h-1 bg-secondary">
+        {(articulosLoading || marcasLoading || rubrosLoading || viscosidadesLoading) && (
+          <div className="mb-2 overflow-hidden rounded-full h-1 bg-secondary">
             <div className="h-full w-1/3 bg-primary rounded-full animate-[indeterminate_1.5s_ease-in-out_infinite]" />
           </div>
         )}
-
-        {viscosidadesLoading && (
-          <div className="mb-4 text-sm text-muted-foreground">Cargando viscosidades...</div>
-        )}
         {viscosidadesError && (
-          <div className="mb-4 text-sm text-destructive">{viscosidadesError}</div>
+          <div className="mb-2 text-sm text-destructive">{viscosidadesError}</div>
         )}
+        </div>
 
         {/* Contador de resultados */}
         {!articulosLoading && (
@@ -565,7 +561,31 @@ const Index = () => {
               <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
                 <PackageSearch className="w-16 h-16 text-muted-foreground/50 mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-1">No se encontraron productos</h3>
-                <p className="text-sm text-muted-foreground mb-4">Intenta buscar otra cosa o explora otras categorías</p>
+                <p className="text-sm text-muted-foreground mb-3">Los filtros activos no devolvieron resultados</p>
+                {hasActiveFilters && (
+                  <div className="flex flex-wrap justify-center gap-1.5 mb-4">
+                    {debouncedSearch && (
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-secondary text-muted-foreground">
+                        "{debouncedSearch}"
+                      </span>
+                    )}
+                    {activeRubroId && (
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/10 text-emerald-400">
+                        {activeCategory}
+                      </span>
+                    )}
+                    {activeViscosidadName && (
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-amber-400/10 text-amber-400">
+                        {activeViscosidadName}
+                      </span>
+                    )}
+                    {activeMarcaName && (
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-sky-500/10 text-sky-400">
+                        {activeMarcaName}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <button
                   onClick={() => { setSearch(""); setDebouncedSearch(""); setActiveRubroId(null); setActiveViscosidadId(null); setActiveMarcaId(null); setPage(1); }}
                   className="px-4 py-2 rounded-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all"

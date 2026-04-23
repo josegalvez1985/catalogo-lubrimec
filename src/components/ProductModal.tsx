@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, Check, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MessageCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -21,9 +21,37 @@ const ProductModal: React.FC<ProductModalProps> = ({
 }) => {
   const [zoomed, setZoomed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
+  // Swipe táctil
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    // Solo activar si el movimiento es principalmente horizontal y supera 60px
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0 && hasNext) onNext?.();
+      if (dx > 0 && hasPrev) onPrev?.();
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  // Keyboard + back button
   React.useEffect(() => {
     if (!isOpen) return;
+
+    // Empujar una entrada al historial para capturar el botón "Atrás" del celular
+    window.history.pushState({ modal: true }, "");
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (zoomed) setZoomed(false);
@@ -32,18 +60,28 @@ const ProductModal: React.FC<ProductModalProps> = ({
       if (e.key === "ArrowLeft" && hasPrev) onPrev?.();
       if (e.key === "ArrowRight" && hasNext) onNext?.();
     };
+
+    const handlePopState = () => {
+      if (zoomed) setZoomed(false);
+      else onClose();
+    };
+
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("popstate", handlePopState);
     document.body.style.overflow = "hidden";
+
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("popstate", handlePopState);
       document.body.style.overflow = "";
     };
   }, [isOpen, onClose, onPrev, onNext, hasPrev, hasNext, zoomed]);
 
-  // Reset zoom/copied on article change
+  // Reset al cambiar de producto
   React.useEffect(() => {
     setZoomed(false);
     setCopied(false);
+    setImgLoaded(false);
   }, [articulo?.id_articulo]);
 
   if (!articulo) return null;
@@ -86,15 +124,17 @@ const ProductModal: React.FC<ProductModalProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="product-modal-title"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
-          {/* Prev/Next navigation */}
+          {/* Prev/Next — fuera del modal, con mejor tamaño táctil */}
           {hasPrev && (
             <button
               onClick={onPrev}
-              className="absolute left-2 sm:left-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-background/80 hover:bg-background text-foreground transition"
+              className="absolute left-1 sm:left-4 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-foreground shadow-lg transition active:scale-95"
               aria-label="Producto anterior"
             >
               <ChevronLeft className="w-6 h-6" />
@@ -103,7 +143,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           {hasNext && (
             <button
               onClick={onNext}
-              className="absolute right-2 sm:right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-background/80 hover:bg-background text-foreground transition"
+              className="absolute right-1 sm:right-4 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-foreground shadow-lg transition active:scale-95"
               aria-label="Producto siguiente"
             >
               <ChevronRight className="w-6 h-6" />
@@ -112,7 +152,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
           {/* Modal */}
           <motion.div
-            className="relative z-10 bg-card border border-border rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            className="relative z-10 bg-card border border-border rounded-2xl shadow-2xl w-full mx-8 sm:mx-0 sm:max-w-lg max-h-[92vh] overflow-y-auto"
             initial={{ scale: 0.85, opacity: 0, y: 30 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.85, opacity: 0, y: 30 }}
@@ -127,18 +167,25 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            {/* Image with zoom toggle */}
+            {/* Image con skeleton mientras carga */}
             <div
-              className="relative w-full bg-white flex items-center justify-center p-6 cursor-zoom-in"
-              style={{ maxHeight: "50vh" }}
+              className="relative w-full bg-white flex items-center justify-center p-4 sm:p-6 cursor-zoom-in"
+              style={{ minHeight: "220px", maxHeight: "42vh" }}
               onClick={() => setZoomed(true)}
             >
+              {/* Skeleton */}
+              {!imgLoaded && (
+                <div className="absolute inset-0 bg-gray-100 animate-pulse rounded-t-2xl" />
+              )}
               <img
                 src={imgSrc}
                 alt={articulo.descripcion_articulo}
-                className="max-w-full max-h-[45vh] object-contain"
+                className={`max-w-full object-contain transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+                style={{ maxHeight: "38vh" }}
+                onLoad={() => setImgLoaded(true)}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = placeholder;
+                  setImgLoaded(true);
                 }}
               />
               <button
@@ -150,8 +197,17 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </button>
             </div>
 
+            {/* Indicador de swipe en mobile */}
+            {(hasPrev || hasNext) && (
+              <div className="flex justify-center gap-1.5 py-2 sm:hidden">
+                {hasPrev && <span className="text-xs text-muted-foreground">← anterior</span>}
+                {hasPrev && hasNext && <span className="text-xs text-muted-foreground">·</span>}
+                {hasNext && <span className="text-xs text-muted-foreground">siguiente →</span>}
+              </div>
+            )}
+
             {/* Details */}
-            <div className="p-6 space-y-4">
+            <div className="p-5 sm:p-6 space-y-4">
               <h2 id="product-modal-title" className="text-lg font-semibold text-white font-sans leading-snug">
                 {articulo.descripcion_articulo}
               </h2>

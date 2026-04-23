@@ -138,10 +138,10 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
       }
       ctx.fillText(line, pad, y);
 
-      // Precio (Azul Primario)
+      // Precio (Naranja/dorado de la marca Lubrimec)
       y += 120;
       if (articulo.precio != null) {
-        ctx.fillStyle = "#3b82f6";
+        ctx.fillStyle = "#d97706";
         ctx.font = "bold 70px sans-serif";
         ctx.fillText(`Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)}`, pad, y);
       }
@@ -217,7 +217,7 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
           )}
           {articulo.stock != null && articulo.stock > 0 ? (
             <span className="mt-1 inline-block text-xs font-semibold text-emerald-400">
-              ✔ {articulo.stock}, en stock
+              ✔ {articulo.stock} en stock
             </span>
           ) : (
             <span className="mt-1 inline-block text-xs font-semibold text-red-400">
