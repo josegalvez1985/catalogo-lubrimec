@@ -227,9 +227,19 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
             {/* Details */}
             <div className="p-5 sm:p-6 space-y-4">
-              <h2 id="product-modal-title" className="text-lg font-semibold text-white font-sans leading-snug">
-                {articulo.descripcion_articulo}
-              </h2>
+              <div>
+                <h2 id="product-modal-title" className="text-lg font-semibold text-white font-sans leading-snug">
+                  {articulo.descripcion_articulo}
+                </h2>
+                {/* Metadata tags */}
+                {articulo.descripcion_rubro && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      {articulo.descripcion_rubro}
+                    </span>
+                  </div>
+                )}
+              </div>
 
               {articulo.descripcion_marca && (
                 <p className="text-sm text-muted-foreground">
@@ -258,12 +268,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   </span>
                 )}
               </div>
-
-              {articulo.descripcion_rubro && (
-                <p className="text-xs text-muted-foreground">
-                  Rubro: {articulo.descripcion_rubro}
-                </p>
-              )}
 
               {/* Action buttons */}
               <div className="flex gap-2 pt-2">

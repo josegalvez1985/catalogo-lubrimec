@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, Search, Phone, MapPin, ChevronDown, ChevronUp, PackageSearch, X } from "lucide-react";
@@ -38,6 +38,7 @@ const Index = () => {
   const [showMoreMarcas, setShowMoreMarcas] = useState(false);
   const [showMoreViscosidades, setShowMoreViscosidades] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const loadMoreButtonRef = useRef<HTMLButtonElement>(null);
 
   // Reiniciar página cuando cambian los filtros
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,16 +275,16 @@ const Index = () => {
 
       {/* Filters — sticky */}
       <main className="max-w-7xl mx-auto px-4 py-12">
-        <div className={`sticky top-0 z-40 bg-background pb-4 -mx-4 px-4 pt-2 transition-shadow ${isScrolled ? "shadow-md shadow-background/80" : ""}`}>
+        <div className={`sticky top-0 z-40 bg-background pb-4 -mx-4 px-4 pt-2 transition-shadow ${isScrolled ? "shadow-lg shadow-slate-900/40" : ""}`}>
           <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Buscar productos..."
+                placeholder="Buscar productos, marcas, rubros..."
                 value={search}
                 onChange={handleSearchChange}
-                aria-label="Buscar productos"
+                aria-label="Buscar productos, marcas, rubros"
                 className="w-full bg-card border border-border rounded-xl py-3 pl-12 pr-10 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
               />
               {search && (
@@ -369,47 +370,7 @@ const Index = () => {
             </div>
         </div>
 
-        {visibleViscosidades.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4" role="radiogroup" aria-label="Filtrar por viscosidad">
-            <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Viscosidad:</span>
-            <label className={viscosidadButtonClass(!activeViscosidadId) + " cursor-pointer"}>
-              <input
-                type="radio"
-                name="viscosidad"
-                checked={!activeViscosidadId}
-                onChange={() => { setActiveViscosidadId(null); setShowMoreViscosidades(false); setPage(1); }}
-                className="sr-only"
-              />
-              Todas
-            </label>
-            {(showMoreViscosidades && !activeViscosidadId ? viscosidadesDisponibles : visibleViscosidades.slice(0, 4)).map((v) => (
-              <label
-                key={v.id_viscosidad}
-                className={viscosidadButtonClass(activeViscosidadId === v.id_viscosidad) + " cursor-pointer"}
-              >
-                <input
-                  type="radio"
-                  name="viscosidad"
-                  checked={activeViscosidadId === v.id_viscosidad}
-                  onChange={() => handleViscosidadClick(v.id_viscosidad)}
-                  className="sr-only"
-                />
-                {v.descripcion}
-              </label>
-            ))}
-            {!activeViscosidadId && viscosidadesDisponibles.length > 4 && (
-              <button
-                onClick={() => setShowMoreViscosidades(!showMoreViscosidades)}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-accent/10 text-accent hover:bg-accent/20 inline-flex items-center gap-1"
-              >
-                {showMoreViscosidades ? "Menos" : `Ver más (${viscosidadesDisponibles.length - 4})`}
-                {showMoreViscosidades ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Filtro por marca */}
+        {/* Filtro por marca — antes que viscosidad */}
         {marcasLoading && <span className="text-sm text-muted-foreground">Cargando marcas...</span>}
         {marcasError && <span className="text-sm text-destructive">{marcasError}</span>}
         {visibleMarcas.length > 0 && (
@@ -443,7 +404,7 @@ const Index = () => {
             {!activeMarcaId && availableMarcas.length > 4 && (
               <button
                 onClick={() => setShowMoreMarcas(!showMoreMarcas)}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-accent/10 text-accent hover:bg-accent/20 inline-flex items-center gap-1"
+                className="px-3 py-2 rounded-full text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors inline-flex items-center gap-1"
               >
                 {showMoreMarcas ? "Menos" : `Ver más (${availableMarcas.length - 4})`}
                 {showMoreMarcas ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -455,6 +416,46 @@ const Index = () => {
           <p className="text-sm text-muted-foreground mb-4">
             Marca: <span className="font-medium text-foreground">{availableMarcas[0].descripcion_marca}</span>
           </p>
+        )}
+
+        {visibleViscosidades.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4" role="radiogroup" aria-label="Filtrar por viscosidad">
+            <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Viscosidad:</span>
+            <label className={viscosidadButtonClass(!activeViscosidadId) + " cursor-pointer"}>
+              <input
+                type="radio"
+                name="viscosidad"
+                checked={!activeViscosidadId}
+                onChange={() => { setActiveViscosidadId(null); setShowMoreViscosidades(false); setPage(1); }}
+                className="sr-only"
+              />
+              Todas
+            </label>
+            {(showMoreViscosidades && !activeViscosidadId ? viscosidadesDisponibles : visibleViscosidades.slice(0, 4)).map((v) => (
+              <label
+                key={v.id_viscosidad}
+                className={viscosidadButtonClass(activeViscosidadId === v.id_viscosidad) + " cursor-pointer"}
+              >
+                <input
+                  type="radio"
+                  name="viscosidad"
+                  checked={activeViscosidadId === v.id_viscosidad}
+                  onChange={() => handleViscosidadClick(v.id_viscosidad)}
+                  className="sr-only"
+                />
+                {v.descripcion}
+              </label>
+            ))}
+            {!activeViscosidadId && viscosidadesDisponibles.length > 4 && (
+              <button
+                onClick={() => setShowMoreViscosidades(!showMoreViscosidades)}
+                className="px-3 py-2 rounded-full text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors inline-flex items-center gap-1"
+              >
+                {showMoreViscosidades ? "Menos" : `Ver más (${viscosidadesDisponibles.length - 4})`}
+                {showMoreViscosidades ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
         )}
 
         {/* Chips de filtros activos — dentro del sticky para que siempre sean visibles */}
@@ -602,7 +603,13 @@ const Index = () => {
         {hasMore && !articulosLoading && (
           <div className="flex justify-center mt-8">
             <button
-              onClick={() => setPage((p) => p + 1)}
+              ref={loadMoreButtonRef}
+              onClick={() => {
+                setPage((p) => p + 1);
+                setTimeout(() => {
+                  loadMoreButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+              }}
               className="px-6 py-3 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-all"
             >
               Cargar más productos ({displayedArticulos.length - paginatedArticulos.length} restantes)
@@ -633,49 +640,63 @@ const Index = () => {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="border-t border-border py-10 mt-12">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img src={lubrimecLogo} alt="Lubrimec" className="w-10 h-10 object-contain" />
-            <span className="text-2xl font-bold tracking-wider text-foreground">LUBRIMEC</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 text-muted-foreground text-sm sm:flex-row sm:gap-6">
-            <span className="flex items-center gap-2 text-center">
-              <Phone className="w-4 h-4" />
-              <span className="block">+595 974 759 037</span>
-            </span>
-            <a
-              href="https://wa.me/595974759037"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Abrir chat de WhatsApp"
-              title="Abrir WhatsApp"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition-colors shadow-md"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-5 h-5">
-                <path fill="#fff" d="M16.03 3C9.22 3 3.98 8.24 3.98 15.05c0 2.65.86 5.1 2.34 7.11L3 29l6.18-3.29c1.86 1.03 3.98 1.59 6.85 1.59 6.81 0 12.05-5.24 12.05-12.05S22.84 3 16.03 3zm6.87 18.22c-.26.73-1.49 1.39-2.07 1.47-.54.08-1.2.12-2.98-.44-2.57-.86-4.23-2.98-4.36-3.13-.13-.16-1.04-1.22-1.04-2.33 0-1.11.64-1.66.87-1.89.23-.23.5-.26.68-.26.17 0 .35 0 .5.01.16.01.38-.06.59.45.21.51.71 1.76.77 1.9.06.14.1.3.02.48-.08.18-.12.3-.24.46-.12.16-.26.36-.36.49-.12.16-.24.34-.1.57.14.23.62 1.02 1.33 1.65.92.82 1.69 1.2 2.01 1.34.32.14.51.12.7-.07.19-.19.83-.98 1.05-1.32.22-.34.43-.28.72-.17.29.11 1.83.86 2.14 1.01.31.15.52.23.6.36.08.13.08.76-.18 1.49z"/>
-              </svg>
-              Chateá con nosotros
-            </a>
+      <footer className="border-t border-border py-8 mt-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col gap-6">
+            {/* Logo y nombre */}
+            <div className="flex items-center justify-center md:justify-start gap-3">
+              <img src={lubrimecLogo} alt="Lubrimec" className="w-10 h-10 object-contain" />
+              <span className="text-2xl font-bold tracking-wider text-foreground">LUBRIMEC</span>
+            </div>
 
-            <span className="flex items-center gap-2 text-center">
-              <MapPin className="w-4 h-4" />
-              <span className="block">Capiata Ruta 2 Km 20, Paraguay</span>
-              <a
-                href="https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Abrir ubicación en Google Maps"
-                title="Abrir en Google Maps"
-                className="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-secondary/20 text-muted-foreground hover:opacity-90"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4">
-                  <path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>
-                </svg>
-              </a>
-            </span>
+            {/* Contactos */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              <div className="flex flex-col items-center md:items-start gap-2">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Phone className="w-4 h-4 flex-shrink-0" />
+                  <span>+595 974 759 037</span>
+                </div>
+              </div>
+
+              <div className="flex justify-center md:justify-start">
+                <a
+                  href="https://wa.me/595974759037"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Abrir chat de WhatsApp"
+                  title="Abrir WhatsApp"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition-colors shadow-md"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-5 h-5">
+                    <path fill="#fff" d="M16.03 3C9.22 3 3.98 8.24 3.98 15.05c0 2.65.86 5.1 2.34 7.11L3 29l6.18-3.29c1.86 1.03 3.98 1.59 6.85 1.59 6.81 0 12.05-5.24 12.05-12.05S22.84 3 16.03 3zm6.87 18.22c-.26.73-1.49 1.39-2.07 1.47-.54.08-1.2.12-2.98-.44-2.57-.86-4.23-2.98-4.36-3.13-.13-.16-1.04-1.22-1.04-2.33 0-1.11.64-1.66.87-1.89.23-.23.5-.26.68-.26.17 0 .35 0 .5.01.16.01.38-.06.59.45.21.51.71 1.76.77 1.9.06.14.1.3.02.48-.08.18-.12.3-.24.46-.12.16-.26.36-.36.49-.12.16-.24.34-.1.57.14.23.62 1.02 1.33 1.65.92.82 1.69 1.2 2.01 1.34.32.14.51.12.7-.07.19-.19.83-.98 1.05-1.32.22-.34.43-.28.72-.17.29.11 1.83.86 2.14 1.01.31.15.52.23.6.36.08.13.08.76-.18 1.49z"/>
+                  </svg>
+                  Chateá con nosotros
+                </a>
+              </div>
+
+              <div className="flex flex-col items-center md:items-start gap-2">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <MapPin className="w-4 h-4 flex-shrink-0" />
+                  <span>Capiatá, Ruta 2 Km 20</span>
+                </div>
+                <a
+                  href="https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Abrir ubicación en Google Maps"
+                  title="Abrir en Google Maps"
+                  className="inline-flex items-center justify-center px-3 py-1 text-xs rounded-full bg-secondary/20 text-muted-foreground hover:bg-secondary/40 transition-colors"
+                >
+                  Ver en Google Maps
+                </a>
+              </div>
+            </div>
+
+            {/* Copyright */}
+            <div className="pt-4 border-t border-border text-center">
+              <p className="text-xs text-muted-foreground">© 2026 Lubrimec. Todos los derechos reservados.</p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">© 2026 Lubrimec. Todos los derechos reservados.</p>
         </div>
       </footer>
 
