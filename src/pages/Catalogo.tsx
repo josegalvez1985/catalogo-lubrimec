@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Search, ChevronDown, ChevronUp, PackageSearch, X } from "lucide-react";
+import { ArrowUp, Search, PackageSearch, X, Menu } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useArticulos } from "@/hooks/useArticulos";
 import { useViscosidades } from "@/hooks/useViscosidades";
@@ -9,6 +9,7 @@ import ArticleCard from "@/components/ArticleCard";
 import ProductModal from "@/components/ProductModal";
 import { useRubros } from "@/hooks/useRubros";
 import { useMarcas } from "@/hooks/useMarcas";
+import FilterSidebar from "@/components/FilterSidebar";
 import type { Articulo } from "@/hooks/useArticulos";
 
 const Catalogo = () => {
@@ -30,8 +31,7 @@ const Catalogo = () => {
   );
   const [selectedArticulo, setSelectedArticulo] = useState<Articulo | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [showMoreMarcas, setShowMoreMarcas] = useState(false);
-  const [showMoreViscosidades, setShowMoreViscosidades] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const loadMoreButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -56,33 +56,28 @@ const Catalogo = () => {
     setSearchParams(params, { replace: true });
   }, [debouncedSearch, activeRubroId, activeViscosidadId, activeMarcaId, setSearchParams]);
 
-  const handleCategoryClick = () => {
-    setActiveRubroId(null);
-    setActiveViscosidadId(null);
-    setActiveMarcaId(null);
-    setShowMoreMarcas(false);
-    setShowMoreViscosidades(false);
-    setPage(1);
-  };
-  const handleRubroClick = (rubroId: number) => {
+  const handleRubroClick = (rubroId: number | null) => {
     setActiveRubroId(rubroId);
     setActiveViscosidadId(null);
     setActiveMarcaId(null);
-    setShowMoreMarcas(false);
-    setShowMoreViscosidades(false);
     setPage(1);
   };
-  const handleViscosidadClick = (id_viscosidad: number) => {
+  const handleViscosidadClick = (id_viscosidad: number | null) => {
     setActiveViscosidadId(id_viscosidad);
-    setShowMoreViscosidades(false);
     setPage(1);
   };
-  const [showMoreRubros, setShowMoreRubros] = useState(false);
-  const { rubros, loading: rubrosLoading, error: rubrosError } = useRubros();
+  const handleMarcaClick = (id_marca: number | null) => {
+    setActiveMarcaId(id_marca);
+    setPage(1);
+  };
+  const handleClearAll = () => {
+    setActiveRubroId(null);
+    setActiveViscosidadId(null);
+    setActiveMarcaId(null);
+    setPage(1);
+  };
 
-  const TOP_RUBROS_IDS = [1, 7, 8, 13];
-  const topRubros = rubros.filter((r) => TOP_RUBROS_IDS.includes(r.id_rubro));
-  const otherRubros = rubros.filter((r) => !TOP_RUBROS_IDS.includes(r.id_rubro));
+  const { rubros, loading: rubrosLoading, error: rubrosError } = useRubros();
 
   const { articulos, loading: articulosLoading, error: articulosError } = useArticulos();
   const { viscosidades, loading: viscosidadesLoading, error: viscosidadesError } = useViscosidades();
@@ -100,8 +95,9 @@ const Catalogo = () => {
   }, []);
 
   const viscosidadesDisponibles = useMemo(() => {
-    if (!activeRubroId) return [];
-    let subset = articulos.filter(a => a.id_rubro === activeRubroId && a.id_viscosidad != null);
+    let subset = activeRubroId
+      ? articulos.filter(a => a.id_rubro === activeRubroId && a.id_viscosidad != null)
+      : articulos.filter(a => a.id_viscosidad != null);
     if (activeMarcaId) subset = subset.filter(a => a.id_marca === activeMarcaId);
     const ids = new Set(subset.map(a => a.id_viscosidad!));
     return viscosidades.filter(v => ids.has(v.id_viscosidad));
@@ -120,19 +116,6 @@ const Catalogo = () => {
       .sort((a, b) => a.descripcion_marca.localeCompare(b.descripcion_marca));
   }, [articulos, activeRubroId, activeViscosidadId, marcas]);
 
-  const visibleViscosidades = activeViscosidadId
-    ? viscosidadesDisponibles.filter(v => v.id_viscosidad === activeViscosidadId)
-    : viscosidadesDisponibles;
-
-  const visibleMarcas = activeMarcaId
-    ? availableMarcas.filter(m => m.id_marca === activeMarcaId)
-    : availableMarcas;
-
-  const visibleRubros = activeRubroId
-    ? rubros.filter(r => r.id_rubro === activeRubroId)
-    : topRubros;
-
-  const visibleOtherRubros = activeRubroId ? [] : otherRubros;
 
   useEffect(() => {
     if (activeMarcaId && availableMarcas.length > 0 && !availableMarcas.some(m => m.id_marca === activeMarcaId)) {
@@ -176,26 +159,6 @@ const Catalogo = () => {
     return r?.descripcion_rubro ?? "Todos";
   }, [activeRubroId, rubros]);
 
-  const rubroButtonClass = (active: boolean) =>
-    `px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-      active
-        ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-lg shadow-emerald-500/20"
-        : "bg-slate-950 text-emerald-300 border-slate-800 hover:text-emerald-100"
-    }`;
-
-  const viscosidadButtonClass = (active: boolean) =>
-    `px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-      active
-        ? "bg-amber-400 text-slate-950 border-amber-400 shadow-lg shadow-amber-400/20"
-        : "bg-slate-950 text-amber-300 border-slate-800 hover:text-amber-100"
-    }`;
-
-  const marcaButtonClass = (active: boolean) =>
-    `px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-      active
-        ? "bg-sky-500 text-slate-950 border-sky-500 shadow-lg shadow-sky-500/20"
-        : "bg-slate-950 text-sky-300 border-slate-800 hover:text-sky-100"
-    }`;
 
   const activeViscosidadName = useMemo(() => {
     if (!activeViscosidadId) return null;
@@ -221,7 +184,7 @@ const Catalogo = () => {
       {/* Page header */}
       <div className="pt-24 pb-8 px-4 bg-gradient-to-b from-card/40 to-transparent border-b border-border">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
             CATÁLOGO DE PRODUCTOS
           </h1>
           <p className="text-muted-foreground text-sm">
@@ -230,11 +193,36 @@ const Catalogo = () => {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Sticky filter bar */}
-        <div className={`sticky top-16 z-40 bg-background pb-4 -mx-4 px-4 pt-3 transition-shadow ${isScrolled ? "shadow-lg shadow-slate-900/40" : ""}`}>
-          <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
-            <div className="relative flex-1 w-full">
+      <div className="flex overflow-x-hidden">
+        {/* Sidebar */}
+        <FilterSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          rubros={rubros}
+          viscosidades={viscosidadesDisponibles}
+          marcas={availableMarcas}
+          activeRubroId={activeRubroId}
+          activeViscosidadId={activeViscosidadId}
+          activeMarcaId={activeMarcaId}
+          onRubroChange={handleRubroClick}
+          onViscosidadChange={handleViscosidadClick}
+          onMarcaChange={handleMarcaClick}
+          onClearAll={handleClearAll}
+        />
+
+        {/* Main content */}
+        <main className="flex-1 w-full">
+        {/* Sticky search bar */}
+        <div className={`sticky top-16 z-40 bg-background pb-4 pt-3 px-4 transition-shadow ${isScrolled ? "shadow-lg shadow-slate-900/40" : ""}`}>
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-border text-foreground hover:bg-secondary/50 transition-colors"
+              aria-label="Abrir filtros"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <input
                 type="text"
@@ -254,93 +242,11 @@ const Catalogo = () => {
                 </button>
               )}
             </div>
-            <div className="flex gap-2 flex-wrap" role="radiogroup" aria-label="Filtrar por rubro">
-              <label className={rubroButtonClass(activeCategory === "Todos") + " cursor-pointer"}>
-                <input type="radio" name="rubro" checked={!activeRubroId} onChange={() => handleCategoryClick()} className="sr-only" />
-                Todos
-              </label>
-              {rubrosLoading && <span className="text-muted-foreground text-sm">Cargando...</span>}
-              {rubrosError && <span className="text-destructive text-sm">Error</span>}
-              {!rubrosLoading && !rubrosError && (
-                <>
-                  {visibleRubros.map((rubro) => (
-                    <label key={rubro.id_rubro} className={rubroButtonClass(activeCategory === rubro.descripcion_rubro) + " cursor-pointer"}>
-                      <input type="radio" name="rubro" checked={activeRubroId === rubro.id_rubro} onChange={() => handleRubroClick(rubro.id_rubro)} className="sr-only" />
-                      {rubro.descripcion_rubro}
-                    </label>
-                  ))}
-                  {!activeRubroId && !showMoreRubros && otherRubros.length > 0 && (
-                    <button onClick={() => setShowMoreRubros(true)} className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1">
-                      Ver más ({otherRubros.length}) <ChevronDown className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  {!activeRubroId && showMoreRubros && visibleOtherRubros.map((rubro) => (
-                    <label key={rubro.id_rubro} className={rubroButtonClass(activeCategory === rubro.descripcion_rubro) + " cursor-pointer"}>
-                      <input type="radio" name="rubro" checked={activeRubroId === rubro.id_rubro} onChange={() => handleRubroClick(rubro.id_rubro)} className="sr-only" />
-                      {rubro.descripcion_rubro}
-                    </label>
-                  ))}
-                  {!activeRubroId && showMoreRubros && (
-                    <button onClick={() => setShowMoreRubros(false)} className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1">
-                      Menos <ChevronUp className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
           </div>
-
-          {/* Marca filter */}
-          {marcasLoading && <span className="text-sm text-muted-foreground">Cargando marcas...</span>}
-          {marcasError && <span className="text-sm text-destructive">{marcasError}</span>}
-          {visibleMarcas.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4" role="radiogroup" aria-label="Filtrar por marca">
-              <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Marca:</span>
-              <label className={marcaButtonClass(!activeMarcaId) + " cursor-pointer"}>
-                <input type="radio" name="marca" checked={!activeMarcaId} onChange={() => { setActiveMarcaId(null); setPage(1); }} className="sr-only" />
-                Todas
-              </label>
-              {(showMoreMarcas && !activeMarcaId ? availableMarcas : visibleMarcas.slice(0, 4)).map((marca) => (
-                <label key={marca.id_marca} className={marcaButtonClass(activeMarcaId === marca.id_marca) + " cursor-pointer"}>
-                  <input type="radio" name="marca" checked={activeMarcaId === marca.id_marca} onChange={() => { setActiveMarcaId(marca.id_marca); setPage(1); }} className="sr-only" />
-                  {marca.descripcion_marca}
-                </label>
-              ))}
-              {!activeMarcaId && availableMarcas.length > 4 && (
-                <button onClick={() => setShowMoreMarcas(!showMoreMarcas)} className="px-3 py-2 rounded-full text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors inline-flex items-center gap-1">
-                  {showMoreMarcas ? "Menos" : `Ver más (${availableMarcas.length - 4})`}
-                  {showMoreMarcas ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Viscosidad filter */}
-          {visibleViscosidades.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4" role="radiogroup" aria-label="Filtrar por viscosidad">
-              <span className="px-2 py-2 text-sm font-semibold text-muted-foreground">Viscosidad:</span>
-              <label className={viscosidadButtonClass(!activeViscosidadId) + " cursor-pointer"}>
-                <input type="radio" name="viscosidad" checked={!activeViscosidadId} onChange={() => { setActiveViscosidadId(null); setShowMoreViscosidades(false); setPage(1); }} className="sr-only" />
-                Todas
-              </label>
-              {(showMoreViscosidades && !activeViscosidadId ? viscosidadesDisponibles : visibleViscosidades.slice(0, 4)).map((v) => (
-                <label key={v.id_viscosidad} className={viscosidadButtonClass(activeViscosidadId === v.id_viscosidad) + " cursor-pointer"}>
-                  <input type="radio" name="viscosidad" checked={activeViscosidadId === v.id_viscosidad} onChange={() => handleViscosidadClick(v.id_viscosidad)} className="sr-only" />
-                  {v.descripcion}
-                </label>
-              ))}
-              {!activeViscosidadId && viscosidadesDisponibles.length > 4 && (
-                <button onClick={() => setShowMoreViscosidades(!showMoreViscosidades)} className="px-3 py-2 rounded-full text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors inline-flex items-center gap-1">
-                  {showMoreViscosidades ? "Menos" : `Ver más (${viscosidadesDisponibles.length - 4})`}
-                  {showMoreViscosidades ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
-              )}
-            </div>
-          )}
 
           {/* Active filter chips */}
           {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2 max-w-full">
               {debouncedSearch && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
                   Búsqueda: "{debouncedSearch}"
@@ -349,8 +255,8 @@ const Catalogo = () => {
               )}
               {activeRubroId && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
-                  Rubro: {activeCategory}
-                  <button onClick={() => { setActiveRubroId(null); setActiveViscosidadId(null); setActiveMarcaId(null); setPage(1); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar rubro"><X className="w-3 h-3" /></button>
+                  Categoría: {activeCategory}
+                  <button onClick={() => { setActiveRubroId(null); setActiveViscosidadId(null); setActiveMarcaId(null); setPage(1); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar categoría"><X className="w-3 h-3" /></button>
                 </span>
               )}
               {activeViscosidadName && (
@@ -365,12 +271,6 @@ const Catalogo = () => {
                   <button onClick={() => { setActiveMarcaId(null); setPage(1); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar marca"><X className="w-3 h-3" /></button>
                 </span>
               )}
-              <button
-                onClick={() => { setSearch(""); setDebouncedSearch(""); setActiveRubroId(null); setActiveViscosidadId(null); setActiveMarcaId(null); setPage(1); }}
-                className="text-xs text-muted-foreground hover:text-foreground underline"
-              >
-                Limpiar todo
-              </button>
             </div>
           )}
 
@@ -384,7 +284,7 @@ const Catalogo = () => {
 
         {/* Results count */}
         {!articulosLoading && (
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground mb-4 px-4">
             {displayedArticulos.length > 0
               ? `Mostrando ${Math.min(paginatedArticulos.length, displayedArticulos.length)} de ${displayedArticulos.length} productos`
               : "0 productos encontrados"}
@@ -392,7 +292,7 @@ const Catalogo = () => {
         )}
 
         {/* Product Grid */}
-        <div id="product-grid" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div id="product-grid" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-4 py-8">
           <AnimatePresence mode="popLayout">
             {articulosLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
@@ -442,7 +342,7 @@ const Catalogo = () => {
 
         {/* Load more */}
         {hasMore && !articulosLoading && (
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center mt-8 px-4 pb-8">
             <button
               ref={loadMoreButtonRef}
               onClick={() => {
@@ -456,6 +356,7 @@ const Catalogo = () => {
           </div>
         )}
       </main>
+      </div>
 
       {/* Scroll to top */}
       <AnimatePresence>

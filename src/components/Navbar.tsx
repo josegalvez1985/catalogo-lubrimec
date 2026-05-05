@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone, Wrench, BookOpen, Home, Users, Settings, MessageSquare } from "lucide-react";
-import lubrimecLogo from "@/assets/lubrimec-logo.png";
 import PwaInstallButton from "@/components/PwaInstallButton";
 
 const navLinks = [
@@ -83,23 +82,8 @@ export default function Navbar() {
             <Link
               to="/"
               className="flex items-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-lg"
-              aria-label="Ir al inicio — Lubrimec"
+              aria-label="Ir al inicio"
             >
-              <div className="relative">
-                <div className="absolute inset-0 rounded-xl bg-white/10 scale-0 group-hover:scale-100 transition-transform duration-200" />
-                <img
-                  src={lubrimecLogo}
-                  alt=""
-                  aria-hidden="true"
-                  className="w-9 h-9 object-contain relative z-10"
-                />
-              </div>
-              <span
-                className="text-xl font-bold tracking-widest text-foreground"
-                style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-              >
-                LUBRIMEC
-              </span>
             </Link>
 
             {/* Desktop Nav */}
@@ -190,12 +174,7 @@ export default function Navbar() {
             >
               {/* Drawer header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <img src={lubrimecLogo} alt="" aria-hidden="true" className="w-8 h-8 object-contain" />
-                  <span className="font-bold tracking-widest text-foreground" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-                    LUBRIMEC
-                  </span>
-                </div>
+                <div></div>
                 <button
                   onClick={() => setMobileOpen(false)}
                   aria-label="Cerrar menú"

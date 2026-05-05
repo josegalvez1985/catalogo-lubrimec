@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_BASE } from "@/lib/config";
+import MARCAS_FIXTURE from "@/data/marcas";
 
 export interface Marca {
   id_marca: number;
@@ -34,7 +35,7 @@ export function useMarcas() {
   });
 
   return {
-    marcas: query.data ?? [],
+    marcas: query.data ?? MARCAS_FIXTURE,
     loading: query.isLoading,
     error: query.isError ? "Error al cargar marcas" : null,
   };

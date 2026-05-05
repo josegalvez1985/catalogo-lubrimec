@@ -10,12 +10,12 @@
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "/catalogo-lubrimec/lubrimec-logo.png",
+      "src": "/lubrimec-logo.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "/catalogo-lubrimec/lubrimec-logo.png",
+      "src": "/lubrimec-logo.png",
       "sizes": "192x192",
       "type": "image/png"
     }
