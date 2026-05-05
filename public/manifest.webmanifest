@@ -1,7 +1,7 @@
 {
-  "name": "Catalogo Lubrimec",
+  "name": "Lubrimec, Lubricantes y Filtros",
   "short_name": "Lubrimec",
-  "description": "Catálogo de productos Lubrimec",
+  "description": "Lubrimec, Lubricantes y Filtros — tu lubricentro de confianza en Capiatá.",
   "lang": "es-ES",
   "start_url": "/catalogo-lubrimec/",
   "scope": "/catalogo-lubrimec/",

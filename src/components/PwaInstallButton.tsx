@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import { CloudDownload } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
-const isIosDevice = (userAgent: string) => /iphone|ipad|ipod/.test(userAgent) && !window.MSStream;
+const isIosDevice = (userAgent: string) => /iphone|ipad|ipod/.test(userAgent) && !(window as unknown as Record<string, unknown>)["MSStream"];
 const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || ("standalone" in navigator && (navigator as any).standalone);
 
-const PwaInstallButton = () => {
+const PwaInstallButton = ({ compact = false }: { compact?: boolean }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -62,6 +60,20 @@ const PwaInstallButton = () => {
 
   if (!visible) {
     return null;
+  }
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={handleInstall}
+        title={deferredPrompt ? "Instalar app" : "Añadir a pantalla de inicio"}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
+      >
+        <CloudDownload className="h-3.5 w-3.5" />
+        Instalar
+      </button>
+    );
   }
 
   return (
