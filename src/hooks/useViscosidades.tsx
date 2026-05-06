@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_BASE } from "@/lib/config";
+import VISCOSIDADES_FIXTURE from "@/data/viscosidades";
 
 export interface Viscosidad {
   id_viscosidad: number;
@@ -27,7 +28,7 @@ export function useViscosidades() {
   });
 
   return {
-    viscosidades: query.data ?? [],
+    viscosidades: query.data ?? VISCOSIDADES_FIXTURE,
     loading: query.isLoading,
     error: query.isError ? "Error al cargar viscosidades" : null,
   };

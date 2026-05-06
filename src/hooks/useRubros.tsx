@@ -30,8 +30,8 @@ export function useRubros() {
   });
 
   return {
-    rubros: query.data ?? (query.isError ? RUBROS_FIXTURE : []),
+    rubros: query.data ?? RUBROS_FIXTURE,
     loading: query.isLoading,
-    error: query.isError ? "Error al cargar rubros (usando datos locales)" : null,
+    error: query.isError ? "Error al cargar rubros" : null,
   };
 }

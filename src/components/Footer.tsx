@@ -22,7 +22,7 @@ export default function Footer() {
               <img src={lubrimecLogo} alt="Lubrimec" className="w-10 h-10 object-contain" />
               <span
                 className="text-2xl font-bold tracking-widest text-foreground"
-                style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+                style={{ fontFamily: "'Poppins', sans-serif" }}
               >
                 LUBRIMEC
               </span>

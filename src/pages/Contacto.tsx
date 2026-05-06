@@ -12,6 +12,8 @@ import {
   Instagram,
   MessageCircle,
 } from "lucide-react";
+import tikTokIcon from "@/assets/icons/tik-tok.svg";
+import whatsappIcon from "@/assets/icons/whatsapp.svg";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -49,7 +51,7 @@ const CONTACT_METHODS = [
     icon: MapPin,
     label: "Dirección",
     value: "Capiatá, Ruta 2 Km 20",
-    href: "https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7",
+    href: "https://www.google.com/maps/place/Lubrimec+Lubricantes+y+Filtros/@-25.3484096,-57.465288,982m/data=!3m2!1e3!4b1!4m6!3m5!1s0x945dadf4417f96ff:0x1d849c9152d9290d!8m2!3d-25.3484145!4d-57.4627131!16s%2Fg%2F11vy_cz7dj?hl=es-US&entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D",
     desc: "Ver en Google Maps",
     color: "text-amber-400",
     bg: "bg-amber-400/10",
@@ -59,8 +61,8 @@ const CONTACT_METHODS = [
 ];
 
 const HOURS = [
-  { day: "Lunes – Viernes", time: "7:00 – 18:00" },
-  { day: "Sábado", time: "7:00 – 13:00" },
+  { day: "Lunes – Viernes", time: "9:00 – 19:00" },
+  { day: "Sábado", time: "9:00 – 17:00" },
   { day: "Domingo", time: "Cerrado", closed: true },
 ];
 
@@ -100,13 +102,13 @@ export default function Contacto() {
 
   const buildWhatsAppMessage = () => {
     const lines = [
-      `📩 *Consulta desde la web — Lubrimec*`,
+      `*Consulta desde la web — Lubrimec*`,
       ``,
-      name ? `👤 Nombre: ${name}` : "",
-      phone ? `📞 Teléfono: ${phone}` : "",
-      subject ? `📋 Asunto: ${subject}` : "",
+      name ? `Nombre: ${name}` : "",
+      phone ? `Teléfono: ${phone}` : "",
+      subject ? `Asunto: ${subject}` : "",
       ``,
-      `💬 Mensaje:`,
+      `Mensaje:`,
       message,
     ]
       .filter(Boolean)
@@ -321,10 +323,10 @@ export default function Contacto() {
                 <h3 className="text-base font-bold text-foreground">Correo</h3>
               </div>
               <a
-                href="mailto:contacto@lubrimec.com.py"
+                href="mailto:lubrimec15@gmail.com"
                 className="text-sm text-primary hover:underline break-all"
               >
-                contacto@lubrimec.com.py
+                lubrimec15@gmail.com
               </a>
             </div>
 
@@ -337,23 +339,36 @@ export default function Contacto() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="WhatsApp"
-                  className="w-10 h-10 rounded-xl bg-green-500 hover:bg-green-600 text-white flex items-center justify-center transition-all hover:scale-110"
+                  className="w-10 h-10 rounded-xl bg-white hover:bg-gray-100 flex items-center justify-center transition-all hover:scale-110"
                 >
-                  <MessageCircle className="w-5 h-5" />
+                  <img src={whatsappIcon} alt="WhatsApp" className="w-8 h-8" />
                 </a>
                 <a
-                  href="#"
+                  href="https://www.facebook.com/share/1GZELpwy3D/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="Facebook"
                   className="w-10 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-all hover:scale-110"
                 >
                   <Facebook className="w-5 h-5" />
                 </a>
                 <a
-                  href="#"
+                  href="https://www.instagram.com/lubrimec7?igsh=ZzlkY2I3N3A1cmdw"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="Instagram"
                   className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-amber-400 text-white flex items-center justify-center transition-all hover:scale-110"
                 >
                   <Instagram className="w-5 h-5" />
+                </a>
+                <a
+                  href="https://www.tiktok.com/@lubrimec4?_r=1&_t=ZS-94xHbtIVx0K"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="TikTok"
+                  className="w-10 h-10 rounded-xl bg-black hover:bg-gray-800 text-white flex items-center justify-center transition-all hover:scale-110"
+                >
+                  <img src={tikTokIcon} alt="TikTok" className="w-7 h-7" />
                 </a>
               </div>
             </div>
@@ -385,8 +400,8 @@ export default function Contacto() {
             className="rounded-2xl overflow-hidden border border-border shadow-xl shadow-black/30"
           >
             <iframe
-              title="Ubicación Lubrimec en Capiatá"
-              src="https://maps.google.com/maps?q=Capiat%C3%A1%20Ruta%202%20Km%2020&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              title="Ubicación Lubrimec"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3586.216543209876!2d-57.4652880!3d-25.3484096!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x945dadf4417f96ff%3A0x1d849c9152d9290d!2sLubrimec%20Lubricantes%20y%20Filtros!5e0!3m2!1ses!2spy!4v1630704235678"
               width="100%"
               height="420"
               style={{ border: 0, filter: "grayscale(20%) contrast(1.05)" }}
@@ -398,7 +413,7 @@ export default function Contacto() {
 
           <div className="mt-4 flex justify-center">
             <a
-              href="https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7"
+              href="https://www.google.com/maps/place/Lubrimec+Lubricantes+y+Filtros/@-25.3484096,-57.465288,982m/data=!3m2!1e3!4b1!4m6!3m5!1s0x945dadf4417f96ff:0x1d849c9152d9290d!8m2!3d-25.3484145!4d-57.4627131!16s%2Fg%2F11vy_cz7dj?hl=es-US&entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all hover:scale-105 shadow-md shadow-primary/20"
