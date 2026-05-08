@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone, Wrench, BookOpen, Home, Users, Settings, MessageSquare } from "lucide-react";
 import PwaInstallButton from "@/components/PwaInstallButton";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const navLinks = [
   {
@@ -115,6 +116,7 @@ export default function Navbar() {
 
             {/* Desktop Right Actions */}
             <div className="hidden lg:flex items-center gap-3">
+              <ThemeToggle />
               <a
                 href="https://wa.me/595974759037"
                 target="_blank"
@@ -129,12 +131,14 @@ export default function Navbar() {
               <PwaInstallButton compact />
             </div>
 
-            {/* Mobile hamburger */}
+            {/* Mobile right actions */}
+            <div className="lg:hidden flex items-center gap-2">
+              <ThemeToggle />
             <button
               onClick={() => setMobileOpen((v) => !v)}
               aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
               aria-expanded={mobileOpen}
-              className="lg:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-border text-foreground hover:bg-secondary/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+              className="flex items-center justify-center w-10 h-10 rounded-lg border border-border text-foreground hover:bg-secondary/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             >
               <AnimatePresence mode="wait" initial={false}>
                 {mobileOpen ? (
@@ -148,6 +152,7 @@ export default function Navbar() {
                 )}
               </AnimatePresence>
             </button>
+            </div>
           </div>
         </div>
       </header>

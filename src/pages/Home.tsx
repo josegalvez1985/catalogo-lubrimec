@@ -75,10 +75,12 @@ export default function Home() {
           aria-hidden="true"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+        {/* Dark tint para legibilidad (independiente del tema) */}
+        <div className="absolute inset-0 bg-black/40 dark:bg-black/30" />
+        {/* Gradient overlay hacia el fondo de la página */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
         {/* Radial glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_hsl(36_90%_50%_/_0.08)_0%,_transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_hsl(36_90%_50%_/_0.10)_0%,_transparent_70%)]" />
 
         <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
           {/* Logo badge */}
@@ -105,7 +107,7 @@ export default function Home() {
             initial="hidden"
             animate="visible"
             custom={1}
-            className="text-6xl sm:text-7xl md:text-8xl font-bold text-foreground tracking-wider mb-4"
+            className="text-6xl sm:text-7xl md:text-8xl font-bold text-white tracking-wider mb-4 drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]"
             style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
             LUBRIMEC
@@ -116,7 +118,7 @@ export default function Home() {
             initial="hidden"
             animate="visible"
             custom={2}
-            className="text-lg sm:text-xl md:text-2xl text-muted-foreground font-light tracking-wide mb-3"
+            className="text-lg sm:text-xl md:text-2xl text-white/85 font-light tracking-wide mb-3 drop-shadow-[0_1px_8px_rgba(0,0,0,0.4)]"
           >
             Tu lubricentro de confianza en Capiatá
           </motion.p>
@@ -126,7 +128,7 @@ export default function Home() {
             initial="hidden"
             animate="visible"
             custom={3}
-            className="text-base text-muted-foreground/70 max-w-xl mx-auto mb-10"
+            className="text-base text-white/75 max-w-xl mx-auto mb-10 drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)]"
           >
             Lubricantes, filtros, aceites y mantenimiento preventivo para autos, motos y camiones. Productos premium, servicio express.
           </motion.p>
@@ -149,7 +151,7 @@ export default function Home() {
             </Link>
             <Link
               to="/cotizador"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-secondary/80 border border-border text-foreground font-bold text-base hover:bg-secondary hover:border-primary/30 hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/30 text-white font-bold text-base hover:bg-white/20 hover:border-primary/50 hover:scale-105 transition-all duration-200"
             >
               <Wrench className="w-5 h-5" />
               Cotizá tu mantenimiento
@@ -165,7 +167,7 @@ export default function Home() {
           className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5"
           aria-hidden="true"
         >
-          <span className="text-xs text-muted-foreground/50 tracking-widest uppercase">Scroll</span>
+          <span className="text-xs text-white/60 tracking-widest uppercase">Scroll</span>
           <motion.div
             animate={{ y: [0, 6, 0] }}
             transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}

@@ -22,6 +22,12 @@ const ACEITES_ENDPOINT =
   "https://oracleapex.com/ords/josegalvez/paginaweb/aceites";
 const FILTRO_ACEITE_ENDPOINT =
   "https://oracleapex.com/ords/josegalvez/paginaweb/filtroaceite";
+const FILTRO_AIRE_ENDPOINT =
+  "https://oracleapex.com/ords/josegalvez/paginaweb/filtroaire";
+const FILTRO_COMBUSTIBLE_ENDPOINT =
+  "https://oracleapex.com/ords/josegalvez/paginaweb/filtrocombustible";
+const FILTRO_CAJA_ENDPOINT =
+  "https://oracleapex.com/ords/josegalvez/paginaweb/filtrocaja";
 
 type ApiModelo = { modelo: string | null };
 type ApiResponse = { items: ApiModelo[] };
@@ -46,6 +52,21 @@ type ApiFiltroAceite = {
   id_marca: number;
 };
 type FiltroAceiteResponse = { items: ApiFiltroAceite[] };
+type ApiFiltroAire = {
+  descripcion: string;
+  id_marca: number;
+};
+type FiltroAireResponse = { items: ApiFiltroAire[] };
+type ApiFiltroCombustible = {
+  descripcion: string;
+  id_marca: number;
+};
+type FiltroCombustibleResponse = { items: ApiFiltroCombustible[] };
+type ApiFiltroCaja = {
+  descripcion: string;
+  id_marca: number;
+};
+type FiltroCajaResponse = { items: ApiFiltroCaja[] };
 
 type TipoServicio = "motor" | "caja";
 type Existencia = "stock" | "todos";
@@ -56,11 +77,20 @@ export default function Cotizador() {
   const [marcas, setMarcas] = useState<ApiMarca[]>([]);
   const [aceites, setAceites] = useState<ApiAceite[]>([]);
   const [filtrosAceite, setFiltrosAceite] = useState<ApiFiltroAceite[]>([]);
+  const [filtrosAire, setFiltrosAire] = useState<ApiFiltroAire[]>([]);
+  const [filtrosCombustible, setFiltrosCombustible] = useState<
+    ApiFiltroCombustible[]
+  >([]);
+  const [filtrosCaja, setFiltrosCaja] = useState<ApiFiltroCaja[]>([]);
   const [loading, setLoading] = useState(true);
   const [viscosidadesLoading, setViscosidadesLoading] = useState(false);
   const [marcasLoading, setMarcasLoading] = useState(false);
   const [aceitesLoading, setAceitesLoading] = useState(false);
   const [filtrosLoading, setFiltrosLoading] = useState(false);
+  const [filtrosAireLoading, setFiltrosAireLoading] = useState(false);
+  const [filtrosCombustibleLoading, setFiltrosCombustibleLoading] =
+    useState(false);
+  const [filtrosCajaLoading, setFiltrosCajaLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -73,6 +103,16 @@ export default function Cotizador() {
   const [selectedMarca, setSelectedMarca] = useState<number | null>(null);
   const [selectedAceites, setSelectedAceites] = useState<number[]>([]);
   const [selectedFiltro, setSelectedFiltro] = useState<number | null>(null);
+  const [selectedFiltroAire, setSelectedFiltroAire] = useState<number | null>(
+    null
+  );
+  const [selectedFiltroCombustible, setSelectedFiltroCombustible] = useState<
+    number | null
+  >(null);
+  const [selectedFiltroCaja, setSelectedFiltroCaja] = useState<number | null>(
+    null
+  );
+  const [descuento, setDescuento] = useState<string>("");
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -235,11 +275,80 @@ export default function Cotizador() {
     }
   };
 
+  const fetchFiltrosAire = async (modelo: string) => {
+    setFiltrosAireLoading(true);
+    setSelectedFiltroAire(null);
+    try {
+      const url = `${FILTRO_AIRE_ENDPOINT}/${encodeURIComponent(modelo)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: FiltroAireResponse = await res.json();
+      setFiltrosAire(data.items);
+
+      // Si hay un único filtro, seleccionarlo por defecto
+      if (data.items.length === 1) {
+        setSelectedFiltroAire(data.items[0].id_marca);
+      }
+    } catch (e) {
+      console.error("Error cargando filtros de aire:", e);
+      setFiltrosAire([]);
+    } finally {
+      setFiltrosAireLoading(false);
+    }
+  };
+
+  const fetchFiltrosCombustible = async (modelo: string) => {
+    setFiltrosCombustibleLoading(true);
+    setSelectedFiltroCombustible(null);
+    try {
+      const url = `${FILTRO_COMBUSTIBLE_ENDPOINT}/${encodeURIComponent(modelo)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: FiltroCombustibleResponse = await res.json();
+      setFiltrosCombustible(data.items);
+
+      // Si hay un único filtro, seleccionarlo por defecto
+      if (data.items.length === 1) {
+        setSelectedFiltroCombustible(data.items[0].id_marca);
+      }
+    } catch (e) {
+      console.error("Error cargando filtros de combustible:", e);
+      setFiltrosCombustible([]);
+    } finally {
+      setFiltrosCombustibleLoading(false);
+    }
+  };
+
+  const fetchFiltrosCaja = async (modelo: string) => {
+    setFiltrosCajaLoading(true);
+    setSelectedFiltroCaja(null);
+    try {
+      const url = `${FILTRO_CAJA_ENDPOINT}/${encodeURIComponent(modelo)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: FiltroCajaResponse = await res.json();
+      setFiltrosCaja(data.items);
+
+      // Si hay un único filtro, seleccionarlo por defecto
+      if (data.items.length === 1) {
+        setSelectedFiltroCaja(data.items[0].id_marca);
+      }
+    } catch (e) {
+      console.error("Error cargando filtros de caja:", e);
+      setFiltrosCaja([]);
+    } finally {
+      setFiltrosCajaLoading(false);
+    }
+  };
+
   const handleSelect = (modelo: string) => {
     setSelected(modelo);
     setQuery(modelo);
     setOpen(false);
     fetchFiltrosAceite(modelo);
+    fetchFiltrosAire(modelo);
+    fetchFiltrosCombustible(modelo);
+    fetchFiltrosCaja(modelo);
   };
 
   const handleClear = () => {
@@ -621,7 +730,138 @@ export default function Cotizador() {
             </motion.div>
           )}
 
-          {/* Marca del filtro de aceite */}
+          {/* Marca del filtros */}
+          {selected &&
+            selectedAceites.length > 0 &&
+            ((tipoServicio === "motor" &&
+              (filtrosLoading ||
+                filtrosAireLoading ||
+                filtrosCombustibleLoading ||
+                filtrosAceite.length > 0 ||
+                filtrosAire.length > 0 ||
+                filtrosCombustible.length > 0)) ||
+              (tipoServicio === "caja" &&
+                (filtrosCajaLoading || filtrosCaja.length > 0))) && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-10"
+            >
+              <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-primary" /> Marca del filtros
+              </h2>
+
+              {(() => {
+                const grupos =
+                  tipoServicio === "motor"
+                    ? [
+                        {
+                          key: "aceite",
+                          label: "Filtro de aceite",
+                          icon: "🛢️",
+                          loading: filtrosLoading,
+                          items: filtrosAceite,
+                          selected: selectedFiltro,
+                          onSelect: setSelectedFiltro,
+                        },
+                        {
+                          key: "aire",
+                          label: "Filtro de aire",
+                          icon: "💨",
+                          loading: filtrosAireLoading,
+                          items: filtrosAire,
+                          selected: selectedFiltroAire,
+                          onSelect: setSelectedFiltroAire,
+                        },
+                        {
+                          key: "combustible",
+                          label: "Filtro de combustible",
+                          icon: "⛽",
+                          loading: filtrosCombustibleLoading,
+                          items: filtrosCombustible,
+                          selected: selectedFiltroCombustible,
+                          onSelect: setSelectedFiltroCombustible,
+                        },
+                      ]
+                    : [
+                        {
+                          key: "caja",
+                          label: "Filtro de caja",
+                          icon: "⚙️",
+                          loading: filtrosCajaLoading,
+                          items: filtrosCaja,
+                          selected: selectedFiltroCaja,
+                          onSelect: setSelectedFiltroCaja,
+                        },
+                      ];
+
+                const visibles = grupos.filter(
+                  (g) => g.loading || g.items.length > 0
+                );
+                if (visibles.length === 0) return null;
+
+                const colsClass =
+                  visibles.length === 1
+                    ? "grid-cols-1"
+                    : visibles.length === 2
+                      ? "grid-cols-1 sm:grid-cols-2"
+                      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+
+                return (
+                  <div className={`grid ${colsClass} gap-4`}>
+                    {visibles.map((g) => (
+                      <div
+                        key={g.key}
+                        className="rounded-2xl border border-border bg-card/40 p-4"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-base leading-none">
+                            {g.icon}
+                          </span>
+                          <p className="text-sm font-semibold text-foreground/90">
+                            {g.label}
+                          </p>
+                        </div>
+                        {g.loading ? (
+                          <div className="flex items-center justify-center py-6">
+                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            {g.items.map((filtro) => {
+                              const active = g.selected === filtro.id_marca;
+                              return (
+                                <button
+                                  key={filtro.id_marca}
+                                  type="button"
+                                  onClick={() => g.onSelect(filtro.id_marca)}
+                                  className={`relative w-full rounded-xl border-2 py-3 px-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                    active
+                                      ? "border-primary bg-primary/10 text-primary shadow-md"
+                                      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-secondary/40 hover:text-foreground"
+                                  }`}
+                                >
+                                  <span>{filtro.descripcion}</span>
+                                  {active && (
+                                    <span className="absolute top-1 right-1">
+                                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </motion.div>
+          )}
+
+          {/* Descuento */}
           {selected && selectedAceites.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -630,45 +870,25 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-primary" /> Marca del filtro
+                <Wrench className="w-5 h-5 text-primary" /> Descuento
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Seleccioná la marca del filtro de aceite
+                Ingresá el porcentaje de descuento (0-35)
               </p>
-              {filtrosLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                </div>
-              ) : filtrosAceite.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                  No hay marcas disponibles para este modelo
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {filtrosAceite.map((filtro) => {
-                    const active = selectedFiltro === filtro.id_marca;
-                    return (
-                      <button
-                        key={filtro.id_marca}
-                        type="button"
-                        onClick={() => setSelectedFiltro(filtro.id_marca)}
-                        className={`relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 py-5 px-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                          active
-                            ? "border-primary bg-primary/10 text-primary shadow-md scale-[1.03]"
-                            : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-secondary/40 hover:text-foreground"
-                        }`}
-                      >
-                        <span>{filtro.descripcion}</span>
-                        {active && (
-                          <span className="absolute top-2 right-2">
-                            <CheckCircle2 className="w-4 h-4 text-primary" />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="relative max-w-xs">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  value={descuento}
+                  onChange={(e) => setDescuento(e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-card border-2 border-border rounded-xl py-3 pl-4 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                  %
+                </span>
+              </div>
             </motion.div>
           )}
 
@@ -745,13 +965,59 @@ export default function Cotizador() {
                       </span>
                     </p>
                   )}
-                  {selectedAceites.length > 0 && selectedFiltro && (
+                  {selectedAceites.length > 0 &&
+                    tipoServicio === "motor" &&
+                    selectedFiltro && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Marca del filtro de aceite:{" "}
+                        <span className="text-primary font-semibold">
+                          {filtrosAceite.find(
+                            (f) => f.id_marca === selectedFiltro
+                          )?.descripcion}
+                        </span>
+                      </p>
+                    )}
+                  {selectedAceites.length > 0 &&
+                    tipoServicio === "motor" &&
+                    selectedFiltroAire && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Marca del filtro de aire:{" "}
+                        <span className="text-primary font-semibold">
+                          {filtrosAire.find(
+                            (f) => f.id_marca === selectedFiltroAire
+                          )?.descripcion}
+                        </span>
+                      </p>
+                    )}
+                  {selectedAceites.length > 0 &&
+                    tipoServicio === "motor" &&
+                    selectedFiltroCombustible && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Marca del filtro de combustible:{" "}
+                        <span className="text-primary font-semibold">
+                          {filtrosCombustible.find(
+                            (f) => f.id_marca === selectedFiltroCombustible
+                          )?.descripcion}
+                        </span>
+                      </p>
+                    )}
+                  {selectedAceites.length > 0 &&
+                    tipoServicio === "caja" &&
+                    selectedFiltroCaja && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Marca del filtro de caja:{" "}
+                        <span className="text-primary font-semibold">
+                          {filtrosCaja.find(
+                            (f) => f.id_marca === selectedFiltroCaja
+                          )?.descripcion}
+                        </span>
+                      </p>
+                    )}
+                  {selectedAceites.length > 0 && Number(descuento) > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Marca del filtro:{" "}
+                      Descuento:{" "}
                       <span className="text-primary font-semibold">
-                        {filtrosAceite.find(
-                          (f) => f.id_marca === selectedFiltro
-                        )?.descripcion}
+                        {descuento}%
                       </span>
                     </p>
                   )}
