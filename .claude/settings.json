@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -v --max-time 5 \"https://oracleapex.com/ords/josegalvez/paginaweb/cotizaModelos\")"
+    ]
+  }
+}

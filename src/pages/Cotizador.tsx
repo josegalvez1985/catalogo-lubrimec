@@ -10,24 +10,28 @@ import {
   RefreshCw,
   X,
   ChevronDown,
+  Image as ImageIcon,
 } from "lucide-react";
+import QuotationModal from "@/components/QuotationModal";
+import type { QuotationData } from "@/lib/quotationCanvas";
 
-const MODELOS_ENDPOINT =
-  "https://oracleapex.com/ords/josegalvez/paginaweb/cotizaModelos";
-const VISCOSIDADES_ENDPOINT =
-  "https://oracleapex.com/ords/josegalvez/paginaweb/viscosidades";
-const MARCAS_ENDPOINT =
-  "https://oracleapex.com/ords/josegalvez/paginaweb/cotizaMarcas";
-const ACEITES_ENDPOINT =
-  "https://oracleapex.com/ords/josegalvez/paginaweb/aceites";
-const FILTRO_ACEITE_ENDPOINT =
-  "https://oracleapex.com/ords/josegalvez/paginaweb/filtroaceite";
-const FILTRO_AIRE_ENDPOINT =
-  "https://oracleapex.com/ords/josegalvez/paginaweb/filtroaire";
-const FILTRO_COMBUSTIBLE_ENDPOINT =
-  "https://oracleapex.com/ords/josegalvez/paginaweb/filtrocombustible";
-const FILTRO_CAJA_ENDPOINT =
-  "https://oracleapex.com/ords/josegalvez/paginaweb/filtrocaja";
+// CORS Proxy para desarrollo (comentar en producción)
+const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
+const USE_CORS_PROXY = false; // Cambiar a true si hay problemas CORS
+
+const BASE_URL = "https://oracleapex.com/ords/josegalvez/paginaweb";
+const getProxiedUrl = (url: string) =>
+  USE_CORS_PROXY ? `${CORS_PROXY}${url}` : url;
+
+const MODELOS_ENDPOINT = getProxiedUrl(`${BASE_URL}/cotizaModelos`);
+const VISCOSIDADES_ENDPOINT = getProxiedUrl(`${BASE_URL}/viscosidades`);
+const MARCAS_ENDPOINT = getProxiedUrl(`${BASE_URL}/cotizaMarcas`);
+const ACEITES_ENDPOINT = getProxiedUrl(`${BASE_URL}/aceites`);
+const FILTRO_ACEITE_ENDPOINT = getProxiedUrl(`${BASE_URL}/filtroaceite`);
+const FILTRO_AIRE_ENDPOINT = getProxiedUrl(`${BASE_URL}/filtroaire`);
+const FILTRO_COMBUSTIBLE_ENDPOINT = getProxiedUrl(`${BASE_URL}/filtrocombustible`);
+const FILTRO_CAJA_ENDPOINT = getProxiedUrl(`${BASE_URL}/filtrocaja`);
+const COTIZACION_ENDPOINT = getProxiedUrl(BASE_URL);
 
 type ApiModelo = { modelo: string | null };
 type ApiResponse = { items: ApiModelo[] };
@@ -71,6 +75,34 @@ type FiltroCajaResponse = { items: ApiFiltroCaja[] };
 type TipoServicio = "motor" | "caja";
 type Existencia = "stock" | "todos";
 
+type CotizacionAPIResponse = {
+  resultado?: {
+    aceites: Array<{
+      id: number;
+      nombre: string;
+      precioBase: number;
+      stock: number;
+      unidad: string;
+      imagen?: {
+        nombre: string;
+        mimeType: string;
+        datos?: string;
+      };
+    }>;
+    filtros: {
+      aceite?: { id: number; nombre: string; precio: number; imagen?: any };
+      aire?: { id: number; nombre: string; precio: number; imagen?: any };
+      combustible?: { id: number; nombre: string; precio: number; imagen?: any };
+      caja?: { id: number; nombre: string; precio: number; imagen?: any };
+    };
+    totales: {
+      sinDescuento: number;
+      conDescuento: number;
+      porcentajeDescuento: number;
+    };
+  };
+};
+
 export default function Cotizador() {
   const [modelos, setModelos] = useState<string[]>([]);
   const [viscosidades, setViscosidades] = useState<ApiViscosidad[]>([]);
@@ -113,6 +145,11 @@ export default function Cotizador() {
     null
   );
   const [descuento, setDescuento] = useState<string>("");
+  const [cantidadLitros, setCantidadLitros] = useState<string>("4");
+  const [cantidadGalones, setCantidadGalones] = useState<string>("1");
+  const [showQuotationModal, setShowQuotationModal] = useState(false);
+  const [cotizacionAPI, setCotizacionAPI] = useState<CotizacionAPIResponse | null>(null);
+  const [loadingCotizacion, setLoadingCotizacion] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -222,6 +259,53 @@ export default function Cotizador() {
     const filterValue = tipoServicio === "motor" ? "M" : "C";
     return viscosidades.filter((v) => v.motor_caja === filterValue);
   }, [viscosidades, tipoServicio]);
+
+  // Construir datos para el modal
+  const quotationData: QuotationData | null = useMemo(() => {
+    if (!selected || selectedAceites.length === 0) return null;
+
+    return {
+      modelo: selected,
+      tipoServicio,
+      viscosidad:
+        filteredViscosidades.find((v) => v.id_viscosidad === selectedViscosidad)
+          ?.descripcion || "",
+      marca: marcas.find((m) => m.id_marca === selectedMarca)?.aceite || "",
+      aceites: aceites
+        .filter((a) => selectedAceites.includes(a.id_articulo))
+        .map((a) => a.articulo),
+      filtros: {
+        aceite: filtrosAceite.find((f) => f.id_marca === selectedFiltro)
+          ?.descripcion,
+        aire: filtrosAire.find((f) => f.id_marca === selectedFiltroAire)
+          ?.descripcion,
+        combustible: filtrosCombustible.find(
+          (f) => f.id_marca === selectedFiltroCombustible
+        )?.descripcion,
+        caja: filtrosCaja.find((f) => f.id_marca === selectedFiltroCaja)
+          ?.descripcion,
+      },
+      descuento: descuento ? parseFloat(descuento) : undefined,
+    };
+  }, [
+    selected,
+    selectedAceites,
+    tipoServicio,
+    filteredViscosidades,
+    selectedViscosidad,
+    marcas,
+    selectedMarca,
+    aceites,
+    filtrosAceite,
+    selectedFiltro,
+    filtrosAire,
+    selectedFiltroAire,
+    filtrosCombustible,
+    selectedFiltroCombustible,
+    filtrosCaja,
+    selectedFiltroCaja,
+    descuento,
+  ]);
 
   // Cargar marcas cuando cambia viscosidad o existencia
   useEffect(() => {
@@ -338,6 +422,123 @@ export default function Cotizador() {
       setFiltrosCaja([]);
     } finally {
       setFiltrosCajaLoading(false);
+    }
+  };
+
+  const fetchCotizacionAPI = async () => {
+    // Validaciones previas
+    if (!selected) {
+      alert("Por favor selecciona un modelo");
+      return;
+    }
+    if (selectedAceites.length === 0) {
+      alert("Por favor selecciona al menos un producto");
+      return;
+    }
+    if (!selectedViscosidad) {
+      alert("Por favor selecciona una viscosidad");
+      return;
+    }
+    if (!selectedMarca) {
+      alert("Por favor selecciona una marca");
+      return;
+    }
+
+    setLoadingCotizacion(true);
+    try {
+      const viscosidadDesc = filteredViscosidades.find(
+        (v) => v.id_viscosidad === selectedViscosidad
+      )?.descripcion || "";
+
+      // Convertir tipoServicio a formato Oracle: 'motor' → 'M', 'caja' → 'C'
+      const tipoServicioOracle = tipoServicio === "motor" ? "M" : "C";
+      const existenciaParam = existencia === "stock" ? "1" : "0";
+      const idAceitesParam = selectedAceites.join(",");
+      const litrosParam = cantidadLitros || "4";
+      const galonesParam = cantidadGalones || "1";
+
+      // Construir URL con todos los path parameters
+      const pathParams = `${encodeURIComponent(selected)}/${tipoServicioOracle}/${encodeURIComponent(viscosidadDesc)}/${existenciaParam}/${selectedMarca}/${selectedFiltro || "0"}/${selectedFiltroAire || "0"}/${selectedFiltroCombustible || "0"}/${selectedFiltroCaja || "0"}/${descuento || "0"}/${encodeURIComponent(idAceitesParam)}/${litrosParam}/${galonesParam}`;
+
+      const url = `${COTIZACION_ENDPOINT}/cotizacion/${pathParams}`;
+
+      // Logs detallados para debugging
+      console.log("🔗 ===== ENDPOINT FINAL DE COTIZACIÓN =====");
+      console.log("URL COMPLETA:", url);
+      console.log("\n📋 PARÁMETROS ENVIADOS:");
+      console.log({
+        modelo: selected,
+        tipoServicio: `${tipoServicioOracle} (${tipoServicio})`,
+        viscosidad: viscosidadDesc,
+        existencia: existenciaParam === "1" ? "Solo Stock" : "Todos",
+        idMarca: selectedMarca,
+        filtros: {
+          aceite: selectedFiltro || "0",
+          aire: selectedFiltroAire || "0",
+          combustible: selectedFiltroCombustible || "0",
+          caja: selectedFiltroCaja || "0",
+        },
+        descuento: `${descuento || "0"}%`,
+        aceites: {
+          ids: idAceitesParam,
+          cantidad: selectedAceites.length,
+        },
+        cantidad: {
+          litros: litrosParam,
+          galones: galonesParam,
+        },
+      });
+      console.log("==========================================\n");
+
+      // Realizar solicitud con timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+
+      const res = await fetch(url, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const data: CotizacionAPIResponse = await res.json();
+
+      if (!data.resultado) {
+        throw new Error("Respuesta sin datos de cotización");
+      }
+
+      console.log("✅ RESPUESTA API EXITOSA:");
+      console.log(data);
+      console.log("\n💰 RESUMEN COTIZACIÓN:");
+      console.log({
+        totalAceites: data.resultado.aceites.length,
+        precioSinDescuento: `Gs. ${data.resultado.totales.sinDescuento.toLocaleString('es-PY')}`,
+        precioConDescuento: `Gs. ${data.resultado.totales.conDescuento.toLocaleString('es-PY')}`,
+        ahorro: `Gs. ${(data.resultado.totales.sinDescuento - data.resultado.totales.conDescuento).toLocaleString('es-PY')}`,
+        porcentajeDescuento: `${data.resultado.totales.porcentajeDescuento}%`,
+      });
+
+      setCotizacionAPI(data);
+      setShowQuotationModal(true);
+    } catch (e) {
+      let errorMsg = "Error al generar cotización";
+
+      if (e instanceof TypeError && e.message === "Failed to fetch") {
+        errorMsg = "No se pudo conectar con el servidor. Verifica tu conexión.";
+      } else if (e instanceof Error) {
+        if (e.name === "AbortError") {
+          errorMsg = "La solicitud tardó demasiado. Intenta nuevamente.";
+        } else {
+          errorMsg = e.message;
+        }
+      }
+
+      console.error("❌ ERROR OBTENIENDO COTIZACIÓN:", e);
+      alert(errorMsg);
+    } finally {
+      setLoadingCotizacion(false);
     }
   };
 
@@ -861,7 +1062,7 @@ export default function Cotizador() {
             </motion.div>
           )}
 
-          {/* Descuento */}
+          {/* Cantidad y Descuento */}
           {selected && selectedAceites.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -870,25 +1071,89 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-primary" /> Descuento
+                <Wrench className="w-5 h-5 text-primary" /> Cantidad y Descuento
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Ingresá el porcentaje de descuento (0-35)
+                Especificá cantidades y descuento
               </p>
-              <div className="relative max-w-xs">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  value={descuento}
-                  onChange={(e) => setDescuento(e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-card border-2 border-border rounded-xl py-3 pl-4 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
-                  %
-                </span>
+              <div className="grid grid-cols-3 gap-4">
+                {/* Litros */}
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-2 block">
+                    Litros
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    value={cantidadLitros}
+                    onChange={(e) => setCantidadLitros(e.target.value)}
+                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+
+                {/* Galones */}
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-2 block">
+                    Galones
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    value={cantidadGalones}
+                    onChange={(e) => setCantidadGalones(e.target.value)}
+                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+
+                {/* Descuento */}
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-2 block">
+                    Descuento %
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={descuento}
+                    onChange={(e) => setDescuento(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
               </div>
+            </motion.div>
+          )}
+
+          {/* Botón Generar Cotización */}
+          {selected && selectedAceites.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-12"
+            >
+              <button
+                onClick={fetchCotizacionAPI}
+                disabled={loadingCotizacion}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-bold text-lg hover:shadow-lg hover:from-primary/90 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingCotizacion ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="w-6 h-6" />
+                    Generar Cotización
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Crea imágenes optimizadas para compartir en redes sociales
+              </p>
             </motion.div>
           )}
 
@@ -1027,6 +1292,29 @@ export default function Cotizador() {
           </AnimatePresence>
         </motion.section>
       </main>
+
+      {/* Modal de Cotización */}
+      {(cotizacionAPI?.resultado || quotationData) && (
+        <QuotationModal
+          isOpen={showQuotationModal}
+          onClose={() => setShowQuotationModal(false)}
+          data={cotizacionAPI?.resultado ? {
+            modelo: selected || "",
+            tipoServicio,
+            viscosidad: filteredViscosidades.find(v => v.id_viscosidad === selectedViscosidad)?.descripcion || "",
+            marca: marcas.find(m => m.id_marca === selectedMarca)?.aceite || "",
+            aceites: cotizacionAPI.resultado.aceites.map(a => a.nombre),
+            filtros: {
+              aceite: cotizacionAPI.resultado.filtros.aceite?.nombre,
+              aire: cotizacionAPI.resultado.filtros.aire?.nombre,
+              combustible: cotizacionAPI.resultado.filtros.combustible?.nombre,
+              caja: cotizacionAPI.resultado.filtros.caja?.nombre,
+            },
+            descuento: cotizacionAPI.resultado.totales.porcentajeDescuento,
+          } : quotationData}
+          apiData={cotizacionAPI?.resultado}
+        />
+      )}
     </div>
   );
 }
