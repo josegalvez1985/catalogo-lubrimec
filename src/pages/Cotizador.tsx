@@ -103,6 +103,32 @@ type CotizacionAPIResponse = {
   };
 };
 
+type RawCotizacionItem = {
+  articulo: string;
+  descripcion: string;
+  viscosidad: string;
+  total_aceite: number;
+  cod_unidad_medida: string;
+  modelo: string;
+  filtro_caja: number;
+  filtro_aceite: number;
+  filtro_aire: number;
+  filtro_combustible: number;
+  total: string;
+  total_descuento: number;
+  cantidad: string;
+  id_articulo: number;
+  stock: number;
+  descuento: string;
+};
+
+type RawCotizacionResponse = { items: RawCotizacionItem[] };
+
+const parseMonto = (s: string | number): number => {
+  if (typeof s === "number") return s;
+  return Number(String(s).replace(/[^\d-]/g, "")) || 0;
+};
+
 export default function Cotizador() {
   const [modelos, setModelos] = useState<string[]>([]);
   const [viscosidades, setViscosidades] = useState<ApiViscosidad[]>([]);
@@ -149,7 +175,9 @@ export default function Cotizador() {
   const [cantidadGalones, setCantidadGalones] = useState<string>("1");
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [cotizacionAPI, setCotizacionAPI] = useState<CotizacionAPIResponse | null>(null);
+  const [rawCotizacionItems, setRawCotizacionItems] = useState<RawCotizacionItem[]>([]);
   const [loadingCotizacion, setLoadingCotizacion] = useState(false);
+  const [quotationDataForModal, setQuotationDataForModal] = useState<QuotationData | null>(null);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -264,6 +292,21 @@ export default function Cotizador() {
   const quotationData: QuotationData | null = useMemo(() => {
     if (!selected || selectedAceites.length === 0) return null;
 
+    const items = rawCotizacionItems.map((it) => ({
+      id: it.id_articulo,
+      nombre: it.articulo.replace(/-\d+$/, "").trim(),
+      modelo: it.modelo,
+      precioAceite: it.total_aceite,
+      filtroAceite: it.filtro_aceite || undefined,
+      filtroAire: it.filtro_aire || undefined,
+      filtroCombustible: it.filtro_combustible || undefined,
+      filtroCaja: it.filtro_caja || undefined,
+      total: parseMonto(it.total),
+      descuentoMonto: parseMonto(it.descuento),
+      totalConDescuento: it.total_descuento,
+      imagenUrl: `${BASE_URL}/articulosimg/${it.id_articulo}`,
+    }));
+
     return {
       modelo: selected,
       tipoServicio,
@@ -286,6 +329,7 @@ export default function Cotizador() {
           ?.descripcion,
       },
       descuento: descuento ? parseFloat(descuento) : undefined,
+      items: rawCotizacionItems.length > 0 ? items : undefined,
     };
   }, [
     selected,
@@ -305,6 +349,7 @@ export default function Cotizador() {
     filtrosCaja,
     selectedFiltroCaja,
     descuento,
+    rawCotizacionItems,
   ]);
 
   // Cargar marcas cuando cambia viscosidad o existencia
@@ -458,8 +503,12 @@ export default function Cotizador() {
       const galonesParam = cantidadGalones || "1";
       const descuentoParam = descuento ? parseInt(descuento) : 0;
 
-      // Construir URL con todos los path parameters
-      const pathParams = `${encodeURIComponent(selected)}/${tipoServicioOracle}/${encodeURIComponent(viscosidadDesc)}/${existenciaParam}/${selectedMarca}/${selectedFiltro || "0"}/${selectedFiltroAire || "0"}/${selectedFiltroCombustible || "0"}/${selectedFiltroCaja || "0"}/${descuentoParam}/${encodeURIComponent(idAceitesParam)}/${litrosParam}/${galonesParam}`;
+      // Modelo sin espacios (el SQL hace REPLACE para matchear)
+      const modeloSinEspacios = selected.replace(/\s+/g, "");
+
+      // Orden del endpoint:
+      // /:idMarcaFiltroCombustible/:modelo/:cantidadGalon/:cantidadLitros/:idMarcaFiltroCaja/:idMarcaFiltroAire/:existencia/:tipoServicio/:idAceites/:viscosidad/:idMarcaFiltroAceite/:descuento
+      const pathParams = `${selectedFiltroCombustible || "0"}/${encodeURIComponent(modeloSinEspacios)}/${galonesParam}/${litrosParam}/${selectedFiltroCaja || "0"}/${selectedFiltroAire || "0"}/${existenciaParam}/${tipoServicioOracle}/${encodeURIComponent(idAceitesParam)}/${encodeURIComponent(viscosidadDesc)}/${selectedFiltro || "0"}/${descuentoParam}`;
 
       const url = `${COTIZACION_ENDPOINT}/cotizacion/${pathParams}`;
 
@@ -518,24 +567,103 @@ export default function Cotizador() {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
 
-      const data: CotizacionAPIResponse = await res.json();
+      const raw: RawCotizacionResponse = await res.json();
 
-      if (!data.resultado) {
+      if (!raw.items || raw.items.length === 0) {
         throw new Error("Respuesta sin datos de cotización");
       }
 
-      console.log("✅ RESPUESTA API EXITOSA:");
-      console.log(data);
-      console.log("\n💰 RESUMEN COTIZACIÓN:");
-      console.log({
-        totalAceites: data.resultado.aceites.length,
-        precioSinDescuento: `Gs. ${data.resultado.totales.sinDescuento.toLocaleString('es-PY')}`,
-        precioConDescuento: `Gs. ${data.resultado.totales.conDescuento.toLocaleString('es-PY')}`,
-        ahorro: `Gs. ${(data.resultado.totales.sinDescuento - data.resultado.totales.conDescuento).toLocaleString('es-PY')}`,
-        porcentajeDescuento: `${data.resultado.totales.porcentajeDescuento}%`,
-      });
+      const first = raw.items[0];
 
+      const aceites = raw.items.map((it) => ({
+        id: it.id_articulo,
+        nombre: it.articulo.replace(/-\d+$/, "").trim(),
+        precioBase: it.total_aceite,
+        stock: it.stock,
+        unidad: it.cod_unidad_medida,
+      }));
+
+      const filtros: NonNullable<CotizacionAPIResponse["resultado"]>["filtros"] = {};
+      if (tipoServicioOracle === "M") {
+        if (first.filtro_aceite > 0 && selectedFiltro) {
+          const f = filtrosAceite.find((x) => x.id_marca === selectedFiltro);
+          filtros.aceite = { id: selectedFiltro, nombre: f?.descripcion || "Filtro de aceite", precio: first.filtro_aceite };
+        }
+        if (first.filtro_aire > 0 && selectedFiltroAire) {
+          const f = filtrosAire.find((x) => x.id_marca === selectedFiltroAire);
+          filtros.aire = { id: selectedFiltroAire, nombre: f?.descripcion || "Filtro de aire", precio: first.filtro_aire };
+        }
+        if (first.filtro_combustible > 0 && selectedFiltroCombustible) {
+          const f = filtrosCombustible.find((x) => x.id_marca === selectedFiltroCombustible);
+          filtros.combustible = { id: selectedFiltroCombustible, nombre: f?.descripcion || "Filtro de combustible", precio: first.filtro_combustible };
+        }
+      } else if (tipoServicioOracle === "C") {
+        if (first.filtro_caja > 0 && selectedFiltroCaja) {
+          const f = filtrosCaja.find((x) => x.id_marca === selectedFiltroCaja);
+          filtros.caja = { id: selectedFiltroCaja, nombre: f?.descripcion || "Filtro de caja", precio: first.filtro_caja };
+        }
+      }
+
+      const aceitesSum = raw.items.reduce((s, it) => s + (it.total_aceite || 0), 0);
+      const filtrosSum =
+        (filtros.aceite?.precio || 0) +
+        (filtros.aire?.precio || 0) +
+        (filtros.combustible?.precio || 0) +
+        (filtros.caja?.precio || 0);
+      const sinDescuento = aceitesSum + filtrosSum;
+      const conDescuento = descuentoParam > 0
+        ? Math.round(sinDescuento * (1 - descuentoParam / 100))
+        : raw.items.reduce((s, it) => s + parseMonto(it.total_descuento), 0) + filtrosSum;
+
+      const data: CotizacionAPIResponse = {
+        resultado: {
+          aceites,
+          filtros,
+          totales: {
+            sinDescuento,
+            conDescuento,
+            porcentajeDescuento: descuentoParam,
+          },
+        },
+      };
+
+      console.log("✅ RESPUESTA API EXITOSA:", raw);
+      console.log("💰 RESUMEN COTIZACIÓN:", data.resultado!.totales);
+
+      setRawCotizacionItems(raw.items);
       setCotizacionAPI(data);
+
+      // Construir quotationData con items aquí para asegurar que tengan datos
+      const quotationDataWithItems: QuotationData = {
+        modelo: selected!,
+        tipoServicio,
+        viscosidad: filteredViscosidades.find(v => v.id_viscosidad === selectedViscosidad)?.descripcion || "",
+        marca: marcas.find(m => m.id_marca === selectedMarca)?.aceite || "",
+        aceites: raw.items.map(it => it.articulo.replace(/-\d+$/, "").trim()),
+        filtros: {
+          aceite: filtrosAceite.find((f) => f.id_marca === selectedFiltro)?.descripcion,
+          aire: filtrosAire.find((f) => f.id_marca === selectedFiltroAire)?.descripcion,
+          combustible: filtrosCombustible.find((f) => f.id_marca === selectedFiltroCombustible)?.descripcion,
+          caja: filtrosCaja.find((f) => f.id_marca === selectedFiltroCaja)?.descripcion,
+        },
+        descuento: descuentoParam,
+        items: raw.items.map((it) => ({
+          id: it.id_articulo,
+          nombre: it.articulo.replace(/-\d+$/, "").trim(),
+          modelo: it.modelo,
+          precioAceite: it.total_aceite,
+          filtroAceite: it.filtro_aceite || undefined,
+          filtroAire: it.filtro_aire || undefined,
+          filtroCombustible: it.filtro_combustible || undefined,
+          filtroCaja: it.filtro_caja || undefined,
+          total: parseMonto(it.total),
+          descuentoMonto: parseMonto(it.descuento),
+          totalConDescuento: it.total_descuento,
+          imagenUrl: `${BASE_URL}/articulosimg/${it.id_articulo}`,
+        })),
+      };
+
+      setQuotationDataForModal(quotationDataWithItems);
       setShowQuotationModal(true);
     } catch (e) {
       let errorMsg = "Error al generar cotización";
@@ -1309,25 +1437,12 @@ export default function Cotizador() {
       </main>
 
       {/* Modal de Cotización */}
-      {(cotizacionAPI?.resultado || quotationData) && (
+      {(quotationDataForModal || quotationData) && (
         <QuotationModal
           isOpen={showQuotationModal}
           onClose={() => setShowQuotationModal(false)}
-          data={cotizacionAPI?.resultado ? {
-            modelo: selected || "",
-            tipoServicio,
-            viscosidad: filteredViscosidades.find(v => v.id_viscosidad === selectedViscosidad)?.descripcion || "",
-            marca: marcas.find(m => m.id_marca === selectedMarca)?.aceite || "",
-            aceites: cotizacionAPI.resultado.aceites.map(a => a.nombre),
-            filtros: {
-              aceite: cotizacionAPI.resultado.filtros.aceite?.nombre,
-              aire: cotizacionAPI.resultado.filtros.aire?.nombre,
-              combustible: cotizacionAPI.resultado.filtros.combustible?.nombre,
-              caja: cotizacionAPI.resultado.filtros.caja?.nombre,
-            },
-            descuento: cotizacionAPI.resultado.totales.porcentajeDescuento,
-          } : quotationData}
-          apiData={cotizacionAPI?.resultado}
+          data={quotationDataForModal || quotationData!}
+          apiData={cotizacionAPI?.resultado ? { resultado: cotizacionAPI.resultado } : undefined}
         />
       )}
     </div>

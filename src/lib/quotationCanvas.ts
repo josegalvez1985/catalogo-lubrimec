@@ -12,6 +12,22 @@ export interface QuotationData {
   };
   descuento?: number;
   precios?: number[];
+  fecha?: string;
+  // Items detallados para el formato "quote" (uno por aceite cotizado)
+  items?: Array<{
+    id: number;
+    nombre: string;
+    modelo: string;
+    precioAceite: number;
+    filtroAceite?: number;
+    filtroAire?: number;
+    filtroCombustible?: number;
+    filtroCaja?: number;
+    total: number;
+    descuentoMonto: number;
+    totalConDescuento: number;
+    imagenUrl?: string;
+  }>;
 }
 
 export type ThemeId =
@@ -25,7 +41,7 @@ export type ThemeId =
   | 'teal'
   | 'indigo'
   | 'orange';
-export type FormatId = 'story' | 'post' | 'reel';
+export type FormatId = 'story' | 'post' | 'reel' | 'quote';
 
 interface Theme {
   bg: string;
@@ -117,6 +133,31 @@ const FORMATS: Record<FormatId, FormatDimensions> = {
   story: { w: 1080, h: 1920 },
   post: { w: 1080, h: 1080 },
   reel: { w: 1080, h: 1920 },
+  quote: { w: 1080, h: 0 }, // alto calculado dinámicamente
+};
+
+// Layout constants para formato "quote"
+const QUOTE = {
+  W: 1080,
+  PAD: 30,
+  HEADER_H: 200,
+  CARD_H: 460,
+  CARD_GAP: 30,
+  CARD_HEADER_H: 60,
+  IMG_BOX: 280,
+  FOOTER_H: 180,
+  HEADER_BG: '#f97316',
+  HEADER_TEXT: '#ffffff',
+  HEADER_HIGHLIGHT: '#fde047',
+  CARD_BORDER: '#e5e7eb',
+  PAGE_BG: '#f9fafb',
+  TEXT: '#111827',
+  TEXT_MUTED: '#6b7280',
+  DIVIDER: '#e5e7eb',
+  STRIKE: '#ef4444',
+  DISCOUNT: '#ef4444',
+  NOW: '#2563eb',
+  NOW_BG: '#dbeafe',
 };
 
 export async function buildQuotationCanvas(
@@ -124,6 +165,10 @@ export async function buildQuotationCanvas(
   format: FormatId,
   theme: ThemeId
 ): Promise<Blob> {
+  if (format === 'quote') {
+    return buildQuoteCanvas(data);
+  }
+
   const dims = FORMATS[format];
   const t = THEMES[theme];
 
@@ -144,7 +189,6 @@ export async function buildQuotationCanvas(
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, dims.w, dims.h);
 
-  // Dibujar contenido según formato
   if (format === 'post') {
     drawPostFormat(ctx, canvas.width, canvas.height, data, t);
   } else if (format === 'story' || format === 'reel') {
@@ -158,6 +202,327 @@ export async function buildQuotationCanvas(
     );
   });
 }
+
+async function buildQuoteCanvas(data: QuotationData): Promise<Blob> {
+  const items = data.items ?? [];
+
+  // Calcular alto total
+  const totalH = QUOTE.HEADER_H + (items.length * (QUOTE.CARD_H + QUOTE.CARD_GAP)) + QUOTE.FOOTER_H;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = QUOTE.W;
+  canvas.height = totalH;
+  const ctx = canvas.getContext('2d', { alpha: false })!;
+  ctx.textBaseline = 'top';
+
+  ctx.fillStyle = QUOTE.PAGE_BG;
+  ctx.fillRect(0, 0, QUOTE.W, totalH);
+
+  // Precargar imágenes de productos
+  const productImages = await Promise.all(
+    items.map((it) => (it.imagenUrl ? loadImage(it.imagenUrl) : Promise.resolve(null)))
+  );
+
+  drawQuoteHeader(ctx, data);
+
+  let y = QUOTE.HEADER_H;
+  for (let i = 0; i < items.length; i++) {
+    drawProductCard(ctx, y, items[i], productImages[i]);
+    y += QUOTE.CARD_H + QUOTE.CARD_GAP;
+  }
+
+  drawQuoteFooter(ctx, totalH);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('Canvas toBlob fallido'))),
+      'image/png'
+    );
+  });
+}
+
+function drawQuoteHeader(ctx: CanvasRenderingContext2D, data: QuotationData) {
+  const w = QUOTE.W;
+  const h = QUOTE.HEADER_H;
+
+  // Fondo naranja del header
+  const grad = ctx.createLinearGradient(0, 0, w, 0);
+  grad.addColorStop(0, '#fb923c');
+  grad.addColorStop(1, '#ea580c');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Logo cuadro blanco a la izquierda
+  const logoSize = 130;
+  const logoX = 30;
+  const logoY = (h - logoSize) / 2;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(logoX, logoY, logoSize, logoSize);
+
+  // Texto "LUBRICANTES Y FILTROS" dentro del logo
+  ctx.fillStyle = QUOTE.HEADER_BG;
+  ctx.font = 'bold 14px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('LUBRICANTES', logoX + logoSize / 2, logoY + logoSize / 2 - 8);
+  ctx.fillText('Y FILTROS', logoX + logoSize / 2, logoY + logoSize / 2 + 10);
+
+  // Título principal
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 56px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('LUBRIMEC', w / 2, 30);
+
+  // Subtítulo
+  ctx.font = '20px Arial, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('COTIZACIÓN DE LUBRICANTES Y FILTROS', w / 2, 95);
+
+  // Modelo (amarillo destacado)
+  ctx.font = 'bold 28px Arial, sans-serif';
+  ctx.fillStyle = QUOTE.HEADER_HIGHLIGHT;
+  ctx.fillText(data.modelo, w / 2, 125);
+
+  // Fecha
+  const fecha = data.fecha || new Date().toLocaleDateString('es-PY');
+  ctx.font = '16px Arial, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(fecha, w / 2, 165);
+}
+
+function drawProductCard(
+  ctx: CanvasRenderingContext2D,
+  yStart: number,
+  item: NonNullable<QuotationData['items']>[number],
+  img: HTMLImageElement | null
+) {
+  const w = QUOTE.W;
+  const x = QUOTE.PAD;
+  const cardW = w - QUOTE.PAD * 2;
+  const cardH = QUOTE.CARD_H;
+  const mostrarDescuento = item.descuentoMonto > 0;
+
+  // Fondo card blanco con borde
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = QUOTE.CARD_BORDER;
+  ctx.lineWidth = 1;
+  roundRect(ctx, x, yStart, cardW, cardH, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  // Header naranja del card
+  ctx.fillStyle = QUOTE.HEADER_BG;
+  roundRectTop(ctx, x, yStart, cardW, QUOTE.CARD_HEADER_H, 12);
+  ctx.fill();
+
+  // Nombre producto en header
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 22px Arial, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(item.nombre, x + 24, yStart + QUOTE.CARD_HEADER_H / 2);
+  ctx.textBaseline = 'top';
+
+  // Zona de imagen
+  const imgX = x + 24;
+  const imgY = yStart + QUOTE.CARD_HEADER_H + 30;
+  const imgBox = QUOTE.IMG_BOX;
+  ctx.fillStyle = '#f3f4f6';
+  ctx.fillRect(imgX, imgY, imgBox, imgBox);
+  if (img) {
+    drawContain(ctx, img, imgX, imgY, imgBox, imgBox);
+  } else {
+    ctx.fillStyle = '#d1d5db';
+    ctx.font = '14px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('[Imagen]', imgX + imgBox / 2, imgY + imgBox / 2 - 8);
+  }
+
+  // Zona de precios (derecha)
+  const priceX = imgX + imgBox + 40;
+  const priceMax = x + cardW - 24;
+  let py = yStart + QUOTE.CARD_HEADER_H + 30;
+  const rowH = 36;
+
+  // Aceite
+  drawPriceRow(ctx, 'Aceite', item.precioAceite, priceX, priceMax, py);
+  py += rowH;
+
+  // Filtros
+  if (item.filtroAceite) {
+    drawPriceRow(ctx, 'Filtro de Aceite', item.filtroAceite, priceX, priceMax, py);
+    py += rowH;
+  }
+  if (item.filtroAire) {
+    drawPriceRow(ctx, 'Filtro de Aire', item.filtroAire, priceX, priceMax, py);
+    py += rowH;
+  }
+  if (item.filtroCombustible) {
+    drawPriceRow(ctx, 'Filtro de Combustible', item.filtroCombustible, priceX, priceMax, py);
+    py += rowH;
+  }
+  if (item.filtroCaja) {
+    drawPriceRow(ctx, 'Filtro de Caja', item.filtroCaja, priceX, priceMax, py);
+    py += rowH;
+  }
+
+  py += 16;
+
+  // Divisor
+  ctx.strokeStyle = QUOTE.DIVIDER;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(priceX, py);
+  ctx.lineTo(priceMax, py);
+  ctx.stroke();
+  py += 14;
+
+  if (mostrarDescuento) {
+    // Antes (tachado)
+    ctx.fillStyle = QUOTE.TEXT_MUTED;
+    ctx.font = '20px Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Antes:', priceX, py);
+    ctx.textAlign = 'right';
+    const antesStr = `Gs. ${formatGs(item.total)}`;
+    ctx.fillStyle = QUOTE.STRIKE;
+    ctx.fillText(antesStr, priceMax, py);
+    const antesW = ctx.measureText(antesStr).width;
+    ctx.strokeStyle = QUOTE.STRIKE;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(priceMax - antesW, py + 11);
+    ctx.lineTo(priceMax, py + 11);
+    ctx.stroke();
+    py += rowH;
+
+    // Descuento (rojo)
+    ctx.fillStyle = QUOTE.DISCOUNT;
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Descuento:', priceX, py);
+    ctx.textAlign = 'right';
+    ctx.fillText(`Gs. ${formatGs(item.descuentoMonto)}`, priceMax, py);
+    py += rowH + 8;
+  }
+
+  // AHORA (banner azul)
+  const ahoraH = 56;
+  ctx.fillStyle = QUOTE.NOW_BG;
+  ctx.fillRect(priceX, py, priceMax - priceX, ahoraH);
+  ctx.fillStyle = QUOTE.NOW;
+  ctx.fillRect(priceX, py, 5, ahoraH);
+
+  ctx.fillStyle = QUOTE.NOW;
+  ctx.font = 'bold 24px Arial, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('AHORA:', priceX + 18, py + ahoraH / 2);
+  ctx.textAlign = 'right';
+  ctx.font = 'bold 28px Arial, sans-serif';
+  ctx.fillText(`Gs. ${formatGs(item.totalConDescuento)}`, priceMax - 14, py + ahoraH / 2);
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+}
+
+function drawPriceRow(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  precio: number,
+  x: number,
+  xMax: number,
+  y: number
+) {
+  ctx.fillStyle = QUOTE.TEXT;
+  ctx.font = '20px Arial, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x, y);
+  ctx.textAlign = 'right';
+  ctx.font = 'bold 20px Arial, sans-serif';
+  ctx.fillText(`Gs. ${formatGs(precio)}`, xMax, y);
+  ctx.textAlign = 'left';
+  ctx.font = '20px Arial, sans-serif';
+}
+
+function drawQuoteFooter(ctx: CanvasRenderingContext2D, totalH: number) {
+  const w = QUOTE.W;
+  const fy = totalH - QUOTE.FOOTER_H + 40;
+  ctx.fillStyle = QUOTE.TEXT_MUTED;
+  ctx.font = '20px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Cotización válida por 5 días', w / 2, fy);
+  ctx.fillText('Sujeta a disponibilidad de stock', w / 2, fy + 32);
+  ctx.fillText('Precios no aplican domingos ni feriados', w / 2, fy + 64);
+  ctx.textAlign = 'left';
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function roundRectTop(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function formatGs(n: number): string {
+  return new Intl.NumberFormat('es-PY').format(Math.round(n));
+}
+
+async function loadImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+function drawContain(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+) {
+  const r = Math.min(w / img.width, h / img.height);
+  const dw = img.width * r;
+  const dh = img.height * r;
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
 
 function drawPostFormat(
   ctx: CanvasRenderingContext2D,
