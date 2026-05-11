@@ -456,21 +456,36 @@ export default function Cotizador() {
       const idAceitesParam = selectedAceites.join(",");
       const litrosParam = cantidadLitros || "4";
       const galonesParam = cantidadGalones || "1";
+      const descuentoParam = descuento ? parseInt(descuento) : 0;
 
       // Construir URL con todos los path parameters
-      const pathParams = `${encodeURIComponent(selected)}/${tipoServicioOracle}/${encodeURIComponent(viscosidadDesc)}/${existenciaParam}/${selectedMarca}/${selectedFiltro || "0"}/${selectedFiltroAire || "0"}/${selectedFiltroCombustible || "0"}/${selectedFiltroCaja || "0"}/${descuento || "0"}/${encodeURIComponent(idAceitesParam)}/${litrosParam}/${galonesParam}`;
+      const pathParams = `${encodeURIComponent(selected)}/${tipoServicioOracle}/${encodeURIComponent(viscosidadDesc)}/${existenciaParam}/${selectedMarca}/${selectedFiltro || "0"}/${selectedFiltroAire || "0"}/${selectedFiltroCombustible || "0"}/${selectedFiltroCaja || "0"}/${descuentoParam}/${encodeURIComponent(idAceitesParam)}/${litrosParam}/${galonesParam}`;
 
       const url = `${COTIZACION_ENDPOINT}/cotizacion/${pathParams}`;
 
-      // Logs detallados para debugging
+      // Logs detallados para debugging y Postman
       console.log("🔗 ===== ENDPOINT FINAL DE COTIZACIÓN =====");
       console.log("URL COMPLETA:", url);
-      console.log("\n📋 PARÁMETROS ENVIADOS:");
+      console.log("\n📋 PARÁMETROS PARA POSTMAN:");
+      console.log("modelo:", selected, `(${typeof selected})`);
+      console.log("tipoServicio:", tipoServicioOracle, `(${typeof tipoServicioOracle})`);
+      console.log("viscosidad:", viscosidadDesc, `(${typeof viscosidadDesc})`);
+      console.log("existencia:", existenciaParam, `(${typeof existenciaParam})`);
+      console.log("idMarca:", selectedMarca, `(${typeof selectedMarca})`);
+      console.log("idMarcaFiltroAceite:", selectedFiltro || "0", `(${typeof (selectedFiltro || "0")})`);
+      console.log("idMarcaFiltroAire:", selectedFiltroAire || "0", `(${typeof (selectedFiltroAire || "0")})`);
+      console.log("idMarcaFiltroCombustible:", selectedFiltroCombustible || "0", `(${typeof (selectedFiltroCombustible || "0")})`);
+      console.log("idMarcaFiltroCaja:", selectedFiltroCaja || "0", `(${typeof (selectedFiltroCaja || "0")})`);
+      console.log("descuento:", descuentoParam, `(${typeof descuentoParam})`);
+      console.log("idAceites:", idAceitesParam, `(${typeof idAceitesParam})`);
+      console.log("cantidadLitros:", litrosParam, `(${typeof litrosParam})`);
+      console.log("cantidadGalones:", galonesParam, `(${typeof galonesParam})`);
+      console.log("\n📋 RESUMEN PARÁMETROS:");
       console.log({
         modelo: selected,
-        tipoServicio: `${tipoServicioOracle} (${tipoServicio})`,
+        tipoServicio: tipoServicioOracle,
         viscosidad: viscosidadDesc,
-        existencia: existenciaParam === "1" ? "Solo Stock" : "Todos",
+        existencia: existenciaParam === "1" ? "Solo Stock (1)" : "Todos (0)",
         idMarca: selectedMarca,
         filtros: {
           aceite: selectedFiltro || "0",
@@ -478,7 +493,7 @@ export default function Cotizador() {
           combustible: selectedFiltroCombustible || "0",
           caja: selectedFiltroCaja || "0",
         },
-        descuento: `${descuento || "0"}%`,
+        descuento: descuentoParam,
         aceites: {
           ids: idAceitesParam,
           cantidad: selectedAceites.length,
