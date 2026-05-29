@@ -4,6 +4,7 @@ import { X, Download, Copy, Check, Loader2 } from 'lucide-react';
 import { toJpeg } from 'html-to-image';
 import { API_BASE } from '@/lib/config';
 import { type QuotationData } from '@/lib/quotationCanvas';
+import logo from '@/assets/lubrimec-logo.png';
 
 interface ApiAceite {
   id: number;
@@ -115,6 +116,7 @@ function PriceBlock({ lista, desc, size = 'sm' }: { lista?: number; desc?: numbe
 export default function QuotationModal({
   isOpen,
   onClose,
+  data,
   cantidadLitros,
   cantidadGalones,
   aceitesSeleccionados,
@@ -212,6 +214,12 @@ export default function QuotationModal({
   const imgUrl = (id: number) =>
     `${API_BASE}/josegalvez/paginaweb/articulosimg/${id}`;
 
+  const fechaActual = new Intl.DateTimeFormat('es-PY', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -223,11 +231,11 @@ export default function QuotationModal({
           className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur px-6 py-4">
+          <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-card/95 backdrop-blur px-6 py-4">
             <h2 className="text-xl font-bold text-foreground">Cotización</h2>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-secondary transition"
+              className="absolute right-6 p-1.5 rounded-lg hover:bg-secondary transition"
               aria-label="Cerrar"
             >
               <X className="w-5 h-5" />
@@ -235,6 +243,23 @@ export default function QuotationModal({
           </div>
 
           <div ref={captureRef} className="p-6 space-y-6 bg-card">
+            {/* Encabezado: logo a la izquierda, vehículo y fecha a la derecha */}
+            <div className="flex items-center justify-between gap-3 pb-2">
+              <div className="flex items-center gap-3">
+                <img src={logo} alt="Lubrimec" className="h-20 w-auto object-contain" />
+                <div className="leading-tight">
+                  <p className="text-lg font-extrabold text-foreground">Lubrimec</p>
+                  <p className="text-xs text-muted-foreground">Lubricantes y Filtros</p>
+                </div>
+              </div>
+              <div className="text-right">
+                {data?.modelo && (
+                  <p className="text-base font-bold text-foreground">{data.modelo}</p>
+                )}
+                <p className="text-xs text-muted-foreground">{fechaActual}</p>
+              </div>
+            </div>
+
             {/* Resumen: cantidad y descuento */}
             <div className="rounded-xl border border-border bg-secondary/40 px-4 py-3 text-center">
               <p className="text-sm text-foreground">
@@ -252,10 +277,10 @@ export default function QuotationModal({
             {/* Marcas de filtros */}
             {filtrosList.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3">Filtros</h3>
-                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3 text-center">Filtros</h3>
+                <div className="flex flex-wrap justify-center gap-3">
                   {filtrosList.map(({ key, tipo, filtro }) => (
-                    <div key={key} className="space-y-1.5">
+                    <div key={key} className="w-[calc(33.333%-0.5rem)] sm:w-[calc(25%-0.5625rem)] space-y-1.5">
                       <ProductImage
                         src={filtro!.idArticulo ? imgUrl(filtro!.idArticulo) : undefined}
                         alt={filtro!.nombre}
@@ -279,8 +304,8 @@ export default function QuotationModal({
             {/* Marcas de aceites */}
             {aceites.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3">Aceites</h3>
-                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3 text-center">Aceites</h3>
+                <div className="flex flex-wrap justify-center gap-3">
                   {aceites.map((a) => {
                     const p = aceitePrecios.get(a.id);
                     // Fallback: aceite no devuelto por la cotización → precio bruto del catálogo
@@ -290,7 +315,7 @@ export default function QuotationModal({
                     const totalLista = p?.totalLista ?? (bruto != null ? bruto + filtrosListaSum : undefined);
                     const totalDesc = p?.totalDesc ?? (bruto != null ? conDesc(bruto) + filtrosDescSum : undefined);
                     return (
-                      <div key={a.id} className="space-y-1.5">
+                      <div key={a.id} className="w-[calc(33.333%-0.5rem)] sm:w-[calc(25%-0.5625rem)] space-y-1.5">
                         <ProductImage src={imgUrl(a.id)} alt={a.nombre} />
                         <p className="text-xs text-center text-foreground leading-tight break-words">
                           {a.nombre}
@@ -310,6 +335,16 @@ export default function QuotationModal({
                 </div>
               </div>
             )}
+
+            {/* Nota legal */}
+            <div className="border-t border-border pt-4 text-center space-y-0.5">
+              <p className="text-[11px] font-medium text-foreground">
+                Presupuesto válido por 5 días a partir de la fecha de emisión.
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Los precios y promociones no aplican los días domingos ni feriados.
+              </p>
+            </div>
           </div>
 
           {/* Acciones */}
