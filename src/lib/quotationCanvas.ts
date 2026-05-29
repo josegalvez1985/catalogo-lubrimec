@@ -449,9 +449,9 @@ function drawQuoteFooter(ctx: CanvasRenderingContext2D, totalH: number) {
   ctx.fillStyle = QUOTE.TEXT_MUTED;
   ctx.font = '20px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Cotización válida por 5 días', w / 2, fy);
-  ctx.fillText('Sujeta a disponibilidad de stock', w / 2, fy + 32);
-  ctx.fillText('Precios no aplican domingos ni feriados', w / 2, fy + 64);
+  ctx.fillText('Presupuesto válido por 5 días a partir de la fecha de emisión.', w / 2, fy);
+  ctx.fillText('Los precios y promociones no aplican los días domingos ni feriados.', w / 2, fy + 32);
+  ctx.fillText('Sujeto a disponibilidad de stock.', w / 2, fy + 64);
   ctx.textAlign = 'left';
 }
 

@@ -10,7 +10,7 @@ import {
   RefreshCw,
   X,
   ChevronDown,
-  Image as ImageIcon,
+  Calculator,
 } from "lucide-react";
 import QuotationModal from "@/components/QuotationModal";
 import type { QuotationData } from "@/lib/quotationCanvas";
@@ -156,6 +156,7 @@ export default function Cotizador() {
 
   // Filtra aceites cuyo stock cubra la cantidad pedida según su unidad (LT→litros, GAL→galones)
   const filtrarPorStock = (id: number) => {
+    if (existencia === "todos") return true; // mostrar todos, sin controlar cantidades
     const info = stockPorId.get(id);
     if (!info) return true; // sin dato de catálogo, no filtrar
     const litros = parseFloat(cantidadLitros || "0") || 0;
@@ -1362,14 +1363,11 @@ export default function Cotizador() {
                   </>
                 ) : (
                   <>
-                    <ImageIcon className="w-6 h-6" />
+                    <Calculator className="w-6 h-6" />
                     Generar Cotización
                   </>
                 )}
               </button>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Crea imágenes optimizadas para compartir en redes sociales
-              </p>
             </motion.div>
           )}
 

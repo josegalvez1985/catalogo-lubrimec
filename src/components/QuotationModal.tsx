@@ -344,6 +344,9 @@ export default function QuotationModal({
               <p className="text-[11px] text-muted-foreground">
                 Los precios y promociones no aplican los días domingos ni feriados.
               </p>
+              <p className="text-[11px] text-muted-foreground">
+                Sujeto a disponibilidad de stock.
+              </p>
             </div>
           </div>
 
