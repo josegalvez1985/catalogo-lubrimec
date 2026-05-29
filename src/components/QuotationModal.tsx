@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Copy, Check, Loader2 } from 'lucide-react';
-import { toJpeg } from 'html-to-image';
+import { toBlob } from 'html-to-image';
 import { API_BASE } from '@/lib/config';
 import { type QuotationData } from '@/lib/quotationCanvas';
 import logo from '@/assets/lubrimec-logo.png';
@@ -80,17 +80,6 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
 
 const fmt = (v: number) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(v))}`;
 
-// El portapapeles no acepta JPEG; reconvertir a PNG manteniendo el render.
-async function jpegBlobToPng(jpeg: Blob): Promise<Blob> {
-  const bitmap = await createImageBitmap(jpeg);
-  const canvas = document.createElement('canvas');
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(bitmap, 0, 0);
-  return new Promise((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
-}
-
 function PriceBlock({ lista, desc, size = 'sm' }: { lista?: number; desc?: number; size?: 'sm' | 'lg' }) {
   if (lista == null || lista <= 0) return null;
   const tieneDesc = desc != null && desc > 0 && desc < lista;
@@ -127,31 +116,52 @@ export default function QuotationModal({
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const generarJpeg = async () => {
+  // pixelRatio dinámico: maximiza la calidad sin superar los límites de canvas
+  // del navegador (lado máx ~16384px y área máx ~256MP en iOS/Safari). Con muchos
+  // objetos el nodo crece y un ratio fijo desbordaría el canvas, dejándolo en blanco.
+  const calcPixelRatio = (node: HTMLElement) => {
+    const { width, height } = node.getBoundingClientRect();
+    if (!width || !height) return 2.5;
+
+    const MAX_SIDE = 16384; // límite de ancho/alto de canvas
+    const MAX_AREA = 16_000_000; // ~16MP de margen seguro para iOS/Safari
+    const TARGET = 2.5; // calidad HD deseada
+
+    const ratioBySide = Math.min(MAX_SIDE / width, MAX_SIDE / height);
+    const ratioByArea = Math.sqrt(MAX_AREA / (width * height));
+
+    // Nunca subir de TARGET ni bajar de 1 (mínimo aceptable)
+    return Math.max(1, Math.min(TARGET, ratioBySide, ratioByArea));
+  };
+
+  const generarPng = async () => {
     if (!captureRef.current) return null;
     // Respetar el tema actual: usar el fondo real del modal (claro u oscuro)
     const bg = getComputedStyle(captureRef.current).backgroundColor || '#ffffff';
-    return toJpeg(captureRef.current, {
-      quality: 0.95,
-      pixelRatio: 2.5, // HD
+    // PNG sin pérdida: copiar y descargar comparten exactamente el mismo blob,
+    // así ambas salidas tienen idéntica calidad. Sin cacheBust para reutilizar
+    // la caché del navegador en vez de re-descargar las imágenes desde la API.
+    return toBlob(captureRef.current, {
+      pixelRatio: calcPixelRatio(captureRef.current),
       backgroundColor: bg,
-      cacheBust: true,
     });
   };
 
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const url = await generarJpeg();
-      if (!url) return;
+      const png = await generarPng();
+      if (!png) return;
+      const url = URL.createObjectURL(png);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cotizacion-lubrimec-${Date.now()}.jpg`;
+      a.download = `cotizacion-lubrimec-${Date.now()}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (e) {
-      console.error('Error generando JPEG:', e);
+      console.error('Error generando PNG:', e);
     } finally {
       setDownloading(false);
     }
@@ -160,11 +170,8 @@ export default function QuotationModal({
   const handleCopy = async () => {
     setCopying(true);
     try {
-      const url = await generarJpeg();
-      if (!url) return;
-      const blob = await (await fetch(url)).blob();
-      // El portapapeles no acepta JPEG; convertir a PNG
-      const png = await jpegBlobToPng(blob);
+      const png = await generarPng();
+      if (!png) return;
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
