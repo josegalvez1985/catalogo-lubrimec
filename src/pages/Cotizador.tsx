@@ -1119,9 +1119,15 @@ export default function Cotizador() {
                   <input
                     type="number"
                     inputMode="decimal"
-                    step="0.01"
+                    step="1"
+                    min="0"
+                    max="100"
                     value={descuento}
-                    onChange={(e) => setDescuento(e.target.value)}
+                    onChange={(e) => {
+                      const n = e.target.value.replace(/\D/g, "");
+                      if (n === "") return setDescuento("");
+                      setDescuento(String(Math.min(100, parseInt(n, 10))));
+                    }}
                     placeholder="0"
                     className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
@@ -1141,9 +1147,37 @@ export default function Cotizador() {
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-primary" /> Productos
               </h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Seleccioná los productos que deseas cotizar
-              </p>
+              <div className="flex items-center justify-between gap-2 mb-6">
+                <p className="text-sm text-muted-foreground">
+                  Seleccioná los productos que deseas cotizar
+                </p>
+                {!aceitesLoading &&
+                  aceites.filter((a) => filtrarPorStock(a.id_articulo)).length > 0 && (
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedAceites(
+                            aceites
+                              .filter((a) => filtrarPorStock(a.id_articulo))
+                              .map((a) => a.id_articulo)
+                          )
+                        }
+                        className="text-xs font-semibold text-primary hover:underline"
+                      >
+                        Marcar todos
+                      </button>
+                      <span className="text-xs text-muted-foreground">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAceites([])}
+                        className="text-xs font-semibold text-muted-foreground hover:underline"
+                      >
+                        Desmarcar todos
+                      </button>
+                    </div>
+                  )}
+              </div>
               {aceitesLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
