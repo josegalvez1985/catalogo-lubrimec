@@ -13,6 +13,7 @@ interface Props {
     tiene_imagen?: number;
     stock?: number | null;
     precio?: number | null;
+    precioLista?: number | null;
   };
   searchQuery?: string;
 }
@@ -124,9 +125,21 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
       <div className="flex items-end justify-between mt-2">
         <div>
           {articulo.precio != null && (
-            <p className="text-lg font-bold text-primary">
-              Gs. {new Intl.NumberFormat("es-PY").format(articulo.precio)}
-            </p>
+            <>
+              {articulo.precioLista != null && articulo.precioLista > articulo.precio && (
+                <p className="text-xs text-muted-foreground line-through">
+                  Precio lista: Gs. {new Intl.NumberFormat("es-PY").format(articulo.precioLista)}
+                </p>
+              )}
+              <p className="text-lg font-bold text-primary">
+                Gs. {new Intl.NumberFormat("es-PY").format(articulo.precio)}
+              </p>
+              {articulo.precioLista != null && articulo.precioLista > articulo.precio && (
+                <p className="text-xs font-semibold text-emerald-400">
+                  Ahorrás Gs. {new Intl.NumberFormat("es-PY").format(articulo.precioLista - articulo.precio)}
+                </p>
+              )}
+            </>
           )}
           {articulo.stock != null && articulo.stock > 0 ? (
             <span className="mt-1 inline-block text-xs font-semibold text-emerald-400">

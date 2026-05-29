@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl -v --max-time 5 \"https://oracleapex.com/ords/josegalvez/paginaweb/cotizaModelos\")"
+      "Bash(curl -v --max-time 5 \"https://oracleapex.com/ords/josegalvez/paginaweb/cotizaModelos\")",
+      "Bash(curl -s \"https://oracleapex.com/ords/josegalvez/paginaweb/filtroaceite/ChevroletAgile2011\")",
+      "Bash(curl -s -w \"\\\\n[HTTP %{http_code} | %{time_total}s]\\\\n\" \"https://oracleapex.com/ords/josegalvez/paginaweb/filtroaceite/ChevroletAgile2011\")",
+      "Bash(curl -s -m 30 \"https://oracleapex.com/ords/josegalvez/paginaweb/articulossinimg?id_articulo=482\")",
+      "Bash(curl -s -m 60 \"https://oracleapex.com/ords/josegalvez/paginaweb/articulossinimg?id_articulo=482\" -w \"\\\\n[HTTP %{http_code} %{time_total}s]\")"
     ]
   }
 }

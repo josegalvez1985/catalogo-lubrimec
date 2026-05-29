@@ -249,9 +249,21 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
               <div className="flex items-end justify-between gap-4">
                 {articulo.precio != null ? (
-                  <p className="text-2xl font-bold text-primary">
-                    Gs. {new Intl.NumberFormat("es-PY").format(articulo.precio)}
-                  </p>
+                  <div>
+                    {articulo.precioLista != null && articulo.precioLista > articulo.precio && (
+                      <p className="text-sm text-muted-foreground line-through">
+                        Precio lista: Gs. {new Intl.NumberFormat("es-PY").format(articulo.precioLista)}
+                      </p>
+                    )}
+                    <p className="text-2xl font-bold text-primary">
+                      Gs. {new Intl.NumberFormat("es-PY").format(articulo.precio)}
+                    </p>
+                    {articulo.precioLista != null && articulo.precioLista > articulo.precio && (
+                      <p className="text-sm font-semibold text-emerald-400">
+                        Ahorrás Gs. {new Intl.NumberFormat("es-PY").format(articulo.precioLista - articulo.precio)}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">Precio no disponible</p>
                 )}

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import QuotationModal from "@/components/QuotationModal";
 import type { QuotationData } from "@/lib/quotationCanvas";
+import { useArticulos } from "@/hooks/useArticulos";
 
 // CORS Proxy para desarrollo (comentar en producción)
 const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
@@ -54,21 +55,25 @@ type AceitesResponse = { items: ApiAceite[] };
 type ApiFiltroAceite = {
   descripcion: string;
   id_marca: number;
+  id_articulo?: number;
 };
 type FiltroAceiteResponse = { items: ApiFiltroAceite[] };
 type ApiFiltroAire = {
   descripcion: string;
   id_marca: number;
+  id_articulo?: number;
 };
 type FiltroAireResponse = { items: ApiFiltroAire[] };
 type ApiFiltroCombustible = {
   descripcion: string;
   id_marca: number;
+  id_articulo?: number;
 };
 type FiltroCombustibleResponse = { items: ApiFiltroCombustible[] };
 type ApiFiltroCaja = {
   descripcion: string;
   id_marca: number;
+  id_articulo?: number;
 };
 type FiltroCajaResponse = { items: ApiFiltroCaja[] };
 
@@ -81,6 +86,9 @@ type CotizacionAPIResponse = {
       id: number;
       nombre: string;
       precioBase: number;
+      precioDescuento: number;
+      totalLista: number;
+      totalDescuento: number;
       stock: number;
       unidad: string;
       imagen?: {
@@ -90,10 +98,10 @@ type CotizacionAPIResponse = {
       };
     }>;
     filtros: {
-      aceite?: { id: number; nombre: string; precio: number; imagen?: any };
-      aire?: { id: number; nombre: string; precio: number; imagen?: any };
-      combustible?: { id: number; nombre: string; precio: number; imagen?: any };
-      caja?: { id: number; nombre: string; precio: number; imagen?: any };
+      aceite?: { id: number; idArticulo?: number; nombre: string; precio: number; imagen?: any };
+      aire?: { id: number; idArticulo?: number; nombre: string; precio: number; imagen?: any };
+      combustible?: { id: number; idArticulo?: number; nombre: string; precio: number; imagen?: any };
+      caja?: { id: number; idArticulo?: number; nombre: string; precio: number; imagen?: any };
     };
     totales: {
       sinDescuento: number;
@@ -130,6 +138,32 @@ const parseMonto = (s: string | number): number => {
 };
 
 export default function Cotizador() {
+  const { articulos: catalogoArticulos } = useArticulos();
+  const precioBrutoPorId = useMemo(
+    () => new Map(catalogoArticulos.map((a) => [a.id_articulo, a.precio ?? null])),
+    [catalogoArticulos]
+  );
+  const stockPorId = useMemo(
+    () =>
+      new Map(
+        catalogoArticulos.map((a) => [
+          a.id_articulo,
+          { stock: a.stock ?? 0, unidad: ((a as any).cod_unidad_medida as string) ?? "" },
+        ])
+      ),
+    [catalogoArticulos]
+  );
+
+  // Filtra aceites cuyo stock cubra la cantidad pedida según su unidad (LT→litros, GAL→galones)
+  const filtrarPorStock = (id: number) => {
+    const info = stockPorId.get(id);
+    if (!info) return true; // sin dato de catálogo, no filtrar
+    const litros = parseFloat(cantidadLitros || "0") || 0;
+    const galones = parseFloat(cantidadGalones || "0") || 0;
+    const requerido = info.unidad === "GAL" ? galones : litros;
+    return info.stock >= requerido;
+  };
+
   const [modelos, setModelos] = useState<string[]>([]);
   const [viscosidades, setViscosidades] = useState<ApiViscosidad[]>([]);
   const [marcas, setMarcas] = useState<ApiMarca[]>([]);
@@ -157,7 +191,7 @@ export default function Cotizador() {
   const [selectedViscosidad, setSelectedViscosidad] = useState<number | null>(
     null
   );
-  const [existencia, setExistencia] = useState<Existencia>("todos");
+  const [existencia, setExistencia] = useState<Existencia>("stock");
   const [selectedMarca, setSelectedMarca] = useState<number | null>(null);
   const [selectedAceites, setSelectedAceites] = useState<number[]>([]);
   const [selectedFiltro, setSelectedFiltro] = useState<number | null>(null);
@@ -578,7 +612,12 @@ export default function Cotizador() {
       const aceites = raw.items.map((it) => ({
         id: it.id_articulo,
         nombre: it.articulo.replace(/-\d+$/, "").trim(),
+        // Precio del aceite solo (lista). El descuento se aplica con el % cargado.
         precioBase: it.total_aceite,
+        precioDescuento: descuentoParam > 0 ? it.total_aceite * (1 - descuentoParam / 100) : it.total_aceite,
+        // Total del item con filtros: lista (it.total) y con descuento (it.total_descuento)
+        totalLista: parseMonto(it.total),
+        totalDescuento: parseMonto(it.total_descuento),
         stock: it.stock,
         unidad: it.cod_unidad_medida,
       }));
@@ -587,20 +626,20 @@ export default function Cotizador() {
       if (tipoServicioOracle === "M") {
         if (first.filtro_aceite > 0 && selectedFiltro) {
           const f = filtrosAceite.find((x) => x.id_marca === selectedFiltro);
-          filtros.aceite = { id: selectedFiltro, nombre: f?.descripcion || "Filtro de aceite", precio: first.filtro_aceite };
+          filtros.aceite = { id: selectedFiltro, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de aceite", precio: first.filtro_aceite };
         }
         if (first.filtro_aire > 0 && selectedFiltroAire) {
           const f = filtrosAire.find((x) => x.id_marca === selectedFiltroAire);
-          filtros.aire = { id: selectedFiltroAire, nombre: f?.descripcion || "Filtro de aire", precio: first.filtro_aire };
+          filtros.aire = { id: selectedFiltroAire, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de aire", precio: first.filtro_aire };
         }
         if (first.filtro_combustible > 0 && selectedFiltroCombustible) {
           const f = filtrosCombustible.find((x) => x.id_marca === selectedFiltroCombustible);
-          filtros.combustible = { id: selectedFiltroCombustible, nombre: f?.descripcion || "Filtro de combustible", precio: first.filtro_combustible };
+          filtros.combustible = { id: selectedFiltroCombustible, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de combustible", precio: first.filtro_combustible };
         }
       } else if (tipoServicioOracle === "C") {
         if (first.filtro_caja > 0 && selectedFiltroCaja) {
           const f = filtrosCaja.find((x) => x.id_marca === selectedFiltroCaja);
-          filtros.caja = { id: selectedFiltroCaja, nombre: f?.descripcion || "Filtro de caja", precio: first.filtro_caja };
+          filtros.caja = { id: selectedFiltroCaja, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de caja", precio: first.filtro_caja };
         }
       }
 
@@ -1027,6 +1066,70 @@ export default function Cotizador() {
             </motion.div>
           )}
 
+          {/* Cantidad y Descuento */}
+          {selected && selectedViscosidad && selectedMarca && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-10"
+            >
+              <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-primary" /> Cantidad y Descuento
+              </h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Especificá cantidades y descuento
+              </p>
+              <div className="grid grid-cols-3 gap-4">
+                {/* Litros */}
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-2 block">
+                    Litros
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    value={cantidadLitros}
+                    onChange={(e) => setCantidadLitros(e.target.value)}
+                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+
+                {/* Galones */}
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-2 block">
+                    Galones
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    value={cantidadGalones}
+                    onChange={(e) => setCantidadGalones(e.target.value)}
+                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+
+                {/* Descuento */}
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-2 block">
+                    Descuento %
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={descuento}
+                    onChange={(e) => setDescuento(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Aceites */}
           {selected && selectedViscosidad && selectedMarca && (
             <motion.div
@@ -1045,13 +1148,13 @@ export default function Cotizador() {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 </div>
-              ) : aceites.length === 0 ? (
+              ) : aceites.filter((a) => filtrarPorStock(a.id_articulo)).length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground">
                   No hay productos disponibles
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {aceites.map((aceite) => (
+                  {aceites.filter((a) => filtrarPorStock(a.id_articulo)).map((aceite) => (
                     <label
                       key={aceite.id_articulo}
                       className="flex items-center gap-3 p-3 rounded-xl border-2 border-border bg-card hover:bg-secondary/40 cursor-pointer transition-colors"
@@ -1202,70 +1305,6 @@ export default function Cotizador() {
                   </div>
                 );
               })()}
-            </motion.div>
-          )}
-
-          {/* Cantidad y Descuento */}
-          {selected && selectedAceites.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-10"
-            >
-              <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-primary" /> Cantidad y Descuento
-              </h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Especificá cantidades y descuento
-              </p>
-              <div className="grid grid-cols-3 gap-4">
-                {/* Litros */}
-                <div>
-                  <label className="text-xs font-semibold text-foreground mb-2 block">
-                    Litros
-                  </label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.1"
-                    value={cantidadLitros}
-                    onChange={(e) => setCantidadLitros(e.target.value)}
-                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-
-                {/* Galones */}
-                <div>
-                  <label className="text-xs font-semibold text-foreground mb-2 block">
-                    Galones
-                  </label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.1"
-                    value={cantidadGalones}
-                    onChange={(e) => setCantidadGalones(e.target.value)}
-                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-
-                {/* Descuento */}
-                <div>
-                  <label className="text-xs font-semibold text-foreground mb-2 block">
-                    Descuento %
-                  </label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    value={descuento}
-                    onChange={(e) => setDescuento(e.target.value)}
-                    placeholder="0"
-                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-              </div>
             </motion.div>
           )}
 
@@ -1442,6 +1481,15 @@ export default function Cotizador() {
           isOpen={showQuotationModal}
           onClose={() => setShowQuotationModal(false)}
           data={quotationDataForModal || quotationData!}
+          cantidadLitros={cantidadLitros || "4"}
+          cantidadGalones={cantidadGalones || "1"}
+          aceitesSeleccionados={aceites
+            .filter((a) => selectedAceites.includes(a.id_articulo))
+            .map((a) => ({
+              id: a.id_articulo,
+              nombre: a.articulo.replace(/-\d+$/, "").trim(),
+              precioBruto: precioBrutoPorId.get(a.id_articulo) ?? null,
+            }))}
           apiData={cotizacionAPI?.resultado ? { resultado: cotizacionAPI.resultado } : undefined}
         />
       )}

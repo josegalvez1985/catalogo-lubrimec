@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Loader2, X } from 'lucide-react';
-import {
-  buildQuotationCanvas,
-  type QuotationData,
-  type ThemeId,
-  type FormatId,
-} from '@/lib/quotationCanvas';
+import { X, Download, Copy, Check, Loader2 } from 'lucide-react';
+import { toJpeg } from 'html-to-image';
+import { API_BASE } from '@/lib/config';
+import { type QuotationData } from '@/lib/quotationCanvas';
 
 interface ApiAceite {
   id: number;
   nombre: string;
   precioBase: number;
+  precioDescuento: number;
+  totalLista: number;
+  totalDescuento: number;
   stock: number;
   unidad: string;
   imagen?: {
@@ -23,6 +23,7 @@ interface ApiAceite {
 
 interface ApiFiltro {
   id: number;
+  idArticulo?: number;
   nombre: string;
   precio: number;
   imagen?: any;
@@ -47,90 +48,169 @@ interface QuotationModalProps {
   isOpen: boolean;
   onClose: () => void;
   data: QuotationData;
+  cantidadLitros?: string;
+  cantidadGalones?: string;
+  aceitesSeleccionados?: Array<{ id: number; nombre: string; precioBruto?: number | null }>;
   apiData?: {
     resultado: ApiCotizacionResultado;
   };
 }
 
-const THEMES: Array<{ id: ThemeId; name: string; color: string }> = [
-  { id: 'dark', name: 'Oscuro', color: 'bg-slate-900' },
-  { id: 'light', name: 'Claro', color: 'bg-amber-50' },
-  { id: 'green', name: 'Verde', color: 'bg-emerald-900' },
-  { id: 'blue', name: 'Azul', color: 'bg-blue-900' },
-  { id: 'purple', name: 'Púrpura', color: 'bg-purple-900' },
-  { id: 'pink', name: 'Rosa', color: 'bg-pink-900' },
-  { id: 'red', name: 'Rojo', color: 'bg-red-900' },
-  { id: 'teal', name: 'Turquesa', color: 'bg-teal-900' },
-  { id: 'indigo', name: 'Índigo', color: 'bg-indigo-900' },
-  { id: 'orange', name: 'Naranja', color: 'bg-orange-900' },
-];
+function ProductImage({ src, alt }: { src?: string; alt: string }) {
+  const [error, setError] = useState(false);
+  return (
+    <div className="aspect-square w-full rounded-xl border border-border bg-white overflow-hidden flex items-center justify-center">
+      {src && !error ? (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          onError={() => setError(true)}
+          className="w-full h-full object-contain"
+        />
+      ) : (
+        <span className="px-2 text-center text-xs font-medium text-muted-foreground">
+          {alt}
+        </span>
+      )}
+    </div>
+  );
+}
 
-const FORMATS: Array<{ id: FormatId; name: string; ratio: string; label: string }> = [
-  { id: 'quote', name: 'Cotización', ratio: 'aspect-auto', label: 'Formato vertical' },
-  { id: 'story', name: 'Historia', ratio: 'aspect-[9/16]', label: 'Instagram Story' },
-  { id: 'post', name: 'Post', ratio: 'aspect-square', label: 'Instagram Post' },
-  { id: 'reel', name: 'Reel', ratio: 'aspect-[9/16]', label: 'Instagram Reel' },
-];
+const fmt = (v: number) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(v))}`;
+
+// El portapapeles no acepta JPEG; reconvertir a PNG manteniendo el render.
+async function jpegBlobToPng(jpeg: Blob): Promise<Blob> {
+  const bitmap = await createImageBitmap(jpeg);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(bitmap, 0, 0);
+  return new Promise((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
+}
+
+function PriceBlock({ lista, desc, size = 'sm' }: { lista?: number; desc?: number; size?: 'sm' | 'lg' }) {
+  if (lista == null || lista <= 0) return null;
+  const tieneDesc = desc != null && desc > 0 && desc < lista;
+  const diff = tieneDesc ? lista - desc! : 0;
+  const listaCls = size === 'lg' ? 'text-xs' : 'text-[10px]';
+  const precioCls = size === 'lg' ? 'text-lg font-extrabold' : 'text-xs font-bold';
+  const ahorroCls = size === 'lg' ? 'text-xs font-bold' : 'text-[9px] font-semibold';
+  return (
+    <div className="text-center leading-tight">
+      {tieneDesc ? (
+        <>
+          <p className={`${listaCls} text-muted-foreground line-through`}>{fmt(lista)}</p>
+          <p className={`${precioCls} text-foreground`}>{fmt(desc!)}</p>
+          <p className={`${ahorroCls} text-emerald-600`}>Ahorrás {fmt(diff)}</p>
+        </>
+      ) : (
+        <p className={`${precioCls} text-foreground`}>{fmt(lista)}</p>
+      )}
+    </div>
+  );
+}
 
 export default function QuotationModal({
   isOpen,
   onClose,
-  data,
+  cantidadLitros,
+  cantidadGalones,
+  aceitesSeleccionados,
   apiData,
 }: QuotationModalProps) {
-  const [selectedTheme, setSelectedTheme] = useState<ThemeId>('dark');
-  const [selectedFormat, setSelectedFormat] = useState<FormatId>('quote');
-  const [previewSrc, setPreviewSrc] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [copying, setCopying] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // Regenerar preview cuando cambia tema o formato
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const generatePreview = async () => {
-      setLoading(true);
-      try {
-        const blob = await buildQuotationCanvas(data, selectedFormat, selectedTheme);
-        const url = URL.createObjectURL(blob);
-        setPreviewSrc(url);
-
-        // Limpiar URL anterior si existe
-        return () => URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error('Error generando preview:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const cleanup = generatePreview();
-    return () => {
-      cleanup?.then((fn) => fn?.());
-    };
-  }, [isOpen, selectedTheme, selectedFormat, data]);
+  const generarJpeg = async () => {
+    if (!captureRef.current) return null;
+    // Respetar el tema actual: usar el fondo real del modal (claro u oscuro)
+    const bg = getComputedStyle(captureRef.current).backgroundColor || '#ffffff';
+    return toJpeg(captureRef.current, {
+      quality: 0.95,
+      pixelRatio: 2.5, // HD
+      backgroundColor: bg,
+      cacheBust: true,
+    });
+  };
 
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const blob = await buildQuotationCanvas(data, selectedFormat, selectedTheme);
-      const url = URL.createObjectURL(blob);
+      const url = await generarJpeg();
+      if (!url) return;
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cotizacion-${data.modelo.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.png`;
+      a.download = `cotizacion-lubrimec-${Date.now()}.jpg`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error descargando:', error);
+    } catch (e) {
+      console.error('Error generando JPEG:', e);
     } finally {
       setDownloading(false);
     }
   };
 
+  const handleCopy = async () => {
+    setCopying(true);
+    try {
+      const url = await generarJpeg();
+      if (!url) return;
+      const blob = await (await fetch(url)).blob();
+      // El portapapeles no acepta JPEG; convertir a PNG
+      const png = await jpegBlobToPng(blob);
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      console.error('Error copiando imagen:', e);
+    } finally {
+      setCopying(false);
+    }
+  };
+
   if (!isOpen) return null;
+
+  const aceites = aceitesSeleccionados ?? apiData?.resultado.aceites ?? [];
+  const filtros = apiData?.resultado.filtros ?? {};
+
+  const pct = apiData?.resultado.totales.porcentajeDescuento ?? 0;
+
+  // Precios por id_articulo del aceite (vienen de la cotización).
+  // lista/desc = aceite solo; totalLista/totalDesc = aceite + filtros.
+  const aceitePrecios = new Map<
+    number,
+    { lista: number; desc: number; totalLista: number; totalDesc: number }
+  >(
+    (apiData?.resultado.aceites ?? []).map((a) => [
+      a.id,
+      {
+        lista: a.precioBase,
+        desc: a.precioDescuento,
+        totalLista: a.totalLista,
+        totalDesc: a.totalDescuento,
+      },
+    ])
+  );
+  const filtrosList = [
+    { key: 'aceite', tipo: 'Filtro de aceite', filtro: filtros.aceite },
+    { key: 'aire', tipo: 'Filtro de aire', filtro: filtros.aire },
+    { key: 'combustible', tipo: 'Filtro de combustible', filtro: filtros.combustible },
+    { key: 'caja', tipo: 'Filtro de caja', filtro: filtros.caja },
+  ].filter((f) => f.filtro);
+
+  // Suma de filtros (lista y con descuento) para el total por aceite
+  const filtrosListaSum = filtrosList.reduce((s, f) => s + (f.filtro!.precio || 0), 0);
+  const filtrosDescSum = pct > 0 ? filtrosListaSum * (1 - pct / 100) : filtrosListaSum;
+
+  const conDesc = (v: number) => (pct > 0 ? v * (1 - pct / 100) : v);
+
+  const imgUrl = (id: number) =>
+    `${API_BASE}/josegalvez/paginaweb/articulosimg/${id}`;
 
   return (
     <AnimatePresence>
@@ -144,7 +224,7 @@ export default function QuotationModal({
         >
           {/* Header */}
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur px-6 py-4">
-            <h2 className="text-xl font-bold text-foreground">Generar Cotización</h2>
+            <h2 className="text-xl font-bold text-foreground">Cotización</h2>
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-secondary transition"
@@ -154,77 +234,108 @@ export default function QuotationModal({
             </button>
           </div>
 
-          <div className="p-6 space-y-6">
-            {/* Selector de tema */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-3">Tema de colores (10 opciones)</h3>
-              <div className="grid grid-cols-5 gap-2">
-                {THEMES.map((theme) => (
-                  <button
-                    key={theme.id}
-                    onClick={() => setSelectedTheme(theme.id)}
-                    className={`relative p-3 rounded-xl border-2 transition-all ${
-                      selectedTheme === theme.id
-                        ? 'border-primary bg-primary/10 shadow-md'
-                        : 'border-border bg-card hover:border-primary/40'
-                    }`}
-                  >
-                    <div className={`${theme.color} w-full h-10 rounded-lg mb-1.5`} />
-                    <p className="text-xs font-medium text-foreground text-center leading-tight">{theme.name}</p>
-                  </button>
-                ))}
+          <div ref={captureRef} className="p-6 space-y-6 bg-card">
+            {/* Resumen: cantidad y descuento */}
+            <div className="rounded-xl border border-border bg-secondary/40 px-4 py-3 text-center">
+              <p className="text-sm text-foreground">
+                Cantidad: <span className="font-semibold">{cantidadLitros} L</span>
+                {' / '}
+                <span className="font-semibold">{cantidadGalones} Gal</span>
+              </p>
+              {pct > 0 && (
+                <p className="text-sm text-emerald-600 font-semibold">
+                  Descuento otorgado: {pct}%
+                </p>
+              )}
+            </div>
+
+            {/* Marcas de filtros */}
+            {filtrosList.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-3">Filtros</h3>
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                  {filtrosList.map(({ key, tipo, filtro }) => (
+                    <div key={key} className="space-y-1.5">
+                      <ProductImage
+                        src={filtro!.idArticulo ? imgUrl(filtro!.idArticulo) : undefined}
+                        alt={filtro!.nombre}
+                      />
+                      <p className="text-[10px] text-center font-semibold uppercase tracking-wide text-primary">
+                        {tipo}
+                      </p>
+                      <p className="text-xs text-center text-foreground leading-tight break-words">
+                        {filtro!.nombre}
+                      </p>
+                      <PriceBlock
+                        lista={filtro!.precio}
+                        desc={pct > 0 ? filtro!.precio * (1 - pct / 100) : undefined}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Selector de formato */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-3">Formato</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {FORMATS.map((fmt) => (
-                  <button
-                    key={fmt.id}
-                    onClick={() => setSelectedFormat(fmt.id)}
-                    className={`relative p-4 rounded-2xl border-2 transition-all ${
-                      selectedFormat === fmt.id
-                        ? 'border-primary bg-primary/10 shadow-md'
-                        : 'border-border bg-card hover:border-primary/40'
-                    }`}
-                  >
-                    <p className="text-sm font-semibold text-foreground mb-1">{fmt.name}</p>
-                    <p className="text-xs text-muted-foreground">{fmt.label}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{fmt.ratio}</p>
-                  </button>
-                ))}
+            {/* Marcas de aceites */}
+            {aceites.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-3">Aceites</h3>
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                  {aceites.map((a) => {
+                    const p = aceitePrecios.get(a.id);
+                    // Fallback: aceite no devuelto por la cotización → precio bruto del catálogo
+                    const bruto = 'precioBruto' in a ? a.precioBruto ?? undefined : undefined;
+                    const listaAceite = p?.lista ?? bruto;
+                    const descAceite = p?.desc ?? (bruto != null ? conDesc(bruto) : undefined);
+                    const totalLista = p?.totalLista ?? (bruto != null ? bruto + filtrosListaSum : undefined);
+                    const totalDesc = p?.totalDesc ?? (bruto != null ? conDesc(bruto) + filtrosDescSum : undefined);
+                    return (
+                      <div key={a.id} className="space-y-1.5">
+                        <ProductImage src={imgUrl(a.id)} alt={a.nombre} />
+                        <p className="text-xs text-center text-foreground leading-tight break-words">
+                          {a.nombre}
+                        </p>
+                        <PriceBlock lista={listaAceite} desc={descAceite} />
+                        {totalLista != null && totalLista > 0 && (
+                          <div className="mt-1 pt-1.5 border-t border-border">
+                            <p className="text-[10px] text-center font-semibold uppercase tracking-wide text-primary">
+                              Total con filtros
+                            </p>
+                            <PriceBlock lista={totalLista} desc={totalDesc} size="lg" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
+          </div>
 
-
-            {/* Botón de descarga */}
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={handleDownload}
-                disabled={downloading || loading}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition disabled:opacity-50"
-              >
-                {downloading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Descargando...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-5 h-5" />
-                    Descargar imagen
-                  </>
-                )}
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 px-6 py-3 rounded-xl border-2 border-border text-foreground font-semibold hover:bg-secondary transition"
-              >
-                Cerrar
-              </button>
-            </div>
+          {/* Acciones */}
+          <div className="sticky bottom-0 flex gap-3 border-t border-border bg-card/95 backdrop-blur px-6 py-4">
+            <button
+              onClick={handleDownload}
+              disabled={downloading || copying}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition disabled:opacity-50"
+            >
+              {downloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+              Descargar
+            </button>
+            <button
+              onClick={handleCopy}
+              disabled={downloading || copying}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border text-foreground font-semibold hover:bg-secondary transition disabled:opacity-50"
+            >
+              {copying ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : copied ? (
+                <Check className="w-5 h-5 text-emerald-500" />
+              ) : (
+                <Copy className="w-5 h-5" />
+              )}
+              {copied ? 'Copiado' : 'Copiar'}
+            </button>
           </div>
         </motion.div>
       </div>

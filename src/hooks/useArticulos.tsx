@@ -15,6 +15,7 @@ export interface Articulo {
   tiene_imagen?: number;
   stock?: number | null;
   precio?: number | null;
+  precioLista?: number | null;
 }
 
 async function fetchArticulos(): Promise<Articulo[]> {
