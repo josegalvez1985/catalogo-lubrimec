@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Lubrimec, Lubricantes y Filtros</title>
+    <script>
+      // SPA redirect para GitHub Pages.
+      // GitHub Pages no conoce las rutas de React Router, así que al recargar o
+      // entrar directo a una sub-ruta (p. ej. /catalogo-lubrimec/cotizador)
+      // devuelve este 404.html. Aquí convertimos la ruta en un query y
+      // redirigimos al index.html, que React Router resuelve sin recargar.
+      // pathSegmentsToKeep = 1 por el subdirectorio del proyecto en Pages.
+      var pathSegmentsToKeep = 1;
+
+      var l = window.location;
+      l.replace(
+        l.protocol +
+          "//" +
+          l.hostname +
+          (l.port ? ":" + l.port : "") +
+          l.pathname
+            .split("/")
+            .slice(0, 1 + pathSegmentsToKeep)
+            .join("/") +
+          "/?/" +
+          l.pathname
+            .slice(1)
+            .split("/")
+            .slice(pathSegmentsToKeep)
+            .join("/")
+            .replace(/&/g, "~and~") +
+          (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+          l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

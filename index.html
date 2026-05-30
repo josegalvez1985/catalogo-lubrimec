@@ -9,6 +9,28 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <!-- Página en español -->
     <title>Lubrimec, Lubricantes y Filtros</title>
+
+    <!-- SPA redirect: decodifica la ruta que 404.html guardó en el query y
+         restaura la URL real antes de que arranque React Router. -->
+    <script>
+      (function () {
+        var l = window.location;
+        if (l.search[1] === "/") {
+          var decoded = l.search
+            .slice(1)
+            .split("&")
+            .map(function (s) {
+              return s.replace(/~and~/g, "&");
+            })
+            .join("?");
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      })();
+    </script>
     <meta name="description" content="Lubrimec, Lubricantes y Filtros: tu lubricentro de confianza en Capiatá. Catálogo de aceites, filtros, grasas y servicio de mantenimiento automotriz." />
     <meta name="author" content="Lubrimec" />
 
@@ -45,7 +67,7 @@
       "image": "https://josegalvez.github.io/catalogo-lubrimec/assets/lubrimec-logo.png"
     }
     </script>
-    <script type="module" crossorigin src="/catalogo-lubrimec/assets/index-DN7PfLFJ.js"></script>
+    <script type="module" crossorigin src="/catalogo-lubrimec/assets/index-uZSAeSyR.js"></script>
     <link rel="stylesheet" crossorigin href="/catalogo-lubrimec/assets/index-Bf1466AC.css">
   </head>
 
