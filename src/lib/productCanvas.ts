@@ -96,6 +96,38 @@ export async function buildProductCanvas(
     STOCK_H + GAP +
     FOOTER_H;
 
+  // ── 4.5. Paleta según el tema activo (claro/oscuro) ────────────────────────
+  // El tema se aplica con la clase `dark` en <html> (ver useTheme).
+  const isDark =
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark");
+
+  const palette = isDark
+    ? {
+        bgTop: "#18120a",
+        bgMid: "#111111",
+        bgBot: "#0d0d0d",
+        desc: "#f9fafb",
+        marca: "#9ca3af",
+        divider: "rgba(255,255,255,0.07)",
+        imgShadow: "#2a2a2a",
+        footerBg: "rgba(255,255,255,0.04)",
+        footerText: "#6b7280",
+        listaText: "#9ca3af",
+      }
+    : {
+        bgTop: "#ffffff",
+        bgMid: "#f8fafc",
+        bgBot: "#f1f5f9",
+        desc: "#0f172a",
+        marca: "#64748b",
+        divider: "rgba(0,0,0,0.08)",
+        imgShadow: "#e2e8f0",
+        footerBg: "rgba(0,0,0,0.03)",
+        footerText: "#64748b",
+        listaText: "#94a3b8",
+      };
+
   // ── 5. Crear canvas ────────────────────────────────────────────────────────
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { alpha: false })!;
@@ -105,9 +137,9 @@ export async function buildProductCanvas(
 
   // ── 6. Fondo con degradado ─────────────────────────────────────────────────
   const bg = ctx.createLinearGradient(0, 0, 0, TOTAL_H);
-  bg.addColorStop(0, "#18120a");
-  bg.addColorStop(0.5, "#111111");
-  bg.addColorStop(1, "#0d0d0d");
+  bg.addColorStop(0, palette.bgTop);
+  bg.addColorStop(0.5, palette.bgMid);
+  bg.addColorStop(1, palette.bgBot);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, TOTAL_H);
 
@@ -146,7 +178,7 @@ export async function buildProductCanvas(
   const imgY = HEADER_H + IMG_MARGIN_TOP;
 
   // Sombra suave
-  ctx.fillStyle = "#2a2a2a";
+  ctx.fillStyle = palette.imgShadow;
   ctx.fillRect(imgX - 4, imgY - 4, IMG_SIZE + 8, IMG_SIZE + 8);
 
   // Fondo blanco
@@ -170,7 +202,7 @@ export async function buildProductCanvas(
   ctx.textAlign = "left";
 
   // Descripción
-  ctx.fillStyle = "#f9fafb";
+  ctx.fillStyle = palette.desc;
   ctx.font = `bold ${DESC_FONT_SIZE}px Arial, sans-serif`;
   for (const lineText of descLines) {
     ctx.fillText(lineText, PAD, y);
@@ -180,7 +212,7 @@ export async function buildProductCanvas(
 
   // Marca
   if (articulo.descripcion_marca) {
-    ctx.fillStyle = "#9ca3af";
+    ctx.fillStyle = palette.marca;
     ctx.font = `${MARCA_FONT_SIZE}px Arial, sans-serif`;
     ctx.fillText(articulo.descripcion_marca.toUpperCase(), PAD, y);
     y += MARCA_H + GAP;
@@ -188,7 +220,7 @@ export async function buildProductCanvas(
 
   // Línea divisoria
   y += GAP;
-  ctx.strokeStyle = "rgba(255,255,255,0.07)";
+  ctx.strokeStyle = palette.divider;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(PAD, y);
@@ -202,13 +234,13 @@ export async function buildProductCanvas(
 
     // Precio de lista tachado (sólo si hay descuento)
     if (tieneDescuento) {
-      ctx.fillStyle = "#9ca3af";
+      ctx.fillStyle = palette.listaText;
       ctx.font = `30px Arial, sans-serif`;
       const listaText = `Precio lista: Gs. ${nf.format(articulo.precioLista!)}`;
       ctx.fillText(listaText, PAD, y);
       // Línea de tachado sobre el texto
       const listaW = ctx.measureText(listaText).width;
-      ctx.strokeStyle = "#9ca3af";
+      ctx.strokeStyle = palette.listaText;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(PAD, y + 16);
@@ -279,10 +311,10 @@ export async function buildProductCanvas(
   ctx.fillStyle = "#d97706";
   ctx.fillRect(0, y, W, 2);
 
-  ctx.fillStyle = "rgba(255,255,255,0.04)";
+  ctx.fillStyle = palette.footerBg;
   ctx.fillRect(0, y + 2, W, FOOTER_H - 2);
 
-  ctx.fillStyle = "#6b7280";
+  ctx.fillStyle = palette.footerText;
   ctx.font = "22px Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
