@@ -2,6 +2,7 @@ export interface CanvasProductData {
   descripcion_articulo: string;
   descripcion_marca?: string | null;
   precio?: number | null;
+  precioLista?: number | null;
   stock?: number | null;
 }
 
@@ -42,7 +43,22 @@ export async function buildProductCanvas(
   const DESC_LINE_H = 54;
   const MARCA_FONT_SIZE = 30;
   const MARCA_H = articulo.descripcion_marca ? 46 : 0;
-  const PRICE_H = articulo.precio != null ? 86 : 0;
+
+  // Descuento: hay precio de lista mayor al precio actual.
+  const tieneDescuento =
+    articulo.precio != null &&
+    articulo.precioLista != null &&
+    articulo.precioLista > articulo.precio;
+  const ahorro = tieneDescuento ? articulo.precioLista! - articulo.precio! : 0;
+
+  // Alturas del bloque de precio: línea de lista tachada (arriba) + precio (66px)
+  // + línea de ahorro (abajo) cuando hay descuento.
+  const LISTA_H = 40;
+  const AHORRO_H = 40;
+  const PRICE_H =
+    articulo.precio != null
+      ? 86 + (tieneDescuento ? LISTA_H + AHORRO_H : 0)
+      : 0;
   const STOCK_H = 70;
   const GAP = 20;
   const FOOTER_H = 68;
@@ -182,10 +198,40 @@ export async function buildProductCanvas(
 
   // Precio
   if (articulo.precio != null) {
+    const nf = new Intl.NumberFormat("es-PY");
+
+    // Precio de lista tachado (sólo si hay descuento)
+    if (tieneDescuento) {
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = `30px Arial, sans-serif`;
+      const listaText = `Precio lista: Gs. ${nf.format(articulo.precioLista!)}`;
+      ctx.fillText(listaText, PAD, y);
+      // Línea de tachado sobre el texto
+      const listaW = ctx.measureText(listaText).width;
+      ctx.strokeStyle = "#9ca3af";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(PAD, y + 16);
+      ctx.lineTo(PAD + listaW, y + 16);
+      ctx.stroke();
+      y += LISTA_H;
+    }
+
+    // Precio actual (destacado)
     ctx.fillStyle = "#d97706";
     ctx.font = `bold 66px Arial Black, Arial, sans-serif`;
-    ctx.fillText(`Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)}`, PAD, y);
-    y += PRICE_H + GAP;
+    ctx.fillText(`Gs. ${nf.format(articulo.precio)}`, PAD, y);
+    y += 86;
+
+    // Ahorro (sólo si hay descuento)
+    if (tieneDescuento) {
+      ctx.fillStyle = "#10b981";
+      ctx.font = `bold 30px Arial, sans-serif`;
+      ctx.fillText(`Ahorrás Gs. ${nf.format(ahorro)}`, PAD, y);
+      y += AHORRO_H;
+    }
+
+    y += GAP;
   }
 
   // Badge de stock con forma pill
