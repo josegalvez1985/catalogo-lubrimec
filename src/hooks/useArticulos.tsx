@@ -48,7 +48,6 @@ export function useArticulos() {
   const query = useQuery({
     queryKey: ["articulos"],
     queryFn: fetchArticulos,
-    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 

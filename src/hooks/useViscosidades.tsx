@@ -23,7 +23,6 @@ export function useViscosidades() {
   const query = useQuery({
     queryKey: ["viscosidades"],
     queryFn: fetchViscosidades,
-    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 

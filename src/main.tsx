@@ -4,10 +4,17 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch((error) => {
-      console.error("Service worker registration failed:", error);
-    });
+// La app NO debe cachear nada: siempre consultar la red en cada navegación.
+// Desregistramos cualquier Service Worker previo (PWA antigua) y borramos sus
+// cachés, para que dispositivos que ya tenían el SW instalado dejen de servir
+// contenido viejo desde la caché.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) registration.unregister();
+  });
+}
+if ("caches" in window) {
+  caches.keys().then((keys) => {
+    for (const key of keys) caches.delete(key);
   });
 }

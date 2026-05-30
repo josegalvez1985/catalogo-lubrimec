@@ -134,15 +134,23 @@ export default function QuotationModal({
     return Math.max(1, Math.min(TARGET, ratioBySide, ratioByArea));
   };
 
-  const generarPng = async () => {
+  // anchoObjetivo: si se indica, fija el ancho final de la imagen en px.
+  // Para descargar usamos máxima resolución (calcPixelRatio). Para copiar y
+  // pegar en WhatsApp conviene un ancho acotado (~1080px): WhatsApp recomprime
+  // y redimensiona toda imagen pegada, y un PNG enorme termina más borroso que
+  // uno ajustado a un tamaño que respeta sin degradar tanto el texto.
+  const generarPng = async (anchoObjetivo?: number) => {
     if (!captureRef.current) return null;
     // Respetar el tema actual: usar el fondo real del modal (claro u oscuro)
     const bg = getComputedStyle(captureRef.current).backgroundColor || '#ffffff';
-    // PNG sin pérdida: copiar y descargar comparten exactamente el mismo blob,
-    // así ambas salidas tienen idéntica calidad. Sin cacheBust para reutilizar
-    // la caché del navegador en vez de re-descargar las imágenes desde la API.
+    const anchoReal = captureRef.current.getBoundingClientRect().width || 1;
+    const pixelRatio = anchoObjetivo
+      ? Math.min(calcPixelRatio(captureRef.current), anchoObjetivo / anchoReal)
+      : calcPixelRatio(captureRef.current);
+    // Sin cacheBust para reutilizar la caché del navegador en vez de
+    // re-descargar las imágenes desde la API.
     return toBlob(captureRef.current, {
-      pixelRatio: calcPixelRatio(captureRef.current),
+      pixelRatio,
       backgroundColor: bg,
     });
   };
@@ -170,7 +178,8 @@ export default function QuotationModal({
   const handleCopy = async () => {
     setCopying(true);
     try {
-      const png = await generarPng();
+      // Ancho acotado para que WhatsApp no la recomprima tan agresivamente.
+      const png = await generarPng(1080);
       if (!png) return;
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
       setCopied(true);

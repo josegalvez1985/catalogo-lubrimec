@@ -14,7 +14,18 @@ import Cotizador from "./pages/Cotizador";
 import Contacto from "./pages/Contacto";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Sin caché: cada montaje/navegación re-consulta los endpoints en fresco.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 0, // los datos se consideran obsoletos al instante
+      gcTime: 0, // no retener nada en memoria al desmontar
+      refetchOnMount: "always",
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
+  },
+});
 
 function ScrollToTop() {
   const { pathname } = useLocation();

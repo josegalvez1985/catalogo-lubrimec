@@ -25,7 +25,6 @@ export function useRubros() {
   const query = useQuery({
     queryKey: ["rubros"],
     queryFn: fetchRubros,
-    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 

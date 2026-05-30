@@ -30,7 +30,6 @@ export function useMarcas() {
   const query = useQuery({
     queryKey: ["marcas"],
     queryFn: fetchMarcas,
-    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 

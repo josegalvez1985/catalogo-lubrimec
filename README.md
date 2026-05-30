@@ -1,20 +1,21 @@
 # Lubrimec — Sitio Web
 
-Sitio web e-commerce/catálogo de **LUBRIMEC**, lubricentro ubicado en Capiatá, Paraguay. Construido como Single Page Application (SPA) con soporte PWA (instalable y con caché offline).
+Sitio web e-commerce/catálogo de **LUBRIMEC**, lubricentro ubicado en Capiatá, Paraguay. Construido como Single Page Application (SPA) con React.
 
 ## Descripción
 
-Sitio web multi-página con navegación moderna que incluye landing, información institucional, catálogo de productos con búsqueda y filtros, cotizador interactivo de mantenimiento y formulario de contacto. Consume datos remotos desde una API de Oracle APEX y usa un fallback local de rubros cuando la API no está disponible.
+Sitio web multi-página con navegación moderna que incluye landing, información institucional, catálogo de productos con búsqueda y filtros, cotizador interactivo de mantenimiento y formulario de contacto. Consume datos remotos desde una API de Oracle APEX y usa un fallback local de rubros, marcas y viscosidades cuando la API no está disponible.
+
+> **Sin caché ni almacenamiento de datos.** La app está configurada para consultar siempre los endpoints en fresco: React Query no retiene datos entre navegaciones y no hay Service Worker. Lo único que se persiste es la preferencia de tema (claro/oscuro) en `localStorage`.
 
 ## Tecnologías
 
 - **Vite** + **React 18** + **TypeScript**
 - **Tailwind CSS** + **shadcn/ui** (Radix UI primitives)
 - **React Router v6** (navegación multi-página)
-- **React Query** (server state)
+- **React Query** (server state, configurado sin caché)
 - **Framer Motion** (animaciones)
 - **Lucide Icons**
-- **PWA** (Service Worker + Web Manifest)
 
 ## Páginas y rutas
 
@@ -38,26 +39,33 @@ src/
 │   ├── Footer.tsx           # Footer compartido
 │   ├── ArticleCard.tsx      # Card de producto en el catálogo
 │   ├── ProductModal.tsx     # Modal de detalle de producto
-│   └── PwaInstallButton.tsx # Botón de instalación PWA
+│   ├── QuotationModal.tsx   # Modal de cotización con imagen exportable
+│   └── PwaInstallButton.tsx # Botón de instalación (en desuso: ya no hay Service Worker)
 ├── pages/
 │   ├── Home.tsx             # Landing
 │   ├── Nosotros.tsx         # Acerca de la empresa
 │   ├── Servicios.tsx        # Detalle de servicios
 │   ├── Catalogo.tsx         # Catálogo de productos (búsqueda + filtros)
-│   ├── Cotizador.tsx        # Cotizador de mantenimiento (4 pasos)
+│   ├── Cotizador.tsx        # Cotizador de mantenimiento (multi-paso)
 │   ├── Contacto.tsx         # Contacto + FAQ
 │   └── NotFound.tsx
 ├── hooks/
 │   ├── useArticulos.tsx     # Fetch de productos
 │   ├── useRubros.tsx        # Fetch de rubros (con fallback local)
-│   ├── useMarcas.tsx        # Fetch de marcas
-│   └── useViscosidades.tsx  # Fetch de viscosidades
+│   ├── useMarcas.tsx        # Fetch de marcas (con fallback local)
+│   ├── useViscosidades.tsx  # Fetch de viscosidades (con fallback local)
+│   ├── useTheme.tsx         # Tema claro/oscuro (persiste en localStorage)
+│   └── useVisitCounter.tsx  # Contador de visitas (counterapi.dev)
 ├── lib/
 │   ├── config.ts            # API_BASE y WHATSAPP_NUMBER
 │   ├── productCanvas.ts     # Genera imagen para compartir productos
+│   ├── quotationCanvas.ts   # Tipos/utilidades de la imagen de cotización
 │   └── utils.ts
 └── data/
-    └── rubros.ts            # Fallback local de rubros
+    ├── rubros.ts            # Fallback local de rubros
+    ├── marcas.ts            # Fallback local de marcas
+    ├── viscosidades.ts      # Fallback local de viscosidades
+    └── products.ts          # Datos de ejemplo de productos
 ```
 
 ## Cómo ejecutar el proyecto
@@ -139,8 +147,13 @@ VITE_API_BASE=https://oracleapex.com/ords
 - Sincronización de filtros con URL (`?q=&rubro=&marca=&viscosidad=`).
 
 ### Cotizador (`/cotizador`)
-- Wizard de 4 pasos: vehículo → tipo de aceite → extras → cotización final.
-- Multiplicador de precio por cilindrada del motor.
+- Wizard de pasos: vehículo → viscosidad/marca → existencia → cantidad y descuento → aceites → filtros → cotización.
+- Selector de **existencia**: "Con Stock" filtra por disponibilidad; "Todos" muestra todo sin controlar stock.
+- Campo de **descuento %** con valor por defecto **30** (editable, 0–100).
+- Consulta los precios y el descuento aplicado a la API de Oracle APEX.
+- Modal de cotización con imagen exportable:
+  - **Descargar** PNG en máxima resolución (`pixelRatio` dinámico para no exceder los límites de canvas del navegador).
+  - **Copiar** al portapapeles con ancho acotado (~1080px) para que WhatsApp no recomprima tan agresivamente el texto al pegar.
 - Genera mensaje formateado y abre WhatsApp con la cotización detallada.
 
 ### Contacto (`/contacto`)
@@ -148,10 +161,10 @@ VITE_API_BASE=https://oracleapex.com/ords
 - Mapa de Google Maps embebido.
 - Sección de FAQ con acordeón animado.
 
-### PWA
-- Instalable en móvil y desktop (botón de instalación contextual).
-- Service Worker (`public/sw.js`) con estrategia network-first para HTML y cache-first para assets.
-- Soporte iOS (instrucciones para "Añadir a pantalla de inicio").
+### Datos siempre frescos (sin caché)
+- **React Query** configurado con `staleTime: 0` y `gcTime: 0` (`refetchOnMount: "always"`): cada montaje y navegación re-consulta los endpoints.
+- **No hay Service Worker.** `public/sw.js` es un "kill switch" que se auto-desinstala y borra cualquier caché de PWA antigua en dispositivos que ya la tenían instalada; `src/main.tsx` también desregistra Service Workers previos y limpia `caches` al cargar.
+- Lo único que se persiste localmente es la preferencia de tema (`localStorage`) y una marca de sesión del contador de visitas (`sessionStorage`).
 
 ## Despliegue
 
@@ -159,7 +172,14 @@ El sitio se despliega automáticamente en GitHub Pages mediante GitHub Actions (
 
 **URL de producción:** [https://josegalvez.github.io/catalogo-lubrimec/](https://josegalvez.github.io/catalogo-lubrimec/)
 
-> El `basename` del router está fijado a `/catalogo-lubrimec` en `src/App.tsx`. Si cambia el path de despliegue, también hay que actualizar `vite.config.ts` (`base`) y `public/manifest.webmanifest` (`start_url` / `scope`).
+> El `basename` del router está fijado a `/catalogo-lubrimec` en `src/App.tsx`. Si cambia el path de despliegue, también hay que actualizar `vite.config.ts` (`base`).
+
+### Routing en GitHub Pages (404 SPA)
+
+GitHub Pages no conoce las rutas de React Router, por lo que al recargar o entrar directo a una sub-ruta (p. ej. `/catalogo-lubrimec/cotizador`) devolvería 404. Para resolverlo:
+
+- `public/404.html` guarda la ruta solicitada en un query y redirige al `index.html`.
+- Un script en el `<head>` de `index.html` decodifica ese query y restaura la URL real antes de que arranque React Router.
 
 ## Notas adicionales
 
