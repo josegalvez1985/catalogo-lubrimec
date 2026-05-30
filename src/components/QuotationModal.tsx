@@ -89,15 +89,31 @@ function PriceBlock({
 }: {
   lista?: number;
   desc?: number;
-  size?: 'sm' | 'lg';
+  // *Big = variantes ampliadas para la imagen generada (más legibles en celular).
+  size?: 'sm' | 'lg' | 'smBig' | 'lgBig';
   align?: 'left' | 'center' | 'right';
 }) {
   if (lista == null || lista <= 0) return null;
   const tieneDesc = desc != null && desc > 0 && desc < lista;
   const diff = tieneDesc ? lista - desc! : 0;
-  const listaCls = size === 'lg' ? 'text-xs' : 'text-[10px]';
-  const precioCls = size === 'lg' ? 'text-lg font-extrabold' : 'text-xs font-bold';
-  const ahorroCls = size === 'lg' ? 'text-xs font-bold' : 'text-[9px] font-semibold';
+  const listaCls =
+    size === 'lgBig' ? 'text-lg' : size === 'smBig' ? 'text-base' : size === 'lg' ? 'text-xs' : 'text-[10px]';
+  const precioCls =
+    size === 'lgBig'
+      ? 'text-3xl font-extrabold'
+      : size === 'smBig'
+        ? 'text-xl font-bold'
+        : size === 'lg'
+          ? 'text-lg font-extrabold'
+          : 'text-xs font-bold';
+  const ahorroCls =
+    size === 'lgBig'
+      ? 'text-base font-bold'
+      : size === 'smBig'
+        ? 'text-sm font-semibold'
+        : size === 'lg'
+          ? 'text-xs font-bold'
+          : 'text-[9px] font-semibold';
   const alignCls = align === 'right' ? 'text-right' : align === 'left' ? 'text-left' : 'text-center';
   return (
     <div className={`${alignCls} leading-tight`}>
@@ -105,7 +121,7 @@ function PriceBlock({
         <>
           <p className={`${listaCls} text-muted-foreground line-through`}>{fmt(lista)}</p>
           <p className={`${precioCls} text-foreground`}>{fmt(desc!)}</p>
-          <p className={`${ahorroCls} text-emerald-600`}>Ahorrás {fmt(diff)}</p>
+          <p className={`${ahorroCls} text-emerald-600 dark:text-emerald-400`}>Ahorrás {fmt(diff)}</p>
         </>
       ) : (
         <p className={`${precioCls} text-foreground`}>{fmt(lista)}</p>
@@ -151,7 +167,7 @@ export default function QuotationModal({
   // Ancho FIJO del contenido (las filas se renderizan siempre a este ancho, donde
   // el grid de 3 columnas se ve equilibrado y sin huecos). El alto es automático:
   // la imagen se ajusta a la altura real del contenido según la cantidad de objetos.
-  const CONTENT_WIDTH = 820;
+  const CONTENT_WIDTH = 1100;
 
   // anchoObjetivo: si se indica, fija el ancho final de la imagen en px (tope).
   // Por defecto las tres acciones (compartir, copiar, descargar) usan máxima
@@ -333,7 +349,7 @@ export default function QuotationModal({
                 )}
                 <p className="text-xs text-muted-foreground">{fechaActual}</p>
                 {pct > 0 && (
-                  <p className="text-sm text-emerald-600 font-semibold">
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
                     Descuento otorgado: {pct}%
                   </p>
                 )}
@@ -343,36 +359,72 @@ export default function QuotationModal({
             {/* Marcas de filtros: fila por producto → imagen | nombre | precio */}
             {filtrosList.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-2 text-center">
+                <h3 className={`font-bold text-foreground mb-2 text-center ${capturing ? 'text-2xl' : 'text-sm'}`}>
                   {filtrosList.length === 1 ? 'Filtro' : 'Filtros'}
                 </h3>
                 <div className="space-y-1.5">
-                  {filtrosList.map(({ key, tipo, filtro }) => (
-                    <div
-                      key={key}
-                      className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3 rounded-xl border border-border bg-secondary/20 p-2"
-                    >
-                      <div className={`shrink-0 ${capturing ? 'w-32' : 'w-24 sm:w-32'}`}>
-                        <ProductImage
-                          src={filtro!.idArticulo ? imgUrl(filtro!.idArticulo) : undefined}
-                          alt={filtro!.nombre}
-                        />
+                  {filtrosList.map(({ key, tipo, filtro }) => {
+                    const filtroDesc = pct > 0 ? filtro!.precio * (1 - pct / 100) : undefined;
+                    const filtroImg = filtro!.idArticulo ? imgUrl(filtro!.idArticulo) : undefined;
+
+                    // ── Captura: tarjeta premium ──
+                    if (capturing) {
+                      return (
+                        <div
+                          key={key}
+                          className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-lg flex items-stretch"
+                        >
+                          <div className="shrink-0 p-3">
+                            <div className="w-44 rounded-xl bg-white border border-border overflow-hidden">
+                              <ProductImage src={filtroImg} alt={filtro!.nombre} />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0 py-4 pr-3 flex flex-col justify-center gap-1">
+                            <span className="text-sm font-bold uppercase tracking-widest text-primary">
+                              {tipo}
+                            </span>
+                            <p className="text-xl font-extrabold text-foreground leading-tight break-words">
+                              {filtro!.nombre}
+                            </p>
+                          </div>
+                          <div className="shrink-0 self-stretch bg-primary/10 border-l-2 border-primary px-5 py-4 flex flex-col items-end justify-center gap-1 min-w-[12rem]">
+                            {filtroDesc != null && filtroDesc < filtro!.precio && (
+                              <span className="text-base text-muted-foreground line-through">{fmt(filtro!.precio)}</span>
+                            )}
+                            <span className="text-3xl font-extrabold text-foreground leading-none">
+                              {fmt(filtroDesc ?? filtro!.precio)}
+                            </span>
+                            {filtroDesc != null && filtroDesc < filtro!.precio && (
+                              <span className="mt-1 inline-block rounded-full bg-emerald-500 px-3 py-1 text-sm font-bold text-white">
+                                Ahorrás {fmt(filtro!.precio - filtroDesc)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // ── Pantalla ──
+                    return (
+                      <div
+                        key={key}
+                        className="grid grid-cols-[auto_1fr_auto] items-center rounded-xl border border-border bg-secondary/20 gap-2 sm:gap-3 p-2"
+                      >
+                        <div className="shrink-0 w-24 sm:w-32">
+                          <ProductImage src={filtroImg} alt={filtro!.nombre} />
+                        </div>
+                        <div className="min-w-0 leading-tight">
+                          <p className="font-semibold uppercase tracking-wide text-primary text-[10px]">
+                            {tipo}
+                          </p>
+                          <p className="text-foreground break-words text-xs">{filtro!.nombre}</p>
+                        </div>
+                        <div className="shrink-0">
+                          <PriceBlock lista={filtro!.precio} desc={filtroDesc} align="right" size="sm" />
+                        </div>
                       </div>
-                      <div className="min-w-0 leading-tight">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
-                          {tipo}
-                        </p>
-                        <p className="text-xs text-foreground break-words">{filtro!.nombre}</p>
-                      </div>
-                      <div className="shrink-0">
-                        <PriceBlock
-                          lista={filtro!.precio}
-                          desc={pct > 0 ? filtro!.precio * (1 - pct / 100) : undefined}
-                          align="right"
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -380,7 +432,7 @@ export default function QuotationModal({
             {/* Marcas de aceites: fila por producto → imagen | precio aceite | total con filtros */}
             {aceites.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-2 text-center">
+                <h3 className={`font-bold text-foreground mb-2 text-center ${capturing ? 'text-2xl' : 'text-sm'}`}>
                   {aceites.length === 1 ? 'Aceite' : 'Aceites'}
                 </h3>
                 <div className="space-y-1.5">
@@ -393,38 +445,86 @@ export default function QuotationModal({
                     const totalLista = p?.totalLista ?? (bruto != null ? bruto + filtrosListaSum : undefined);
                     const totalDesc = p?.totalDesc ?? (bruto != null ? conDesc(bruto) + filtrosDescSum : undefined);
                     const tieneTotal = totalLista != null && totalLista > 0;
+                    const ahorroTotal =
+                      totalLista != null && totalDesc != null && totalDesc < totalLista
+                        ? totalLista - totalDesc
+                        : 0;
+
+                    // ── Captura: tarjeta premium impactante ──
+                    if (capturing) {
+                      return (
+                        <div
+                          key={a.id}
+                          className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-lg flex items-stretch"
+                        >
+                          {/* Imagen protagonista */}
+                          <div className="shrink-0 p-3">
+                            <div className="w-44 rounded-xl bg-white border border-border overflow-hidden">
+                              <ProductImage src={imgUrl(a.id)} alt={a.nombre} />
+                            </div>
+                          </div>
+
+                          {/* Nombre + precio del aceite */}
+                          <div className="flex-1 min-w-0 py-4 pr-3 flex flex-col justify-center gap-1">
+                            <p className="text-xl font-extrabold text-foreground leading-tight break-words">
+                              {a.nombre}
+                            </p>
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                              <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                Aceite
+                              </span>
+                              <PriceBlock lista={listaAceite} desc={descAceite} align="left" size="smBig" />
+                            </div>
+                          </div>
+
+                          {/* Bloque destacado: TOTAL con filtros */}
+                          {tieneTotal && (
+                            <div className="shrink-0 self-stretch bg-primary/10 border-l-2 border-primary px-5 py-4 flex flex-col items-end justify-center gap-1 min-w-[12rem]">
+                              <span className="text-xs font-bold uppercase tracking-widest text-primary">
+                                Total con filtros
+                              </span>
+                              {totalLista != null && totalDesc != null && totalDesc < totalLista && (
+                                <span className="text-base text-muted-foreground line-through">{fmt(totalLista)}</span>
+                              )}
+                              <span className="text-3xl font-extrabold text-foreground leading-none">
+                                {fmt(totalDesc ?? totalLista!)}
+                              </span>
+                              {ahorroTotal > 0 && (
+                                <span className="mt-1 inline-block rounded-full bg-emerald-500 px-3 py-1 text-sm font-bold text-white">
+                                  Ahorrás {fmt(ahorroTotal)}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    // ── Pantalla (no captura): layout responsive existente ──
                     return (
                       <div
                         key={a.id}
-                        className={
-                          capturing
-                            ? 'rounded-xl border border-border bg-secondary/20 p-2 grid grid-cols-[minmax(11rem,1.4fr)_1fr_1fr] items-center gap-3'
-                            : 'rounded-xl border border-border bg-secondary/20 p-2 flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(11rem,1.4fr)_1fr_1fr] sm:items-center sm:gap-3'
-                        }
+                        className="rounded-xl border border-border bg-secondary/20 p-2 flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(11rem,1.4fr)_1fr_1fr] sm:items-center sm:gap-3"
                       >
-                        {/* Columna 1: imagen (alineada a la izquierda) + nombre al lado */}
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`shrink-0 ${capturing ? 'w-32' : 'w-24 sm:w-32'}`}>
+                          <div className="shrink-0 w-24 sm:w-32">
                             <ProductImage src={imgUrl(a.id)} alt={a.nombre} />
                           </div>
-                          <p className="text-xs text-foreground leading-tight break-words min-w-0">
+                          <p className="text-foreground leading-tight break-words min-w-0 font-semibold text-xs">
                             {a.nombre}
                           </p>
                         </div>
-                        {/* Precios: en móvil 2 cols debajo; en captura/≥sm como columnas del grid */}
-                        <div className={capturing ? 'contents' : 'grid grid-cols-2 gap-2 sm:contents'}>
-                          {/* Precio del aceite (centrado) */}
+                        <div className="grid grid-cols-2 gap-2 sm:contents">
                           <div className="leading-tight">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground text-center mb-0.5">
+                            <p className="font-semibold uppercase tracking-wide text-muted-foreground text-center text-[10px] mb-0.5">
                               Aceite
                             </p>
-                            <PriceBlock lista={listaAceite} desc={descAceite} align="center" />
+                            <PriceBlock lista={listaAceite} desc={descAceite} align="center" size="sm" />
                           </div>
-                          {/* Total con filtros (alineado a la derecha) */}
                           <div className="leading-tight">
                             {tieneTotal ? (
                               <>
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-primary text-right mb-0.5">
+                                <p className="font-semibold uppercase tracking-wide text-primary text-right text-[10px] mb-0.5">
                                   Total con filtros
                                 </p>
                                 <PriceBlock lista={totalLista} desc={totalDesc} size="lg" align="right" />
