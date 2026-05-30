@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download, Copy, Check, Loader2 } from 'lucide-react';
+import { X, Download, Copy, Check, Loader2, Share2 } from 'lucide-react';
 import { toBlob } from 'html-to-image';
 import { API_BASE } from '@/lib/config';
 import { type QuotationData } from '@/lib/quotationCanvas';
@@ -49,6 +49,7 @@ interface QuotationModalProps {
   isOpen: boolean;
   onClose: () => void;
   data: QuotationData;
+  /** @deprecated ya no se muestran en la cotización; se mantienen para compatibilidad del llamador */
   cantidadLitros?: string;
   cantidadGalones?: string;
   aceitesSeleccionados?: Array<{ id: number; nombre: string; precioBruto?: number | null }>;
@@ -106,8 +107,6 @@ export default function QuotationModal({
   isOpen,
   onClose,
   data,
-  cantidadLitros,
-  cantidadGalones,
   aceitesSeleccionados,
   apiData,
 }: QuotationModalProps) {
@@ -115,6 +114,15 @@ export default function QuotationModal({
   const [downloading, setDownloading] = useState(false);
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  // Web Share API con archivos: disponible sobre todo en móvil. Cuando existe,
+  // compartir manda el PNG como ARCHIVO a WhatsApp, que NO lo recomprime → se ve
+  // nítido (a diferencia de pegar una imagen copiada, que WhatsApp pasa a JPEG).
+  const canShareFiles =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.canShare === 'function' &&
+    typeof navigator.share === 'function';
 
   // pixelRatio dinámico: maximiza la calidad sin superar los límites de canvas
   // del navegador (lado máx ~16384px y área máx ~256MP en iOS/Safari). Con muchos
@@ -134,25 +142,80 @@ export default function QuotationModal({
     return Math.max(1, Math.min(TARGET, ratioBySide, ratioByArea));
   };
 
-  // anchoObjetivo: si se indica, fija el ancho final de la imagen en px.
-  // Para descargar usamos máxima resolución (calcPixelRatio). Para copiar y
-  // pegar en WhatsApp conviene un ancho acotado (~1080px): WhatsApp recomprime
-  // y redimensiona toda imagen pegada, y un PNG enorme termina más borroso que
-  // uno ajustado a un tamaño que respeta sin degradar tanto el texto.
+  // Relación de aspecto vertical objetivo de la imagen generada (9:16, tipo 1080×1920).
+  // No es un tamaño fijo: la imagen crece o se achica según la cantidad de objetos,
+  // pero siempre conserva esta proporción. El alto/ancho NUNCA estira el contenido;
+  // cuando el contenido es más corto que 9:16 se rellena con fondo arriba/abajo.
+  const ASPECT_W = 9;
+  const ASPECT_H = 16;
+  const CAPTURE_BASE_WIDTH = 1080; // ancho base de layout (más px reales = más nitidez)
+
+  // anchoObjetivo: si se indica, fija el ancho final de la imagen en px (tope).
+  // Por defecto las tres acciones (compartir, copiar, descargar) usan máxima
+  // resolución vía calcPixelRatio. La vía de mejor calidad para WhatsApp es
+  // Compartir (manda el archivo sin recomprimir); Copiar/Descargar sirven el
+  // PNG en alta resolución para otros usos (documentos, email, impresión).
   const generarPng = async (anchoObjetivo?: number) => {
-    if (!captureRef.current) return null;
+    const node = captureRef.current;
+    if (!node) return null;
     // Respetar el tema actual: usar el fondo real del modal (claro u oscuro)
-    const bg = getComputedStyle(captureRef.current).backgroundColor || '#ffffff';
-    const anchoReal = captureRef.current.getBoundingClientRect().width || 1;
+    const bg = getComputedStyle(node).backgroundColor || '#ffffff';
+
+    // --- Forzar proporción 9:16 sólo durante la captura ---
+    // Guardamos los estilos inline que tocamos para restaurarlos exactamente.
+    const prev = {
+      width: node.style.width,
+      paddingTop: node.style.paddingTop,
+      paddingBottom: node.style.paddingBottom,
+      boxSizing: node.style.boxSizing,
+    };
+
+    // Fijamos un ancho de layout estable para que la medición del alto sea
+    // determinística (independiente del ancho actual del modal en pantalla).
+    node.style.boxSizing = 'border-box';
+    node.style.width = `${CAPTURE_BASE_WIDTH}px`;
+
+    // Alto natural del contenido a ese ancho.
+    const naturalHeight = node.getBoundingClientRect().height;
+    // Alto que exige la proporción 9:16 para ese ancho.
+    const targetHeight = (CAPTURE_BASE_WIDTH * ASPECT_H) / ASPECT_W;
+
+    let captureWidth = CAPTURE_BASE_WIDTH;
+    if (naturalHeight <= targetHeight) {
+      // Contenido más corto que 9:16 → rellenar con fondo arriba/abajo.
+      const extra = targetHeight - naturalHeight;
+      const padTop = parseFloat(getComputedStyle(node).paddingTop) || 0;
+      const padBottom = parseFloat(getComputedStyle(node).paddingBottom) || 0;
+      node.style.paddingTop = `${padTop + extra / 2}px`;
+      node.style.paddingBottom = `${padBottom + extra / 2}px`;
+    } else {
+      // Contenido más alto que 9:16 → ensanchar para mantener la proporción
+      // (la imagen resultante es más grande, sin estirar el contenido).
+      captureWidth = (naturalHeight * ASPECT_W) / ASPECT_H;
+      node.style.width = `${captureWidth}px`;
+    }
+
+    // Forzar reflujo y remedir tras los ajustes.
+    const finalWidth = node.getBoundingClientRect().width || 1;
+
     const pixelRatio = anchoObjetivo
-      ? Math.min(calcPixelRatio(captureRef.current), anchoObjetivo / anchoReal)
-      : calcPixelRatio(captureRef.current);
-    // Sin cacheBust para reutilizar la caché del navegador en vez de
-    // re-descargar las imágenes desde la API.
-    return toBlob(captureRef.current, {
-      pixelRatio,
-      backgroundColor: bg,
-    });
+      ? Math.min(calcPixelRatio(node), anchoObjetivo / finalWidth)
+      : calcPixelRatio(node);
+
+    try {
+      // Sin cacheBust para reutilizar la caché del navegador en vez de
+      // re-descargar las imágenes desde la API.
+      return await toBlob(node, {
+        pixelRatio,
+        backgroundColor: bg,
+      });
+    } finally {
+      // Restaurar siempre los estilos para no afectar la vista en pantalla.
+      node.style.width = prev.width;
+      node.style.paddingTop = prev.paddingTop;
+      node.style.paddingBottom = prev.paddingBottom;
+      node.style.boxSizing = prev.boxSizing;
+    }
   };
 
   const handleDownload = async () => {
@@ -178,8 +241,8 @@ export default function QuotationModal({
   const handleCopy = async () => {
     setCopying(true);
     try {
-      // Ancho acotado para que WhatsApp no la recomprima tan agresivamente.
-      const png = await generarPng(1080);
+      // Máxima calidad (sin acotar el ancho).
+      const png = await generarPng();
       if (!png) return;
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
       setCopied(true);
@@ -188,6 +251,38 @@ export default function QuotationModal({
       console.error('Error copiando imagen:', e);
     } finally {
       setCopying(false);
+    }
+  };
+
+  const handleShare = async () => {
+    setSharing(true);
+    try {
+      // Máxima calidad: se comparte como archivo, no se pega, así que no hace
+      // falta acotar el ancho a 1080 (WhatsApp no recomprime un archivo adjunto).
+      const png = await generarPng();
+      if (!png) return;
+      const file = new File([png], `cotizacion-lubrimec-${Date.now()}.png`, {
+        type: 'image/png',
+      });
+      // En móvil con Web Share API → diálogo nativo (WhatsApp recibe el archivo
+      // sin recomprimir). En desktop, donde la API no existe o no acepta archivos,
+      // caemos a descargar el PNG.
+      if (canShareFiles && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Cotización Lubrimec',
+          text: data?.modelo ? `Cotización ${data.modelo}` : 'Cotización Lubrimec',
+        });
+      } else {
+        await handleDownload();
+      }
+    } catch (e) {
+      // El usuario puede cancelar el diálogo de compartir (AbortError): no es error.
+      if ((e as DOMException)?.name !== 'AbortError') {
+        console.error('Error compartiendo imagen:', e);
+      }
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -244,7 +339,7 @@ export default function QuotationModal({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+          className="w-full max-w-3xl rounded-2xl border border-border bg-card shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
           <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-card/95 backdrop-blur px-6 py-4">
@@ -273,55 +368,57 @@ export default function QuotationModal({
                   <p className="text-base font-bold text-foreground">{data.modelo}</p>
                 )}
                 <p className="text-xs text-muted-foreground">{fechaActual}</p>
+                {pct > 0 && (
+                  <p className="text-sm text-emerald-600 font-semibold">
+                    Descuento otorgado: {pct}%
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Resumen: cantidad y descuento */}
-            <div className="rounded-xl border border-border bg-secondary/40 px-4 py-3 text-center">
-              <p className="text-sm text-foreground">
-                Cantidad: <span className="font-semibold">{cantidadLitros} L</span>
-                {' / '}
-                <span className="font-semibold">{cantidadGalones} Gal</span>
-              </p>
-              {pct > 0 && (
-                <p className="text-sm text-emerald-600 font-semibold">
-                  Descuento otorgado: {pct}%
-                </p>
-              )}
-            </div>
-
-            {/* Marcas de filtros */}
+            {/* Marcas de filtros: fila por producto → imagen | nombre | precio */}
             {filtrosList.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3 text-center">Filtros</h3>
-                <div className="flex flex-wrap justify-center gap-3">
+                <h3 className="text-sm font-semibold text-foreground mb-3 text-center">
+                  {filtrosList.length === 1 ? 'Filtro' : 'Filtros'}
+                </h3>
+                <div className="space-y-2">
                   {filtrosList.map(({ key, tipo, filtro }) => (
-                    <div key={key} className="w-[calc(33.333%-0.5rem)] sm:w-[calc(25%-0.5625rem)] space-y-1.5">
-                      <ProductImage
-                        src={filtro!.idArticulo ? imgUrl(filtro!.idArticulo) : undefined}
-                        alt={filtro!.nombre}
-                      />
-                      <p className="text-[10px] text-center font-semibold uppercase tracking-wide text-primary">
-                        {tipo}
-                      </p>
-                      <p className="text-xs text-center text-foreground leading-tight break-words">
-                        {filtro!.nombre}
-                      </p>
-                      <PriceBlock
-                        lista={filtro!.precio}
-                        desc={pct > 0 ? filtro!.precio * (1 - pct / 100) : undefined}
-                      />
+                    <div
+                      key={key}
+                      className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-border bg-secondary/20 p-2"
+                    >
+                      <div className="w-28 shrink-0">
+                        <ProductImage
+                          src={filtro!.idArticulo ? imgUrl(filtro!.idArticulo) : undefined}
+                          alt={filtro!.nombre}
+                        />
+                      </div>
+                      <div className="min-w-0 leading-tight">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+                          {tipo}
+                        </p>
+                        <p className="text-xs text-foreground break-words">{filtro!.nombre}</p>
+                      </div>
+                      <div className="shrink-0">
+                        <PriceBlock
+                          lista={filtro!.precio}
+                          desc={pct > 0 ? filtro!.precio * (1 - pct / 100) : undefined}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Marcas de aceites */}
+            {/* Marcas de aceites: fila por producto → imagen | precio aceite | total con filtros */}
             {aceites.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3 text-center">Aceites</h3>
-                <div className="flex flex-wrap justify-center gap-3">
+                <h3 className="text-sm font-semibold text-foreground mb-3 text-center">
+                  {aceites.length === 1 ? 'Aceite' : 'Aceites'}
+                </h3>
+                <div className="space-y-2">
                   {aceites.map((a) => {
                     const p = aceitePrecios.get(a.id);
                     // Fallback: aceite no devuelto por la cotización → precio bruto del catálogo
@@ -330,21 +427,41 @@ export default function QuotationModal({
                     const descAceite = p?.desc ?? (bruto != null ? conDesc(bruto) : undefined);
                     const totalLista = p?.totalLista ?? (bruto != null ? bruto + filtrosListaSum : undefined);
                     const totalDesc = p?.totalDesc ?? (bruto != null ? conDesc(bruto) + filtrosDescSum : undefined);
+                    const tieneTotal = totalLista != null && totalLista > 0;
                     return (
-                      <div key={a.id} className="w-[calc(33.333%-0.5rem)] sm:w-[calc(25%-0.5625rem)] space-y-1.5">
-                        <ProductImage src={imgUrl(a.id)} alt={a.nombre} />
-                        <p className="text-xs text-center text-foreground leading-tight break-words">
-                          {a.nombre}
-                        </p>
-                        <PriceBlock lista={listaAceite} desc={descAceite} />
-                        {totalLista != null && totalLista > 0 && (
-                          <div className="mt-1 pt-1.5 border-t border-border">
-                            <p className="text-[10px] text-center font-semibold uppercase tracking-wide text-primary">
-                              Total con filtros
-                            </p>
-                            <PriceBlock lista={totalLista} desc={totalDesc} size="lg" />
+                      <div
+                        key={a.id}
+                        className="grid grid-cols-[minmax(10rem,1.4fr)_1fr_1fr] items-center gap-3 rounded-xl border border-border bg-secondary/20 p-2"
+                      >
+                        {/* Columna 1: imagen + nombre al lado */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-28 shrink-0">
+                            <ProductImage src={imgUrl(a.id)} alt={a.nombre} />
                           </div>
-                        )}
+                          <p className="text-xs text-foreground leading-tight break-words min-w-0">
+                            {a.nombre}
+                          </p>
+                        </div>
+                        {/* Columna 2: precio del aceite */}
+                        <div className="leading-tight">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground text-center mb-0.5">
+                            Aceite
+                          </p>
+                          <PriceBlock lista={listaAceite} desc={descAceite} />
+                        </div>
+                        {/* Columna 3: total con filtros */}
+                        <div className="leading-tight">
+                          {tieneTotal ? (
+                            <>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-primary text-center mb-0.5">
+                                Total con filtros
+                              </p>
+                              <PriceBlock lista={totalLista} desc={totalDesc} size="lg" />
+                            </>
+                          ) : (
+                            <p className="text-[10px] text-center text-muted-foreground">—</p>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -369,16 +486,24 @@ export default function QuotationModal({
           {/* Acciones */}
           <div className="sticky bottom-0 flex gap-3 border-t border-border bg-card/95 backdrop-blur px-6 py-4">
             <button
-              onClick={handleDownload}
-              disabled={downloading || copying}
+              onClick={handleShare}
+              disabled={downloading || copying || sharing}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition disabled:opacity-50"
+            >
+              {sharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Share2 className="w-5 h-5" />}
+              Compartir
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={downloading || copying || sharing}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border text-foreground font-semibold hover:bg-secondary transition disabled:opacity-50"
             >
               {downloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
               Descargar
             </button>
             <button
               onClick={handleCopy}
-              disabled={downloading || copying}
+              disabled={downloading || copying || sharing}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border text-foreground font-semibold hover:bg-secondary transition disabled:opacity-50"
             >
               {copying ? (

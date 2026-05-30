@@ -599,7 +599,9 @@ export default function Cotizador() {
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        const err = new Error(`HTTP ${res.status}: ${res.statusText}`);
+        (err as Error & { status?: number }).status = res.status;
+        throw err;
       }
 
       const raw: RawCotizacionResponse = await res.json();
@@ -706,15 +708,23 @@ export default function Cotizador() {
       setQuotationDataForModal(quotationDataWithItems);
       setShowQuotationModal(true);
     } catch (e) {
-      let errorMsg = "Error al generar cotización";
+      let errorMsg = "No se pudo generar la cotización. Intentá nuevamente.";
 
       if (e instanceof TypeError && e.message === "Failed to fetch") {
-        errorMsg = "No se pudo conectar con el servidor. Verifica tu conexión.";
+        errorMsg = "No se pudo conectar con el servidor. Verificá tu conexión.";
       } else if (e instanceof Error) {
+        const status = (e as Error & { status?: number }).status;
         if (e.name === "AbortError") {
-          errorMsg = "La solicitud tardó demasiado. Intenta nuevamente.";
-        } else {
-          errorMsg = e.message;
+          errorMsg = "La solicitud tardó demasiado. Intentá nuevamente.";
+        } else if (status === 404) {
+          // El endpoint de cotización no encontró resultado para esta combinación.
+          errorMsg =
+            "No encontramos una cotización para esa combinación. Revisá el modelo, la viscosidad, la marca y los filtros seleccionados.";
+        } else if (status && status >= 500) {
+          errorMsg = "El servidor tuvo un problema. Intentá de nuevo en unos minutos.";
+        } else if (e.message === "Respuesta sin datos de cotización") {
+          errorMsg =
+            "No hay datos disponibles para esa combinación. Probá con otra viscosidad, marca o filtros.";
         }
       }
 
