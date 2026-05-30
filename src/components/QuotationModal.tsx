@@ -115,6 +115,10 @@ export default function QuotationModal({
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
+  // Mientras capturamos, forzamos el layout de 3 columnas (imagen | precio | total)
+  // sin importar el ancho de pantalla. Las clases `sm:` dependen del viewport, así
+  // que en móvil no servirían para la imagen: por eso usamos esta bandera.
+  const [capturing, setCapturing] = useState(false);
 
   // Web Share API con archivos: disponible sobre todo en móvil. Cuando existe,
   // compartir manda el PNG como ARCHIVO a WhatsApp, que NO lo recomprime → se ve
@@ -133,7 +137,7 @@ export default function QuotationModal({
 
     const MAX_SIDE = 16384; // límite de ancho/alto de canvas
     const MAX_AREA = 16_000_000; // ~16MP de margen seguro para iOS/Safari
-    const TARGET = 2.5; // calidad HD deseada
+    const TARGET = 4; // calidad HD deseada (compensa el ancho base más angosto)
 
     const ratioBySide = Math.min(MAX_SIDE / width, MAX_SIDE / height);
     const ratioByArea = Math.sqrt(MAX_AREA / (width * height));
@@ -148,7 +152,10 @@ export default function QuotationModal({
   // cuando el contenido es más corto que 9:16 se rellena con fondo arriba/abajo.
   const ASPECT_W = 9;
   const ASPECT_H = 16;
-  const CAPTURE_BASE_WIDTH = 1080; // ancho base de layout (más px reales = más nitidez)
+  // Ancho base de layout. Más angosto = filas compactas e imagen más vertical
+  // (estilo flyer), que se ve más atractiva. La nitidez se compensa con un
+  // pixelRatio mayor en calcPixelRatio.
+  const CAPTURE_BASE_WIDTH = 480;
 
   // anchoObjetivo: si se indica, fija el ancho final de la imagen en px (tope).
   // Por defecto las tres acciones (compartir, copiar, descargar) usan máxima
@@ -158,6 +165,11 @@ export default function QuotationModal({
   const generarPng = async (anchoObjetivo?: number) => {
     const node = captureRef.current;
     if (!node) return null;
+
+    // Activar layout de 3 columnas y esperar a que React lo pinte antes de medir.
+    setCapturing(true);
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
     // Respetar el tema actual: usar el fondo real del modal (claro u oscuro)
     const bg = getComputedStyle(node).backgroundColor || '#ffffff';
 
@@ -182,12 +194,17 @@ export default function QuotationModal({
 
     let captureWidth = CAPTURE_BASE_WIDTH;
     if (naturalHeight <= targetHeight) {
-      // Contenido más corto que 9:16 → rellenar con fondo arriba/abajo.
-      const extra = targetHeight - naturalHeight;
-      const padTop = parseFloat(getComputedStyle(node).paddingTop) || 0;
-      const padBottom = parseFloat(getComputedStyle(node).paddingBottom) || 0;
-      node.style.paddingTop = `${padTop + extra / 2}px`;
-      node.style.paddingBottom = `${padBottom + extra / 2}px`;
+      // Contenido más corto que 9:16 → tendemos a 9:16 con un relleno acotado:
+      // como mucho un 15% extra del alto del contenido, para no dejar grandes
+      // franjas en blanco cuando hay pocos objetos.
+      const MAX_PAD_RATIO = 0.15;
+      const extra = Math.min(targetHeight - naturalHeight, naturalHeight * MAX_PAD_RATIO);
+      if (extra > 0) {
+        const padTop = parseFloat(getComputedStyle(node).paddingTop) || 0;
+        const padBottom = parseFloat(getComputedStyle(node).paddingBottom) || 0;
+        node.style.paddingTop = `${padTop + extra / 2}px`;
+        node.style.paddingBottom = `${padBottom + extra / 2}px`;
+      }
     } else {
       // Contenido más alto que 9:16 → ensanchar para mantener la proporción
       // (la imagen resultante es más grande, sin estirar el contenido).
@@ -215,6 +232,7 @@ export default function QuotationModal({
       node.style.paddingTop = prev.paddingTop;
       node.style.paddingBottom = prev.paddingBottom;
       node.style.boxSizing = prev.boxSizing;
+      setCapturing(false);
     }
   };
 
@@ -386,9 +404,9 @@ export default function QuotationModal({
                   {filtrosList.map(({ key, tipo, filtro }) => (
                     <div
                       key={key}
-                      className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-border bg-secondary/20 p-2"
+                      className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3 rounded-xl border border-border bg-secondary/20 p-2"
                     >
-                      <div className="w-28 shrink-0">
+                      <div className={`shrink-0 ${capturing ? 'w-16' : 'w-20 sm:w-28'}`}>
                         <ProductImage
                           src={filtro!.idArticulo ? imgUrl(filtro!.idArticulo) : undefined}
                           alt={filtro!.nombre}
@@ -431,36 +449,43 @@ export default function QuotationModal({
                     return (
                       <div
                         key={a.id}
-                        className="grid grid-cols-[minmax(10rem,1.4fr)_1fr_1fr] items-center gap-3 rounded-xl border border-border bg-secondary/20 p-2"
+                        className={
+                          capturing
+                            ? 'rounded-xl border border-border bg-secondary/20 p-1.5 grid grid-cols-[minmax(8rem,1.2fr)_1fr_1fr] items-center gap-1.5'
+                            : 'rounded-xl border border-border bg-secondary/20 p-2 flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(8rem,1.2fr)_1fr_1fr] sm:items-center sm:gap-3'
+                        }
                       >
                         {/* Columna 1: imagen + nombre al lado */}
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-28 shrink-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className={`shrink-0 ${capturing ? 'w-16' : 'w-20 sm:w-28'}`}>
                             <ProductImage src={imgUrl(a.id)} alt={a.nombre} />
                           </div>
                           <p className="text-xs text-foreground leading-tight break-words min-w-0">
                             {a.nombre}
                           </p>
                         </div>
-                        {/* Columna 2: precio del aceite */}
-                        <div className="leading-tight">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground text-center mb-0.5">
-                            Aceite
-                          </p>
-                          <PriceBlock lista={listaAceite} desc={descAceite} />
-                        </div>
-                        {/* Columna 3: total con filtros */}
-                        <div className="leading-tight">
-                          {tieneTotal ? (
-                            <>
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-primary text-center mb-0.5">
-                                Total con filtros
-                              </p>
-                              <PriceBlock lista={totalLista} desc={totalDesc} size="lg" />
-                            </>
-                          ) : (
-                            <p className="text-[10px] text-center text-muted-foreground">—</p>
-                          )}
+                        {/* En móvil: precios lado a lado debajo; en captura/≥sm: dos columnas del grid */}
+                        <div className={capturing ? 'contents' : 'grid grid-cols-2 gap-2 sm:contents'}>
+                          {/* Precio del aceite */}
+                          <div className="leading-tight">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground text-center mb-0.5">
+                              Aceite
+                            </p>
+                            <PriceBlock lista={listaAceite} desc={descAceite} />
+                          </div>
+                          {/* Total con filtros */}
+                          <div className="leading-tight">
+                            {tieneTotal ? (
+                              <>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-primary text-center mb-0.5">
+                                  Total con filtros
+                                </p>
+                                <PriceBlock lista={totalLista} desc={totalDesc} size="lg" />
+                              </>
+                            ) : (
+                              <p className="text-[10px] text-center text-muted-foreground">—</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -484,36 +509,36 @@ export default function QuotationModal({
           </div>
 
           {/* Acciones */}
-          <div className="sticky bottom-0 flex gap-3 border-t border-border bg-card/95 backdrop-blur px-6 py-4">
+          <div className="sticky bottom-0 flex gap-2 sm:gap-3 border-t border-border bg-card/95 backdrop-blur px-3 py-3 sm:px-6 sm:py-4">
             <button
               onClick={handleShare}
               disabled={downloading || copying || sharing}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition disabled:opacity-50"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm sm:text-base hover:bg-primary/90 transition disabled:opacity-50"
             >
-              {sharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Share2 className="w-5 h-5" />}
-              Compartir
+              {sharing ? <Loader2 className="w-5 h-5 shrink-0 animate-spin" /> : <Share2 className="w-5 h-5 shrink-0" />}
+              <span className="truncate">Compartir</span>
             </button>
             <button
               onClick={handleDownload}
               disabled={downloading || copying || sharing}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border text-foreground font-semibold hover:bg-secondary transition disabled:opacity-50"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-3 rounded-xl border-2 border-border text-foreground font-semibold text-sm sm:text-base hover:bg-secondary transition disabled:opacity-50"
             >
-              {downloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-              Descargar
+              {downloading ? <Loader2 className="w-5 h-5 shrink-0 animate-spin" /> : <Download className="w-5 h-5 shrink-0" />}
+              <span className="truncate">Descargar</span>
             </button>
             <button
               onClick={handleCopy}
               disabled={downloading || copying || sharing}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border text-foreground font-semibold hover:bg-secondary transition disabled:opacity-50"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-3 rounded-xl border-2 border-border text-foreground font-semibold text-sm sm:text-base hover:bg-secondary transition disabled:opacity-50"
             >
               {copying ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
               ) : copied ? (
-                <Check className="w-5 h-5 text-emerald-500" />
+                <Check className="w-5 h-5 shrink-0 text-emerald-500" />
               ) : (
-                <Copy className="w-5 h-5" />
+                <Copy className="w-5 h-5 shrink-0" />
               )}
-              {copied ? 'Copiado' : 'Copiar'}
+              <span className="truncate">{copied ? 'Copiado' : 'Copiar'}</span>
             </button>
           </div>
         </motion.div>
