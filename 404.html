@@ -9,8 +9,8 @@
       // entrar directo a una sub-ruta (p. ej. /cotizador)
       // devuelve este 404.html. Aquí convertimos la ruta en un query y
       // redirigimos al index.html, que React Router resuelve sin recargar.
-      // pathSegmentsToKeep = 0 porque el sitio se sirve en la raíz del dominio propio.
-      var pathSegmentsToKeep = 0;
+      // pathSegmentsToKeep = 1 porque el sitio se sirve bajo /catalogo-lubrimec/ en GitHub Pages.
+      var pathSegmentsToKeep = 1;
 
       var l = window.location;
       l.replace(
