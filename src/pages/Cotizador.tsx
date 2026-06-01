@@ -525,6 +525,8 @@ export default function Cotizador() {
     }
 
     setLoadingCotizacion(true);
+    // Alias del state (se sombrea más abajo por un const local llamado "aceites")
+    const aceitesDisponibles = aceites;
     try {
       const viscosidadDesc = filteredViscosidades.find(
         (v) => v.id_viscosidad === selectedViscosidad
@@ -606,28 +608,31 @@ export default function Cotizador() {
 
       const raw: RawCotizacionResponse = await res.json();
 
-      // DEBUG: verificar respuesta por aceite (unidad LT vs GAL, precio 0, etc.)
+      // Detectar aceites seleccionados que la API no pudo cotizar (sin precio/stock cargado)
       const idsDevueltos = (raw.items || []).map((it) => it.id_articulo);
       const idsFaltantes = selectedAceites.filter((id) => !idsDevueltos.includes(id));
-      console.log("🧪 DEBUG COTIZACIÓN POR ACEITE");
-      console.log("  idAceites enviados:", idAceitesParam);
-      console.log("  items devueltos:", (raw.items || []).map((it) => ({
-        id: it.id_articulo,
-        articulo: it.articulo,
-        unidad: it.cod_unidad_medida,
-        total_aceite: it.total_aceite,
-        total: it.total,
-      })));
-      console.log("  IDs NO devueltos (sin precio/fila):", idsFaltantes);
-      console.log("  URL para probar:", url);
 
       if (!raw.items || raw.items.length === 0) {
         throw new Error("Respuesta sin datos de cotización");
       }
 
+      // Si algunos (pero no todos) se cotizaron, avisar cuáles quedaron fuera
+      if (idsFaltantes.length > 0) {
+        const nombresFaltantes = aceitesDisponibles
+          .filter((a) => idsFaltantes.includes(a.id_articulo))
+          .map((a) => a.articulo.replace(/-\d+$/, "").trim());
+        const lista = nombresFaltantes.length > 0
+          ? `:\n• ${nombresFaltantes.join("\n• ")}`
+          : ` (IDs: ${idsFaltantes.join(", ")})`;
+        alert(
+          `Estos productos no se pudieron cotizar y no aparecen en la cotización${lista}.\n\n` +
+          "No tienen precio o stock cargado para este modelo. El resto se cotizó normalmente."
+        );
+      }
+
       const first = raw.items[0];
 
-      const aceites = raw.items.map((it) => ({
+      const aceitesCotizados = raw.items.map((it) => ({
         id: it.id_articulo,
         nombre: it.articulo.replace(/-\d+$/, "").trim(),
         // Precio del aceite solo (lista). El descuento se aplica con el % cargado.
@@ -674,7 +679,7 @@ export default function Cotizador() {
 
       const data: CotizacionAPIResponse = {
         resultado: {
-          aceites,
+          aceites: aceitesCotizados,
           filtros,
           totales: {
             sinDescuento,
@@ -1534,6 +1539,18 @@ export default function Cotizador() {
               </motion.div>
             )}
           </AnimatePresence>
+          {selected && (
+            <div className="mt-10 flex justify-center">
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-border bg-card text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/40 transition"
+              >
+                <ChevronDown className="w-4 h-4 rotate-180" />
+                Volver al inicio
+              </button>
+            </div>
+          )}
         </motion.section>
       </main>
 

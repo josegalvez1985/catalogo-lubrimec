@@ -47,7 +47,7 @@ const VALUES = [
 ];
 
 const REASONS = [
-  "Más de 10 años de experiencia en el rubro",
+  "2.5 años de experiencia en el rubro",
   "Productos originales y de marcas reconocidas",
   "Atención personalizada y asesoría técnica",
   "Precios competitivos y transparentes",
@@ -56,7 +56,7 @@ const REASONS = [
 ];
 
 const STATS = [
-  { value: "10+", label: "Años de experiencia" },
+  { value: "2.5", label: "Años de experiencia" },
   { value: "5K+", label: "Clientes satisfechos" },
   { value: "50+", label: "Marcas en stock" },
   { value: "100%", label: "Compromiso" },

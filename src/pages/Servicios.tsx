@@ -216,13 +216,7 @@ export default function Servicios() {
                     </ul>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Desde</p>
-                      <p className={`text-base font-bold ${c.text}`}>
-                        {service.priceFrom === "0" ? "Gratis" : `Gs. ${service.priceFrom}`}
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-end pt-3 border-t border-border">
                     <Link
                       to="/cotizador"
                       className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:text-primary transition-colors"
