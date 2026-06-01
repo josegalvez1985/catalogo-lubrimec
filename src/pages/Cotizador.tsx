@@ -723,8 +723,13 @@ export default function Cotizador() {
         } else if (status && status >= 500) {
           errorMsg = "El servidor tuvo un problema. Intentá de nuevo en unos minutos.";
         } else if (e.message === "Respuesta sin datos de cotización") {
+          const nombres = aceites
+            .filter((a) => selectedAceites.includes(a.id_articulo))
+            .map((a) => a.articulo.replace(/-\d+$/, "").trim());
+          const lista = nombres.length > 0 ? `:\n• ${nombres.join("\n• ")}` : "";
           errorMsg =
-            "No hay datos disponibles para esa combinación. Probá con otra viscosidad, marca o filtros.";
+            `No se pudo cotizar alguno de los productos seleccionados${lista}.\n\n` +
+            "Probá deseleccionando uno por uno para identificar cuál no tiene precio cargado, o elegí otro producto.";
         }
       }
 
