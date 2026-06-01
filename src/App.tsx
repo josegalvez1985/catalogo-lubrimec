@@ -62,7 +62,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename="/catalogo-lubrimec">
+      <BrowserRouter>
         <ScrollToTop />
         <Layout />
       </BrowserRouter>

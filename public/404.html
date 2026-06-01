@@ -6,11 +6,11 @@
     <script>
       // SPA redirect para GitHub Pages.
       // GitHub Pages no conoce las rutas de React Router, así que al recargar o
-      // entrar directo a una sub-ruta (p. ej. /catalogo-lubrimec/cotizador)
+      // entrar directo a una sub-ruta (p. ej. /cotizador)
       // devuelve este 404.html. Aquí convertimos la ruta en un query y
       // redirigimos al index.html, que React Router resuelve sin recargar.
-      // pathSegmentsToKeep = 1 por el subdirectorio del proyecto en Pages.
-      var pathSegmentsToKeep = 1;
+      // pathSegmentsToKeep = 0 porque el sitio se sirve en la raíz del dominio propio.
+      var pathSegmentsToKeep = 0;
 
       var l = window.location;
       l.replace(

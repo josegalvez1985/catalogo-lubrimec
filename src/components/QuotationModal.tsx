@@ -573,6 +573,9 @@ export default function QuotationModal({
               <p className="text-[11px] text-muted-foreground">
                 Sujeto a disponibilidad de stock.
               </p>
+              <p className={`font-bold text-primary pt-1 ${capturing ? 'text-lg' : 'text-xs'}`}>
+                Visitá nuestro sitio web www.lubrimec.shop
+              </p>
             </div>
           </div>
 
