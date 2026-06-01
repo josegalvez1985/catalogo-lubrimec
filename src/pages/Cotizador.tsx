@@ -538,12 +538,12 @@ export default function Cotizador() {
       const galonesParam = cantidadGalones || "1";
       const descuentoParam = descuento ? parseInt(descuento) : 0;
 
-      // Modelo sin espacios (el SQL hace REPLACE para matchear)
-      const modeloSinEspacios = selected.replace(/\s+/g, "");
+      // El endpoint matchea el modelo CON espacios (igual que los endpoints de filtros)
+      const modeloParam = selected;
 
       // Orden del endpoint:
       // /:idMarcaFiltroCombustible/:modelo/:cantidadGalon/:cantidadLitros/:idMarcaFiltroCaja/:idMarcaFiltroAire/:existencia/:tipoServicio/:idAceites/:viscosidad/:idMarcaFiltroAceite/:descuento
-      const pathParams = `${selectedFiltroCombustible || "0"}/${encodeURIComponent(modeloSinEspacios)}/${galonesParam}/${litrosParam}/${selectedFiltroCaja || "0"}/${selectedFiltroAire || "0"}/${existenciaParam}/${tipoServicioOracle}/${encodeURIComponent(idAceitesParam)}/${encodeURIComponent(viscosidadDesc)}/${selectedFiltro || "0"}/${descuentoParam}`;
+      const pathParams = `${selectedFiltroCombustible || "0"}/${encodeURIComponent(modeloParam)}/${galonesParam}/${litrosParam}/${selectedFiltroCaja || "0"}/${selectedFiltroAire || "0"}/${existenciaParam}/${tipoServicioOracle}/${encodeURIComponent(idAceitesParam)}/${encodeURIComponent(viscosidadDesc)}/${selectedFiltro || "0"}/${descuentoParam}`;
 
       const url = `${COTIZACION_ENDPOINT}/cotizacion/${pathParams}`;
 
@@ -605,6 +605,21 @@ export default function Cotizador() {
       }
 
       const raw: RawCotizacionResponse = await res.json();
+
+      // DEBUG: verificar respuesta por aceite (unidad LT vs GAL, precio 0, etc.)
+      const idsDevueltos = (raw.items || []).map((it) => it.id_articulo);
+      const idsFaltantes = selectedAceites.filter((id) => !idsDevueltos.includes(id));
+      console.log("🧪 DEBUG COTIZACIÓN POR ACEITE");
+      console.log("  idAceites enviados:", idAceitesParam);
+      console.log("  items devueltos:", (raw.items || []).map((it) => ({
+        id: it.id_articulo,
+        articulo: it.articulo,
+        unidad: it.cod_unidad_medida,
+        total_aceite: it.total_aceite,
+        total: it.total,
+      })));
+      console.log("  IDs NO devueltos (sin precio/fila):", idsFaltantes);
+      console.log("  URL para probar:", url);
 
       if (!raw.items || raw.items.length === 0) {
         throw new Error("Respuesta sin datos de cotización");
