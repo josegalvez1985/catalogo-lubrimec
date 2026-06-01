@@ -182,6 +182,27 @@ export default function QuotationModal({
     setCapturing(true);
     await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
+    // Esperar a que TODAS las imágenes del nodo terminen (carguen o fallen) antes de
+    // capturar. Sin esto, la primera captura sale incompleta (imágenes aún cargando)
+    // y un artículo sin foto deja la promesa colgada para siempre.
+    await Promise.all(
+      Array.from(node.querySelectorAll('img')).map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete) return resolve();
+            const done = () => {
+              img.removeEventListener('load', done);
+              img.removeEventListener('error', done);
+              resolve();
+            };
+            img.addEventListener('load', done);
+            img.addEventListener('error', done);
+            // Tope de seguridad: si una imagen nunca responde, no bloquear la captura.
+            setTimeout(done, 4000);
+          })
+      )
+    );
+
     // Respetar el tema actual: usar el fondo real del modal (claro u oscuro)
     const bg = getComputedStyle(node).backgroundColor || '#ffffff';
 
