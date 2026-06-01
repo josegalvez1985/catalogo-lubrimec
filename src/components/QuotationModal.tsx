@@ -203,15 +203,24 @@ export default function QuotationModal({
       )
     );
 
-    // Respetar el tema actual: usar el fondo real del modal (claro u oscuro)
-    const bg = getComputedStyle(node).backgroundColor || '#ffffff';
+    // En modo oscuro la imagen se exporta con fondo negro full; en modo claro se
+    // respeta el fondo real del modal.
+    const isDark = document.documentElement.classList.contains('dark');
+    const bg = isDark ? '#000000' : (getComputedStyle(node).backgroundColor || '#ffffff');
 
     // --- Ajustes de tamaño sólo durante la captura ---
     // Guardamos los estilos inline que tocamos para restaurarlos exactamente.
     const prev = {
       width: node.style.width,
       boxSizing: node.style.boxSizing,
+      backgroundColor: node.style.backgroundColor,
     };
+    // Fondo negro full en la imagen exportada.
+    node.style.backgroundColor = bg;
+    // En oscuro, forzar la variable --card a negro para que las tarjetas (bg-card)
+    // también queden negras y no marrón oscuro. Se restaura al terminar.
+    const prevCardVar = node.style.getPropertyValue('--card');
+    if (isDark) node.style.setProperty('--card', '0 0% 0%');
     const basePadLeft = parseFloat(getComputedStyle(node).paddingLeft) || 0;
     const basePadRight = parseFloat(getComputedStyle(node).paddingRight) || 0;
 
@@ -239,6 +248,11 @@ export default function QuotationModal({
       // Restaurar siempre los estilos para no afectar la vista en pantalla.
       node.style.width = prev.width;
       node.style.boxSizing = prev.boxSizing;
+      node.style.backgroundColor = prev.backgroundColor;
+      if (isDark) {
+        if (prevCardVar) node.style.setProperty('--card', prevCardVar);
+        else node.style.removeProperty('--card');
+      }
       setCapturing(false);
     }
   };
