@@ -54,8 +54,7 @@ src/
 │   ├── useRubros.tsx        # Fetch de rubros (con fallback local)
 │   ├── useMarcas.tsx        # Fetch de marcas (con fallback local)
 │   ├── useViscosidades.tsx  # Fetch de viscosidades (con fallback local)
-│   ├── useTheme.tsx         # Tema claro/oscuro (persiste en localStorage)
-│   └── useVisitCounter.tsx  # Contador de visitas (counterapi.dev)
+│   └── useTheme.tsx         # Tema claro/oscuro (persiste en localStorage)
 ├── lib/
 │   ├── config.ts            # API_BASE y WHATSAPP_NUMBER
 │   ├── productCanvas.ts     # Genera imagen para compartir productos
@@ -164,7 +163,7 @@ VITE_API_BASE=https://oracleapex.com/ords
 ### Datos siempre frescos (sin caché)
 - **React Query** configurado con `staleTime: 0` y `gcTime: 0` (`refetchOnMount: "always"`): cada montaje y navegación re-consulta los endpoints.
 - **No hay Service Worker.** `public/sw.js` es un "kill switch" que se auto-desinstala y borra cualquier caché de PWA antigua en dispositivos que ya la tenían instalada; `src/main.tsx` también desregistra Service Workers previos y limpia `caches` al cargar.
-- Lo único que se persiste localmente es la preferencia de tema (`localStorage`) y una marca de sesión del contador de visitas (`sessionStorage`).
+- Lo único que se persiste localmente es la preferencia de tema (`localStorage`).
 
 ## Despliegue
 
