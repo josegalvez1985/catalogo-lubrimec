@@ -12,19 +12,13 @@ export async function buildProductCanvas(
   articulo: CanvasProductData
 ): Promise<Blob> {
   // ── 1. Cargar imagen ──────────────────────────────────────────────────────
-  const imgRes = await fetch(imgSrc);
-  if (!imgRes.ok) throw new Error("Error descargando imagen");
-  const imgBlob = await imgRes.blob();
-
-  const dataUrl = await new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.readAsDataURL(imgBlob);
-  });
-
+  // Cargar directo en un <img> reutiliza el caché del navegador (la misma URL
+  // ya se mostró en el modal) en vez de hacer un fetch nuevo + FileReader.
   const img = new Image();
-  img.src = dataUrl;
+  img.crossOrigin = "anonymous";
+  img.src = imgSrc;
   await new Promise<void>((resolve, reject) => {
+    if (img.complete && img.naturalWidth > 0) return resolve();
     img.onload = () => resolve();
     img.onerror = reject;
   });

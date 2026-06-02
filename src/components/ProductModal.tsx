@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Copy, Check, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MessageCircle } from "lucide-react";
+import { X, Copy, Check, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MessageCircle, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { API_BASE, WHATSAPP_NUMBER } from "@/lib/config";
 import placeholder from "@/assets/lubrimec-logo.png";
@@ -23,6 +23,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [zoomed, setZoomed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
   // Swipe táctil
@@ -84,6 +85,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
     setZoomed(false);
     setCopied(false);
     setCopying(false);
+    setDownloading(false);
     setImgLoaded(false);
   }, [articulo?.id_articulo]);
 
@@ -123,6 +125,27 @@ const ProductModal: React.FC<ProductModalProps> = ({
     } finally {
       setCopying(false);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const blob = await buildProductCanvas(imgSrc, articulo);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${articulo.descripcion_articulo.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "producto"}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo generar la imagen.");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -282,31 +305,50 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </div>
 
               {/* Action buttons */}
-              <div className="flex gap-2 pt-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={handleCopy}
-                      disabled={copying}
-                      aria-label="Copiar imagen del producto"
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors disabled:opacity-50"
-                    >
-                      {copying ? <Loader2 className="w-4 h-4 animate-spin" /> : copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                      {copying ? "Copiando..." : copied ? "¡Copiado!" : "Copiar imagen"}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p>Copiar imagen del producto al portapapeles</p>
-                  </TooltipContent>
-                </Tooltip>
+              <div className="space-y-2 pt-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleCopy}
+                        disabled={copying}
+                        aria-label="Copiar imagen del producto"
+                        className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors disabled:opacity-50"
+                      >
+                        {copying ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : copied ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Copy className="w-4 h-4 shrink-0" />}
+                        <span className="truncate">{copying ? "Copiando..." : copied ? "¡Copiado!" : "Copiar"}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>Copiar imagen del producto al portapapeles</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleDownload}
+                        disabled={downloading}
+                        aria-label="Descargar imagen del producto"
+                        className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors disabled:opacity-50"
+                      >
+                        {downloading ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <Download className="w-4 h-4 shrink-0" />}
+                        <span className="truncate">{downloading ? "Generando..." : "Descargar"}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>Descargar imagen del producto</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
 
                 <a
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
                 >
-                  <MessageCircle className="w-4 h-4" />
+                  <MessageCircle className="w-4 h-4 shrink-0" />
                   Consultar por este producto
                 </a>
               </div>

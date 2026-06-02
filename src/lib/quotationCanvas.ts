@@ -140,7 +140,7 @@ const FORMATS: Record<FormatId, FormatDimensions> = {
 const QUOTE = {
   W: 1080,
   PAD: 30,
-  HEADER_H: 200,
+  HEADER_H: 280,
   CARD_H: 460,
   CARD_GAP: 30,
   CARD_HEADER_H: 60,
@@ -206,8 +206,13 @@ export async function buildQuotationCanvas(
 async function buildQuoteCanvas(data: QuotationData): Promise<Blob> {
   const items = data.items ?? [];
 
+  // Header proporcional: escala el alto del header según la cantidad de cards,
+  // así con 1 solo aceite no queda una cabecera diminuta sobre una imagen corta.
+  const cardsH = items.length * (QUOTE.CARD_H + QUOTE.CARD_GAP);
+  const headerH = computeHeaderHeight(cardsH);
+
   // Calcular alto total
-  const totalH = QUOTE.HEADER_H + (items.length * (QUOTE.CARD_H + QUOTE.CARD_GAP)) + QUOTE.FOOTER_H;
+  const totalH = headerH + cardsH + QUOTE.FOOTER_H;
 
   const canvas = document.createElement('canvas');
   canvas.width = QUOTE.W;
@@ -223,9 +228,9 @@ async function buildQuoteCanvas(data: QuotationData): Promise<Blob> {
     items.map((it) => (it.imagenUrl ? loadImage(it.imagenUrl) : Promise.resolve(null)))
   );
 
-  drawQuoteHeader(ctx, data);
+  drawQuoteHeader(ctx, data, headerH);
 
-  let y = QUOTE.HEADER_H;
+  let y = headerH;
   for (let i = 0; i < items.length; i++) {
     drawProductCard(ctx, y, items[i], productImages[i]);
     y += QUOTE.CARD_H + QUOTE.CARD_GAP;
@@ -241,9 +246,14 @@ async function buildQuoteCanvas(data: QuotationData): Promise<Blob> {
   });
 }
 
-function drawQuoteHeader(ctx: CanvasRenderingContext2D, data: QuotationData) {
+// Alto fijo del header. Se mantiene constante sin importar la cantidad de
+// cards, con logo y textos grandes y proporcionados al ancho de 1080px.
+function computeHeaderHeight(_cardsH: number): number {
+  return QUOTE.HEADER_H;
+}
+
+function drawQuoteHeader(ctx: CanvasRenderingContext2D, data: QuotationData, h: number) {
   const w = QUOTE.W;
-  const h = QUOTE.HEADER_H;
 
   // Fondo naranja del header
   const grad = ctx.createLinearGradient(0, 0, w, 0);
@@ -253,40 +263,42 @@ function drawQuoteHeader(ctx: CanvasRenderingContext2D, data: QuotationData) {
   ctx.fillRect(0, 0, w, h);
 
   // Logo cuadro blanco a la izquierda
-  const logoSize = 130;
-  const logoX = 30;
+  const logoSize = 200;
+  const logoX = 40;
   const logoY = (h - logoSize) / 2;
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(logoX, logoY, logoSize, logoSize);
 
   // Texto "LUBRICANTES Y FILTROS" dentro del logo
   ctx.fillStyle = QUOTE.HEADER_BG;
-  ctx.font = 'bold 14px Arial, sans-serif';
+  ctx.font = 'bold 22px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('LUBRICANTES', logoX + logoSize / 2, logoY + logoSize / 2 - 8);
-  ctx.fillText('Y FILTROS', logoX + logoSize / 2, logoY + logoSize / 2 + 10);
+  ctx.fillText('LUBRICANTES', logoX + logoSize / 2, logoY + logoSize / 2 - 14);
+  ctx.fillText('Y FILTROS', logoX + logoSize / 2, logoY + logoSize / 2 + 16);
+
+  // Distribución vertical de los textos centrales
+  ctx.textAlign = 'center';
 
   // Título principal
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 56px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('LUBRIMEC', w / 2, 30);
+  ctx.font = 'bold 88px Arial, sans-serif';
+  ctx.fillText('LUBRIMEC', w / 2, h * 0.13);
 
   // Subtítulo
-  ctx.font = '20px Arial, sans-serif';
+  ctx.font = '30px Arial, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('COTIZACIÓN DE LUBRICANTES Y FILTROS', w / 2, 95);
+  ctx.fillText('COTIZACIÓN DE LUBRICANTES Y FILTROS', w / 2, h * 0.50);
 
   // Modelo (amarillo destacado)
-  ctx.font = 'bold 28px Arial, sans-serif';
+  ctx.font = 'bold 40px Arial, sans-serif';
   ctx.fillStyle = QUOTE.HEADER_HIGHLIGHT;
-  ctx.fillText(data.modelo, w / 2, 125);
+  ctx.fillText(data.modelo, w / 2, h * 0.64);
 
   // Fecha
   const fecha = data.fecha || new Date().toLocaleDateString('es-PY');
-  ctx.font = '16px Arial, sans-serif';
+  ctx.font = '24px Arial, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(fecha, w / 2, 165);
+  ctx.fillText(fecha, w / 2, h * 0.82);
 }
 
 function drawProductCard(
