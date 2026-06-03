@@ -125,7 +125,7 @@ export default function Contacto() {
   const isFormValid = message.trim().length > 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* ===== HERO ===== */}
       <section className="relative pt-28 pb-12 px-4 overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_30%,_hsl(36_90%_50%_/_0.1)_0%,_transparent_70%)]" />

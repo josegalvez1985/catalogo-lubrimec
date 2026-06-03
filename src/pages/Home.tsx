@@ -13,7 +13,6 @@ import {
   Filter,
   Settings,
 } from "lucide-react";
-import heroBanner from "@/assets/hero-banner.jpg";
 import lubrimecLogo from "@/assets/lubrimec-logo.png";
 
 const fadeUp = {
@@ -65,23 +64,9 @@ const FEATURES = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* ===== HERO ===== */}
       <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
-        {/* Background image */}
-        <img
-          src={heroBanner}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        {/* Dark tint para legibilidad (independiente del tema) */}
-        <div className="absolute inset-0 bg-black/40 dark:bg-black/30" />
-        {/* Gradient overlay hacia el fondo de la página */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
-        {/* Radial glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_hsl(36_90%_50%_/_0.10)_0%,_transparent_70%)]" />
-
         <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
           {/* Logo badge */}
           <motion.div

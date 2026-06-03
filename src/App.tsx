@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HomeButton from "@/components/HomeButton";
+import heroBanner from "@/assets/hero-banner.jpg";
 import Home from "./pages/Home";
 import Nosotros from "./pages/Nosotros";
 import Servicios from "./pages/Servicios";
@@ -38,7 +39,22 @@ function ScrollToTop() {
 
 function Layout() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="relative flex flex-col min-h-screen">
+      {/* Fondo global con el mismo efecto del hero del Home (fijo en todas las páginas) */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <img
+          src={heroBanner}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Tinte oscuro para legibilidad */}
+        <div className="absolute inset-0 bg-black/40 dark:bg-black/30" />
+        {/* Degradado hacia el fondo de la página */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
+        {/* Glow radial ámbar */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_hsl(36_90%_50%_/_0.10)_0%,_transparent_70%)]" />
+      </div>
       <Navbar />
       <div className="flex-1">
         <Routes>

@@ -778,7 +778,7 @@ export default function Cotizador() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Page header */}
       <div className="pt-24 pb-8 px-4 bg-gradient-to-b from-card/40 to-transparent border-b border-border">
         <div className="max-w-3xl mx-auto">
