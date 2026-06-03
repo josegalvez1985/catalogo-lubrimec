@@ -200,7 +200,7 @@ const Catalogo = () => {
         </div>
       </div>
 
-      <div className="flex overflow-x-hidden">
+      <div className="flex overflow-x-hidden max-w-7xl mx-auto">
         {/* Sidebar */}
         <FilterSidebar
           isOpen={sidebarOpen}
@@ -220,7 +220,7 @@ const Catalogo = () => {
         {/* Main content */}
         <main className="flex-1 w-full">
         {/* Sticky search bar */}
-        <div className={`sticky top-16 z-40 bg-background pb-4 pt-3 px-4 transition-shadow ${isScrolled ? "shadow-lg shadow-slate-900/40" : ""}`}>
+        <div className="sticky top-16 z-40 pb-4 pt-3 px-4">
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -237,7 +237,7 @@ const Catalogo = () => {
                 value={search}
                 onChange={handleSearchChange}
                 aria-label="Buscar productos, marcas, rubros"
-                className="w-full bg-card border border-border rounded-xl py-3 pl-12 pr-10 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
+                className={`w-full bg-card/60 backdrop-blur-sm border border-border rounded-2xl py-3 pl-12 pr-10 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition ${isScrolled ? "shadow-lg shadow-black/10" : ""}`}
               />
               {search && (
                 <button
@@ -303,7 +303,7 @@ const Catalogo = () => {
           <AnimatePresence mode="popLayout">
             {articulosLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-card border border-border rounded-xl p-4">
+                <div key={i} className="bg-card/60 backdrop-blur-sm border border-border rounded-xl p-4">
                   <Skeleton className="w-full aspect-square rounded-md mb-3" />
                   <Skeleton className="h-4 w-3/4 mb-2" />
                   <Skeleton className="h-4 w-1/2 mb-3" />

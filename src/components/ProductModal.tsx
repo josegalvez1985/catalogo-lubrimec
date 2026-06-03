@@ -251,7 +251,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             {/* Details */}
             <div className="p-5 sm:p-6 space-y-4">
               <div>
-                <h2 id="product-modal-title" className="text-lg font-semibold text-white font-sans leading-snug">
+                <h2 id="product-modal-title" className="text-lg font-semibold text-foreground font-sans leading-snug">
                   {articulo.descripcion_articulo}
                 </h2>
                 {/* Metadata tags */}
@@ -282,7 +282,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                       Gs. {new Intl.NumberFormat("es-PY").format(articulo.precio)}
                     </p>
                     {articulo.precioLista != null && articulo.precioLista > articulo.precio && (
-                      <p className="text-sm font-semibold text-emerald-400">
+                      <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                         Ahorrás Gs. {new Intl.NumberFormat("es-PY").format(articulo.precioLista - articulo.precio)}
                       </p>
                     )}
@@ -292,7 +292,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 )}
 
                 {articulo.stock != null && articulo.stock > 0 ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-emerald-500/15 text-emerald-400">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     {articulo.stock} en stock
                   </span>
@@ -315,7 +315,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         aria-label="Copiar imagen del producto"
                         className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors disabled:opacity-50"
                       >
-                        {copying ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : copied ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Copy className="w-4 h-4 shrink-0" />}
+                        {copying ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : copied ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /> : <Copy className="w-4 h-4 shrink-0" />}
                         <span className="truncate">{copying ? "Copiando..." : copied ? "¡Copiado!" : "Copiar"}</span>
                       </button>
                     </TooltipTrigger>

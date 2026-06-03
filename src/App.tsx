@@ -46,10 +46,10 @@ function Layout() {
           src={heroBanner}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover opacity-95 dark:opacity-100"
         />
-        {/* Tinte oscuro para legibilidad */}
-        <div className="absolute inset-0 bg-black/40 dark:bg-black/30" />
+        {/* Tinte: claro en tema claro, oscuro en tema oscuro */}
+        <div className="absolute inset-0 bg-background/40 dark:bg-black/40" />
         {/* Degradado hacia el fondo de la página */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
         {/* Glow radial ámbar */}

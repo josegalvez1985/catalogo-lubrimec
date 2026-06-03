@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone, Wrench, BookOpen, Home, Users, Settings, MessageSquare } from "lucide-react";
 import PwaInstallButton from "@/components/PwaInstallButton";
 import ThemeToggle from "@/components/ThemeToggle";
+import lubrimecLogo from "@/assets/lubrimec-logo.png";
 
 const navLinks = [
   {
@@ -85,6 +86,13 @@ export default function Navbar() {
               className="flex items-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-lg"
               aria-label="Ir al inicio"
             >
+              <img src={lubrimecLogo} alt="Lubrimec" className="w-9 h-9 object-contain" />
+              <span
+                className="text-xl font-bold tracking-widest text-foreground"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                LUBRIMEC
+              </span>
             </Link>
 
             {/* Desktop Nav */}

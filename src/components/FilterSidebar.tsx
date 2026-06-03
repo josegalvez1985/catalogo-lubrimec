@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, X, SlidersHorizontal, PanelLeftClose } from "lucide-react";
 
 interface FilterSidebarProps {
   isOpen: boolean;
@@ -35,6 +35,7 @@ export default function FilterSidebar({
     viscosidad: true,
     marca: true,
   });
+  const [collapsed, setCollapsed] = useState(false);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
@@ -129,16 +130,35 @@ export default function FilterSidebar({
           />
         )}
 
+      {/* Botón mostrar filtros (desktop, cuando está colapsada) */}
+      {collapsed && (
+        <button
+          onClick={() => setCollapsed(false)}
+          className="hidden lg:flex items-center gap-2 self-start mt-4 ml-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur-md border border-border text-foreground hover:border-primary/40 hover:text-primary text-sm font-medium transition-colors shadow-sm"
+          aria-label="Mostrar filtros"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Mostrar filtros
+        </button>
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`fixed lg:relative top-0 left-0 bottom-0 w-72 bg-card border-r border-border z-50 overflow-y-auto transition-transform lg:translate-x-0 pt-16 lg:pt-0 ${
+        className={`fixed lg:relative top-0 left-0 bottom-0 w-72 bg-card/60 backdrop-blur-md border border-border lg:rounded-2xl lg:m-4 z-50 overflow-y-auto transition-transform lg:translate-x-0 pt-16 lg:pt-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } ${collapsed ? "lg:hidden" : ""}`}
       >
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 lg:mb-4">
             <h2 className="text-lg font-bold text-foreground">Filtros</h2>
+            <button
+              onClick={() => setCollapsed(true)}
+              className="hidden lg:flex p-2 hover:bg-secondary/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Ocultar filtros"
+            >
+              <PanelLeftClose className="w-5 h-5" />
+            </button>
             <button
               onClick={onClose}
               className="lg:hidden p-2 hover:bg-secondary/50 rounded-lg transition-colors"
@@ -185,7 +205,7 @@ export default function FilterSidebar({
                 onClearAll();
                 onClose();
               }}
-              className="w-full mt-6 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-colors"
+              className="w-full mt-6 px-4 py-2 rounded-full bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-colors"
             >
               Limpiar filtros
             </button>

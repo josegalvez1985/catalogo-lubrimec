@@ -31,7 +31,7 @@ const CONTACT_METHODS = [
     value: "+595 974 759 037",
     href: "https://wa.me/595974759037",
     desc: "Respuesta en pocos minutos",
-    color: "text-green-400",
+    color: "text-green-600 dark:text-green-400",
     bg: "bg-green-400/10",
     border: "border-green-400/30",
     external: true,
@@ -42,7 +42,7 @@ const CONTACT_METHODS = [
     value: "+595 974 759 037",
     href: "tel:+595974759037",
     desc: "Lun a Sáb en horario comercial",
-    color: "text-sky-400",
+    color: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-400/10",
     border: "border-sky-400/30",
     external: false,
@@ -53,7 +53,7 @@ const CONTACT_METHODS = [
     value: "Capiatá, Ruta 2 Km 20",
     href: "https://www.google.com/maps/place/Lubrimec+Lubricantes+y+Filtros/@-25.3484096,-57.465288,982m/data=!3m2!1e3!4b1!4m6!3m5!1s0x945dadf4417f96ff:0x1d849c9152d9290d!8m2!3d-25.3484145!4d-57.4627131!16s%2Fg%2F11vy_cz7dj?hl=es-US&entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D",
     desc: "Ver en Google Maps",
-    color: "text-amber-400",
+    color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-400/10",
     border: "border-amber-400/30",
     external: true,
@@ -129,7 +129,7 @@ export default function Contacto() {
       {/* ===== HERO ===== */}
       <section className="relative pt-28 pb-12 px-4 overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_30%,_hsl(36_90%_50%_/_0.1)_0%,_transparent_70%)]" />
-        <div className="relative max-w-4xl mx-auto text-center">
+        <div className="relative max-w-7xl mx-auto text-center">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -163,7 +163,7 @@ export default function Contacto() {
 
       {/* ===== CONTACT METHODS ===== */}
       <section className="py-12 px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
           {CONTACT_METHODS.map((method, i) => (
             <motion.a
               key={method.label}
@@ -190,7 +190,7 @@ export default function Contacto() {
 
       {/* ===== FORM + INFO ===== */}
       <section className="py-12 px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Form */}
           <motion.div
             variants={fadeUp}
@@ -378,7 +378,7 @@ export default function Contacto() {
 
       {/* ===== MAP ===== */}
       <section className="py-12 px-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <motion.div
             variants={fadeUp}
             initial="hidden"

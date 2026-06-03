@@ -101,7 +101,7 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
   };
 
   return (
-    <div ref={cardRef} className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+    <div ref={cardRef} className="bg-card/60 backdrop-blur-sm border border-border rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
       <div className="relative w-full aspect-square bg-white rounded-md mb-3 flex items-center justify-center overflow-hidden">
         <img
           src={imgSrc}
@@ -116,7 +116,7 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
           </span>
         )}
       </div>
-      <h3 className="text-sm font-medium text-white leading-snug line-clamp-2 font-sans">
+      <h3 className="text-sm font-medium text-foreground leading-snug line-clamp-2 font-sans">
         <HighlightText text={articulo.descripcion_articulo} query={searchQuery} />
       </h3>
       {articulo.descripcion_marca && (
@@ -135,14 +135,14 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
                 Gs. {new Intl.NumberFormat("es-PY").format(articulo.precio)}
               </p>
               {articulo.precioLista != null && articulo.precioLista > articulo.precio && (
-                <p className="text-xs font-semibold text-emerald-400">
+                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   Ahorrás Gs. {new Intl.NumberFormat("es-PY").format(articulo.precioLista - articulo.precio)}
                 </p>
               )}
             </>
           )}
           {articulo.stock != null && articulo.stock > 0 ? (
-            <span className="mt-1 inline-block text-xs font-semibold text-emerald-400">
+            <span className="mt-1 inline-block text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               ✔ {articulo.stock} en stock
             </span>
           ) : (
@@ -159,7 +159,7 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
               aria-label="Copiar imagen con precio y stock"
               className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
-              {copying ? <Loader2 className="w-4 h-4 animate-spin" /> : copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copying ? <Loader2 className="w-4 h-4 animate-spin" /> : copied ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
             </button>
           </TooltipTrigger>
           <TooltipContent side="top">

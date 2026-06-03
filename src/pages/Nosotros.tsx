@@ -27,21 +27,21 @@ const VALUES = [
     icon: Target,
     title: "Misión",
     desc: "Brindar productos y servicios de mantenimiento automotriz de alta calidad, con atención personalizada y precios justos para todos nuestros clientes en Capiatá y alrededores.",
-    color: "text-amber-400",
+    color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-400/10",
   },
   {
     icon: Eye,
     title: "Visión",
     desc: "Ser el lubricentro de referencia en Paraguay, reconocido por la excelencia técnica, el compromiso con el cliente y la innovación en el cuidado de cada vehículo.",
-    color: "text-sky-400",
+    color: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-400/10",
   },
   {
     icon: Heart,
     title: "Valores",
     desc: "Honestidad, calidad, compromiso y trato cercano. Cuidamos cada vehículo como si fuera nuestro, porque entendemos que tu auto es parte importante de tu día a día.",
-    color: "text-emerald-400",
+    color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-400/10",
   },
 ];
@@ -68,7 +68,7 @@ export default function Nosotros() {
       {/* ===== HERO ===== */}
       <section className="relative pt-28 pb-16 px-4 overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_30%,_hsl(36_90%_50%_/_0.1)_0%,_transparent_70%)]" />
-        <div className="relative max-w-4xl mx-auto text-center">
+        <div className="relative max-w-7xl mx-auto text-center">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -102,7 +102,7 @@ export default function Nosotros() {
 
       {/* ===== HISTORY ===== */}
       <section className="py-16 px-4">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -146,7 +146,7 @@ export default function Nosotros() {
 
       {/* ===== STATS ===== */}
       <section className="py-12 px-4 bg-card/40 border-y border-border">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
           {STATS.map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -168,7 +168,7 @@ export default function Nosotros() {
 
       {/* ===== MISSION / VISION / VALUES ===== */}
       <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -208,14 +208,14 @@ export default function Nosotros() {
 
       {/* ===== WHY CHOOSE US ===== */}
       <section className="py-20 px-4 bg-card/30 border-y border-border">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <motion.div
             variants={fadeUp}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
           >
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-widest mb-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold uppercase tracking-widest mb-3">
               <Award className="w-3.5 h-3.5" />
               ¿Por qué elegirnos?
             </div>
@@ -245,7 +245,7 @@ export default function Nosotros() {
           >
             {REASONS.map((reason) => (
               <li key={reason} className="flex items-start gap-3 px-4 py-3 rounded-xl bg-background border border-border">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <span className="text-sm text-foreground">{reason}</span>
               </li>
             ))}
@@ -255,7 +255,7 @@ export default function Nosotros() {
 
       {/* ===== TEAM ===== */}
       <section className="py-20 px-4">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <motion.div
             variants={fadeUp}
             initial="hidden"

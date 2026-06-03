@@ -549,47 +549,24 @@ export default function Cotizador() {
 
       const url = `${COTIZACION_ENDPOINT}/cotizacion/${pathParams}`;
 
-      // Logs detallados para debugging y Postman
-      console.log("🔗 ===== ENDPOINT FINAL DE COTIZACIÓN =====");
-      console.log("URL COMPLETA:", url);
-      console.log("\n📋 PARÁMETROS PARA POSTMAN:");
-      console.log("modelo:", selected, `(${typeof selected})`);
-      console.log("tipoServicio:", tipoServicioOracle, `(${typeof tipoServicioOracle})`);
-      console.log("viscosidad:", viscosidadDesc, `(${typeof viscosidadDesc})`);
-      console.log("existencia:", existenciaParam, `(${typeof existenciaParam})`);
-      console.log("idMarca:", selectedMarca, `(${typeof selectedMarca})`);
-      console.log("idMarcaFiltroAceite:", selectedFiltro || "0", `(${typeof (selectedFiltro || "0")})`);
-      console.log("idMarcaFiltroAire:", selectedFiltroAire || "0", `(${typeof (selectedFiltroAire || "0")})`);
-      console.log("idMarcaFiltroCombustible:", selectedFiltroCombustible || "0", `(${typeof (selectedFiltroCombustible || "0")})`);
-      console.log("idMarcaFiltroCaja:", selectedFiltroCaja || "0", `(${typeof (selectedFiltroCaja || "0")})`);
-      console.log("descuento:", descuentoParam, `(${typeof descuentoParam})`);
-      console.log("idAceites:", idAceitesParam, `(${typeof idAceitesParam})`);
-      console.log("cantidadLitros:", litrosParam, `(${typeof litrosParam})`);
-      console.log("cantidadGalones:", galonesParam, `(${typeof galonesParam})`);
-      console.log("\n📋 RESUMEN PARÁMETROS:");
-      console.log({
-        modelo: selected,
-        tipoServicio: tipoServicioOracle,
-        viscosidad: viscosidadDesc,
-        existencia: existenciaParam === "1" ? "Solo Stock (1)" : "Todos (0)",
-        idMarca: selectedMarca,
-        filtros: {
-          aceite: selectedFiltro || "0",
-          aire: selectedFiltroAire || "0",
-          combustible: selectedFiltroCombustible || "0",
-          caja: selectedFiltroCaja || "0",
-        },
-        descuento: descuentoParam,
-        aceites: {
-          ids: idAceitesParam,
-          cantidad: selectedAceites.length,
-        },
-        cantidad: {
-          litros: litrosParam,
-          galones: galonesParam,
-        },
+      // 1) URL del endpoint
+      console.log("🔗 URL DEL ENDPOINT:", url);
+      // 2) Parámetros enviados con sus valores
+      console.table({
+        modelo: { valor: selected },
+        tipoServicio: { valor: tipoServicioOracle },
+        viscosidad: { valor: viscosidadDesc },
+        existencia: { valor: existenciaParam },
+        idMarca: { valor: selectedMarca },
+        idMarcaFiltroAceite: { valor: selectedFiltro || "0" },
+        idMarcaFiltroAire: { valor: selectedFiltroAire || "0" },
+        idMarcaFiltroCombustible: { valor: selectedFiltroCombustible || "0" },
+        idMarcaFiltroCaja: { valor: selectedFiltroCaja || "0" },
+        descuento: { valor: descuentoParam },
+        idAceites: { valor: idAceitesParam },
+        cantidadLitros: { valor: litrosParam },
+        cantidadGalones: { valor: galonesParam },
       });
-      console.log("==========================================\n");
 
       // Realizar solicitud con timeout
       const controller = new AbortController();
@@ -784,10 +761,10 @@ export default function Cotizador() {
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-emerald-400" />
+              <Wrench className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-emerald-400 uppercase tracking-widest">
+              <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
                 Herramienta interactiva
               </p>
               <h1

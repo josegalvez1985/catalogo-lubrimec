@@ -135,11 +135,11 @@ const PROCESS = [
 ];
 
 const colorClasses: Record<string, { bg: string; text: string; border: string; ring: string }> = {
-  amber: { bg: "bg-amber-400/10", text: "text-amber-400", border: "border-amber-400/30", ring: "ring-amber-400/20" },
-  sky: { bg: "bg-sky-400/10", text: "text-sky-400", border: "border-sky-400/30", ring: "ring-sky-400/20" },
-  emerald: { bg: "bg-emerald-400/10", text: "text-emerald-400", border: "border-emerald-400/30", ring: "ring-emerald-400/20" },
-  purple: { bg: "bg-purple-400/10", text: "text-purple-400", border: "border-purple-400/30", ring: "ring-purple-400/20" },
-  rose: { bg: "bg-rose-400/10", text: "text-rose-400", border: "border-rose-400/30", ring: "ring-rose-400/20" },
+  amber: { bg: "bg-amber-400/10", text: "text-amber-600 dark:text-amber-400", border: "border-amber-400/30", ring: "ring-amber-400/20" },
+  sky: { bg: "bg-sky-400/10", text: "text-sky-600 dark:text-sky-400", border: "border-sky-400/30", ring: "ring-sky-400/20" },
+  emerald: { bg: "bg-emerald-400/10", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-400/30", ring: "ring-emerald-400/20" },
+  purple: { bg: "bg-purple-400/10", text: "text-purple-600 dark:text-purple-400", border: "border-purple-400/30", ring: "ring-purple-400/20" },
+  rose: { bg: "bg-rose-400/10", text: "text-rose-600 dark:text-rose-400", border: "border-rose-400/30", ring: "ring-rose-400/20" },
   primary: { bg: "bg-primary/10", text: "text-primary", border: "border-primary/30", ring: "ring-primary/20" },
 };
 
@@ -149,7 +149,7 @@ export default function Servicios() {
       {/* ===== HERO ===== */}
       <section className="relative pt-28 pb-16 px-4 overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_30%,_hsl(36_90%_50%_/_0.1)_0%,_transparent_70%)]" />
-        <div className="relative max-w-4xl mx-auto text-center">
+        <div className="relative max-w-7xl mx-auto text-center">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -234,7 +234,7 @@ export default function Servicios() {
 
       {/* ===== PROCESS ===== */}
       <section className="py-20 px-4 bg-card/40 border-y border-border">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -281,7 +281,7 @@ export default function Servicios() {
 
       {/* ===== CTA SECTION ===== */}
       <section className="py-20 px-4">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <motion.div
             variants={fadeUp}
             initial="hidden"

@@ -29,28 +29,28 @@ const SERVICES = [
     icon: Droplets,
     title: "Cambio de aceite",
     desc: "Servicio express de cambio de aceite con productos de primera calidad para todos los vehículos.",
-    color: "text-amber-400",
+    color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-400/10",
   },
   {
     icon: Filter,
     title: "Cambio de filtros",
     desc: "Filtros de aceite, aire y combustible originales. Revisión completa del sistema de filtrado.",
-    color: "text-sky-400",
+    color: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-400/10",
   },
   {
     icon: Settings,
     title: "Mantenimiento preventivo",
     desc: "Planes de mantenimiento personalizados según el tipo y kilometraje de tu vehículo.",
-    color: "text-emerald-400",
+    color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-400/10",
   },
   {
     icon: ShieldCheck,
     title: "Garantía de calidad",
     desc: "Todos nuestros trabajos cuentan con garantía. Usamos solo productos certificados.",
-    color: "text-purple-400",
+    color: "text-purple-600 dark:text-purple-400",
     bg: "bg-purple-400/10",
   },
 ];
@@ -67,7 +67,7 @@ export default function Home() {
     <div className="min-h-screen">
       {/* ===== HERO ===== */}
       <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
-        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
           {/* Logo badge */}
           <motion.div
             variants={fadeUp}
@@ -92,7 +92,7 @@ export default function Home() {
             initial="hidden"
             animate="visible"
             custom={1}
-            className="text-6xl sm:text-7xl md:text-8xl font-bold text-white tracking-wider mb-4 drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]"
+            className="text-6xl sm:text-7xl md:text-8xl font-bold text-foreground dark:text-white tracking-wider mb-4 drop-shadow-[0_2px_12px_rgba(255,255,255,0.6)] dark:drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]"
             style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
             LUBRIMEC
@@ -103,7 +103,7 @@ export default function Home() {
             initial="hidden"
             animate="visible"
             custom={2}
-            className="text-lg sm:text-xl md:text-2xl text-white/85 font-light tracking-wide mb-3 drop-shadow-[0_1px_8px_rgba(0,0,0,0.4)]"
+            className="text-lg sm:text-xl md:text-2xl text-foreground/90 dark:text-white/85 font-light tracking-wide mb-3 dark:drop-shadow-[0_1px_8px_rgba(0,0,0,0.4)]"
           >
             Tu lubricentro de confianza en Capiatá
           </motion.p>
@@ -113,7 +113,7 @@ export default function Home() {
             initial="hidden"
             animate="visible"
             custom={3}
-            className="text-base text-white/75 max-w-xl mx-auto mb-10 drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)]"
+            className="text-base text-muted-foreground dark:text-white/75 max-w-xl mx-auto mb-10 dark:drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)]"
           >
             Lubricantes, filtros, aceites y mantenimiento preventivo para autos, motos y camiones. Productos premium, servicio express.
           </motion.p>
@@ -136,7 +136,7 @@ export default function Home() {
             </Link>
             <Link
               to="/cotizador"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/30 text-white font-bold text-base hover:bg-white/20 hover:border-primary/50 hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-foreground/5 dark:bg-white/10 backdrop-blur-sm border border-border dark:border-white/30 text-foreground dark:text-white font-bold text-base hover:bg-foreground/10 dark:hover:bg-white/20 hover:border-primary/50 hover:scale-105 transition-all duration-200"
             >
               <Wrench className="w-5 h-5" />
               Cotizá tu mantenimiento
@@ -152,7 +152,7 @@ export default function Home() {
           className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5"
           aria-hidden="true"
         >
-          <span className="text-xs text-white/60 tracking-widest uppercase">Scroll</span>
+          <span className="text-xs text-muted-foreground dark:text-white/60 tracking-widest uppercase">Scroll</span>
           <motion.div
             animate={{ y: [0, 6, 0] }}
             transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
@@ -275,7 +275,7 @@ export default function Home() {
               <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-emerald-500/10 blur-2xl" />
               <div>
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center mb-4">
-                  <Wrench className="w-6 h-6 text-emerald-400" />
+                  <Wrench className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-2" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
                   COTIZADOR DE MANTENIMIENTO
