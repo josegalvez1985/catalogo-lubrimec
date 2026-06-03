@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, Settings, MessageSquare } from "lucide-react";
+import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, Settings, MessageSquare, Eye } from "lucide-react";
 import lubrimecLogo from "@/assets/lubrimec-logo.png";
+import { useVisitCounter } from "@/hooks/useVisitCounter";
 
 const navLinks = [
   { label: "Inicio", href: "/", icon: Home },
@@ -12,6 +13,7 @@ const navLinks = [
 ];
 
 export default function Footer() {
+  const visitas = useVisitCounter();
   return (
     <footer className="border-t border-border bg-card/40 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
@@ -98,8 +100,12 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground inline-flex items-center gap-2 flex-wrap">
             © {new Date().getFullYear()} Lubrimec. Todos los derechos reservados.
+            <span className="inline-flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5 text-primary" />
+              {visitas != null ? new Intl.NumberFormat("es-PY").format(visitas) : "—"} visitas
+            </span>
           </p>
           <p className="text-xs text-muted-foreground">
             Capiatá, Paraguay

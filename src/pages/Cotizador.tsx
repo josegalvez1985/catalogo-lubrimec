@@ -1558,7 +1558,10 @@ export default function Cotizador() {
       {(quotationDataForModal || quotationData) && (
         <QuotationModal
           isOpen={showQuotationModal}
-          onClose={() => setShowQuotationModal(false)}
+          onClose={() => {
+            setShowQuotationModal(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
           data={quotationDataForModal || quotationData!}
           cantidadLitros={cantidadLitros || "4"}
           cantidadGalones={cantidadGalones || "1"}
