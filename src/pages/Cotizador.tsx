@@ -551,21 +551,20 @@ export default function Cotizador() {
 
       // 1) URL del endpoint
       console.log("🔗 URL DEL ENDPOINT:", url);
-      // 2) Parámetros enviados con sus valores
+      // 2) Parámetros enviados con sus valores (orden igual al endpoint backend)
       console.table({
-        modelo: { valor: selected },
-        tipoServicio: { valor: tipoServicioOracle },
-        viscosidad: { valor: viscosidadDesc },
-        existencia: { valor: existenciaParam },
-        idMarca: { valor: selectedMarca },
-        idMarcaFiltroAceite: { valor: selectedFiltro || "0" },
-        idMarcaFiltroAire: { valor: selectedFiltroAire || "0" },
         idMarcaFiltroCombustible: { valor: selectedFiltroCombustible || "0" },
-        idMarcaFiltroCaja: { valor: selectedFiltroCaja || "0" },
-        descuento: { valor: descuentoParam },
-        idAceites: { valor: idAceitesParam },
+        modelo: { valor: modeloParam },
+        cantidadGalon: { valor: galonesParam },
         cantidadLitros: { valor: litrosParam },
-        cantidadGalones: { valor: galonesParam },
+        idMarcaFiltroCaja: { valor: selectedFiltroCaja || "0" },
+        idMarcaFiltroAire: { valor: selectedFiltroAire || "0" },
+        existencia: { valor: existenciaParam },
+        tipoServicio: { valor: tipoServicioOracle },
+        idAceites: { valor: idAceitesParam },
+        viscosidad: { valor: viscosidadDesc },
+        idMarcaFiltroAceite: { valor: selectedFiltro || "0" },
+        descuento: { valor: descuentoParam },
       });
 
       // Realizar solicitud con timeout
@@ -588,6 +587,11 @@ export default function Cotizador() {
       // Detectar aceites seleccionados que la API no pudo cotizar (sin precio/stock cargado)
       const idsDevueltos = (raw.items || []).map((it) => it.id_articulo);
       const idsFaltantes = selectedAceites.filter((id) => !idsDevueltos.includes(id));
+
+      console.log("🔎 DIAGNÓSTICO COTIZACIÓN:");
+      console.log("   • idAceites enviados:", selectedAceites);
+      console.log("   • idAceites devueltos por la API:", idsDevueltos);
+      console.log("   • idAceites que faltaron (no devueltos):", idsFaltantes);
 
       if (!raw.items || raw.items.length === 0) {
         throw new Error("Respuesta sin datos de cotización");
@@ -666,7 +670,9 @@ export default function Cotizador() {
         },
       };
 
-      console.log("✅ RESPUESTA API EXITOSA:", raw);
+      console.log("✅ RESPUESTA API EXITOSA — respuesta cruda:", raw);
+      console.log(`📦 Items cotizados: ${raw.items.length}`);
+      console.table(raw.items);
       console.log("💰 RESUMEN COTIZACIÓN:", data.resultado!.totales);
 
       setRawCotizacionItems(raw.items);
