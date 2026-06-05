@@ -215,6 +215,7 @@ const Catalogo = () => {
           onViscosidadChange={handleViscosidadClick}
           onMarcaChange={handleMarcaClick}
           onClearAll={handleClearAll}
+          resultCount={displayedArticulos.length}
         />
 
         {/* Main content */}

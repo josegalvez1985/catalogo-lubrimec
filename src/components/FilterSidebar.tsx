@@ -7,6 +7,7 @@ type ExpandedSections = {
   marca: boolean;
 };
 
+/* ---------- Sidebar desktop (radios, secciones colapsables) ---------- */
 function FilterSection({
   title,
   section,
@@ -16,7 +17,6 @@ function FilterSection({
   getLabel,
   expanded,
   onToggle,
-  onSelectFilter,
 }: {
   title: string;
   section: keyof ExpandedSections;
@@ -26,7 +26,6 @@ function FilterSection({
   getLabel: (item: any) => string;
   expanded: boolean;
   onToggle: () => void;
-  onSelectFilter: (id: number | null, callback: (id: number | null) => void) => void;
 }) {
   return (
     <div className="border-b border-border pb-4">
@@ -51,7 +50,7 @@ function FilterSection({
                   type="radio"
                   name={section}
                   checked={activeId === null}
-                  onChange={() => onSelectFilter(null, onSelect)}
+                  onChange={() => onSelect(null)}
                   className="w-4 h-4 cursor-pointer accent-primary"
                 />
                 <span className="text-sm text-muted-foreground">Todas</span>
@@ -68,7 +67,7 @@ function FilterSection({
                       type="radio"
                       name={section}
                       checked={activeId === itemId}
-                      onChange={() => onSelectFilter(itemId, onSelect)}
+                      onChange={() => onSelect(itemId)}
                       className="w-4 h-4 cursor-pointer accent-primary"
                     />
                     <span className="text-sm text-foreground">{getLabel(item)}</span>
@@ -77,6 +76,51 @@ function FilterSection({
               })}
             </>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Grupo de chips (bottom sheet móvil) ---------- */
+function ChipGroup({
+  title,
+  items,
+  activeId,
+  onSelect,
+  getLabel,
+}: {
+  title: string;
+  items: any[];
+  activeId: number | null;
+  onSelect: (id: number | null) => void;
+  getLabel: (item: any) => string;
+}) {
+  const chipClass = (active: boolean) =>
+    `px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+      active
+        ? "bg-primary text-primary-foreground border-primary"
+        : "bg-card/60 text-foreground border-border hover:border-primary/40"
+    }`;
+
+  return (
+    <div>
+      <h3 className="font-semibold text-foreground mb-3">{title}</h3>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Cargando...</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => onSelect(null)} className={chipClass(activeId === null)}>
+            Todas
+          </button>
+          {items.map((item) => {
+            const itemId = item.id_rubro ?? item.id_viscosidad ?? item.id_marca;
+            return (
+              <button key={itemId} onClick={() => onSelect(itemId)} className={chipClass(activeId === itemId)}>
+                {getLabel(item)}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -96,6 +140,7 @@ interface FilterSidebarProps {
   onViscosidadChange: (id: number | null) => void;
   onMarcaChange: (id: number | null) => void;
   onClearAll: () => void;
+  resultCount?: number;
 }
 
 export default function FilterSidebar({
@@ -111,6 +156,7 @@ export default function FilterSidebar({
   onViscosidadChange,
   onMarcaChange,
   onClearAll,
+  resultCount,
 }: FilterSidebarProps) {
   const [expandedSections, setExpandedSections] = useState({
     rubro: true,
@@ -120,30 +166,70 @@ export default function FilterSidebar({
   const [collapsed, setCollapsed] = useState(false);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  const handleSelectFilter = (id: number | null, callback: (id: number | null) => void) => {
-    callback(id);
-    onClose();
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
   const hasActiveFilters = activeRubroId != null || activeViscosidadId != null || activeMarcaId != null;
 
   return (
     <>
-      {/* Mobile overlay */}
-      {isOpen && (
-          <div
-            onClick={onClose}
-            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-          />
-        )}
+      {/* ===================== MÓVIL: bottom sheet ===================== */}
+      {/* Overlay */}
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity ${
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      />
 
-      {/* Botón mostrar filtros (desktop, cuando está colapsada) */}
+      {/* Sheet */}
+      <div
+        className={`fixed inset-x-0 bottom-0 z-50 lg:hidden bg-card rounded-t-[2.5rem] border-t border-border shadow-2xl flex flex-col max-h-[85vh] transition-transform duration-300 ${
+          isOpen ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        {/* Header sticky con barra de arrastre + cerrar */}
+        <div className="shrink-0 pt-3 pb-3 px-6 border-b border-border">
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-border" />
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-foreground">Filtros</h2>
+            <button
+              onClick={onClose}
+              className="p-2 -mr-2 hover:bg-secondary/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Cerrar filtros"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Contenido scrollable (chips) */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <ChipGroup title="Categorías" items={rubros} activeId={activeRubroId} onSelect={onRubroChange} getLabel={(i) => i.descripcion_rubro} />
+          <ChipGroup title="Viscosidad" items={viscosidades} activeId={activeViscosidadId} onSelect={onViscosidadChange} getLabel={(i) => i.descripcion} />
+          <ChipGroup title="Marca" items={marcas} activeId={activeMarcaId} onSelect={onMarcaChange} getLabel={(i) => i.descripcion_marca} />
+        </div>
+
+        {/* Barra de acción fija */}
+        <div className="shrink-0 flex items-center gap-3 px-6 py-4 border-t border-border">
+          {hasActiveFilters && (
+            <button
+              onClick={onClearAll}
+              className="px-5 py-3 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors"
+            >
+              Limpiar
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="flex-1 px-5 py-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold transition-colors"
+          >
+            {resultCount != null ? `Ver ${resultCount} resultados` : "Ver resultados"}
+          </button>
+        </div>
+      </div>
+
+      {/* ===================== DESKTOP: sidebar lateral ===================== */}
       {collapsed && (
         <button
           onClick={() => setCollapsed(false)}
@@ -155,78 +241,32 @@ export default function FilterSidebar({
         </button>
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`fixed lg:relative top-0 left-0 bottom-0 w-72 bg-card/60 backdrop-blur-md border border-border lg:rounded-2xl lg:m-4 z-50 overflow-y-auto transition-transform lg:translate-x-0 pt-16 lg:pt-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } ${collapsed ? "lg:hidden" : ""}`}
+        className={`hidden lg:block relative w-72 bg-card/60 backdrop-blur-md border border-border rounded-2xl m-4 overflow-y-auto ${
+          collapsed ? "lg:hidden" : ""
+        }`}
       >
         <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6 lg:mb-4">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-foreground">Filtros</h2>
             <button
               onClick={() => setCollapsed(true)}
-              className="hidden lg:flex p-2 hover:bg-secondary/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+              className="p-2 hover:bg-secondary/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
               aria-label="Ocultar filtros"
             >
               <PanelLeftClose className="w-5 h-5" />
             </button>
-            <button
-              onClick={onClose}
-              className="lg:hidden p-2 hover:bg-secondary/50 rounded-lg transition-colors"
-              aria-label="Cerrar filtros"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
 
-          {/* Filter Sections */}
           <div className="space-y-4">
-            <FilterSection
-              title="Categorías"
-              section="rubro"
-              items={rubros}
-              activeId={activeRubroId}
-              onSelect={onRubroChange}
-              getLabel={(item) => item.descripcion_rubro}
-              expanded={expandedSections.rubro}
-              onToggle={() => toggleSection("rubro")}
-              onSelectFilter={handleSelectFilter}
-            />
-
-            <FilterSection
-              title="Viscosidad"
-              section="viscosidad"
-              items={viscosidades}
-              activeId={activeViscosidadId}
-              onSelect={onViscosidadChange}
-              getLabel={(item) => item.descripcion}
-              expanded={expandedSections.viscosidad}
-              onToggle={() => toggleSection("viscosidad")}
-              onSelectFilter={handleSelectFilter}
-            />
-
-            <FilterSection
-              title="Marca"
-              section="marca"
-              items={marcas}
-              activeId={activeMarcaId}
-              onSelect={onMarcaChange}
-              getLabel={(item) => item.descripcion_marca}
-              expanded={expandedSections.marca}
-              onToggle={() => toggleSection("marca")}
-              onSelectFilter={handleSelectFilter}
-            />
+            <FilterSection title="Categorías" section="rubro" items={rubros} activeId={activeRubroId} onSelect={onRubroChange} getLabel={(i) => i.descripcion_rubro} expanded={expandedSections.rubro} onToggle={() => toggleSection("rubro")} />
+            <FilterSection title="Viscosidad" section="viscosidad" items={viscosidades} activeId={activeViscosidadId} onSelect={onViscosidadChange} getLabel={(i) => i.descripcion} expanded={expandedSections.viscosidad} onToggle={() => toggleSection("viscosidad")} />
+            <FilterSection title="Marca" section="marca" items={marcas} activeId={activeMarcaId} onSelect={onMarcaChange} getLabel={(i) => i.descripcion_marca} expanded={expandedSections.marca} onToggle={() => toggleSection("marca")} />
           </div>
 
-          {/* Clear filters */}
           {hasActiveFilters && (
             <button
-              onClick={() => {
-                onClearAll();
-                onClose();
-              }}
+              onClick={onClearAll}
               className="w-full mt-6 px-4 py-2 rounded-full bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-colors"
             >
               Limpiar filtros

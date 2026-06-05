@@ -613,18 +613,21 @@ export default function Cotizador() {
 
       const first = raw.items[0];
 
-      const aceitesCotizados = raw.items.map((it) => ({
-        id: it.id_articulo,
-        nombre: it.articulo.replace(/-\d+$/, "").trim(),
-        // Precio del aceite solo (lista). El descuento se aplica con el % cargado.
-        precioBase: it.total_aceite,
-        precioDescuento: descuentoParam > 0 ? it.total_aceite * (1 - descuentoParam / 100) : it.total_aceite,
-        // Total del item con filtros: lista (it.total) y con descuento (it.total_descuento)
-        totalLista: parseMonto(it.total),
-        totalDescuento: parseMonto(it.total_descuento),
-        stock: it.stock,
-        unidad: it.cod_unidad_medida,
-      }));
+      const aceitesCotizados = raw.items.map((it) => {
+        const totalLista = parseMonto(it.total);
+        return {
+          id: it.id_articulo,
+          nombre: it.articulo.replace(/-\d+$/, "").trim(),
+          // Precio del aceite solo (lista). El descuento se aplica con el % cargado en el front.
+          precioBase: it.total_aceite,
+          precioDescuento: descuentoParam > 0 ? it.total_aceite * (1 - descuentoParam / 100) : it.total_aceite,
+          // Total del item con filtros: lista (it.total) y con descuento calculado en el front.
+          totalLista,
+          totalDescuento: descuentoParam > 0 ? totalLista * (1 - descuentoParam / 100) : parseMonto(it.total_descuento),
+          stock: it.stock,
+          unidad: it.cod_unidad_medida,
+        };
+      });
 
       const filtros: NonNullable<CotizacionAPIResponse["resultado"]>["filtros"] = {};
       if (tipoServicioOracle === "M") {
