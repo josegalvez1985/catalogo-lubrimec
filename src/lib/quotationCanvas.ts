@@ -276,29 +276,31 @@ function drawQuoteHeader(ctx: CanvasRenderingContext2D, data: QuotationData, h: 
   ctx.fillText('LUBRICANTES', logoX + logoSize / 2, logoY + logoSize / 2 - 14);
   ctx.fillText('Y FILTROS', logoX + logoSize / 2, logoY + logoSize / 2 + 16);
 
-  // Distribución vertical de los textos centrales
+  // Textos centrados en TODO el ancho (1080px)
   ctx.textAlign = 'center';
 
   // Título principal
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 88px Arial, sans-serif';
-  ctx.fillText('LUBRIMEC', w / 2, h * 0.13);
+  ctx.fillText('LUBRIMEC', w / 2, h * 0.06);
 
   // Subtítulo
-  ctx.font = '30px Arial, sans-serif';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText('COTIZACIÓN DE LUBRICANTES Y FILTROS', w / 2, h * 0.50);
+  ctx.font = '28px Arial, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText('COTIZACIÓN DE LUBRICANTES Y FILTROS', w / 2, h * 0.38);
 
-  // Modelo (amarillo destacado)
-  ctx.font = 'bold 40px Arial, sans-serif';
+  // Modelo (amarillo, grande, ocupa todo el ancho)
   ctx.fillStyle = QUOTE.HEADER_HIGHLIGHT;
-  ctx.fillText(data.modelo, w / 2, h * 0.64);
+  const modeloFontSize = fitFontSize(ctx, data.modelo, 'bold', w - 80, 72, 48);
+  ctx.font = `bold ${modeloFontSize}px Arial, sans-serif`;
+  ctx.fillText(data.modelo, w / 2, h * 0.52);
 
-  // Fecha
+  // Fecha y descuento en la misma línea
   const fecha = data.fecha || new Date().toLocaleDateString('es-PY');
-  ctx.font = '24px Arial, sans-serif';
+  const descuentoLabel = data.descuento && data.descuento > 0 ? `  •  DESCUENTO ${data.descuento}%` : '';
+  ctx.font = 'bold 36px Arial, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(fecha, w / 2, h * 0.82);
+  ctx.fillText(`${fecha}${descuentoLabel}`, w / 2, h * 0.80);
 }
 
 function drawProductCard(
@@ -752,6 +754,24 @@ function drawStoryFormat(
   ctx.fillStyle = 'rgba(255,255,255,0.05)';
   ctx.font = '12px Arial, sans-serif';
   ctx.fillText('lubrimec.com.py', w / 2, h - 30);
+}
+
+// Reduce el font-size hasta que el texto entre en maxWidth
+function fitFontSize(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  weight: string,
+  maxWidth: number,
+  startSize: number,
+  minSize: number
+): number {
+  let size = startSize;
+  while (size > minSize) {
+    ctx.font = `${weight} ${size}px Arial, sans-serif`;
+    if (ctx.measureText(text).width <= maxWidth) break;
+    size -= 2;
+  }
+  return size;
 }
 
 // Utility: ajustar brillo de un color hex

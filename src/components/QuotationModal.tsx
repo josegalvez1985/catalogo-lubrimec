@@ -369,22 +369,22 @@ export default function QuotationModal({
           </div>
 
           <div ref={captureRef} className="px-4 pt-3 pb-3 space-y-4 bg-card">
-            {/* Encabezado: logo a la izquierda, vehículo y fecha a la derecha */}
-            <div className="flex items-center justify-between gap-3 pb-1">
-              <div className="flex items-center gap-3">
+            {/* Encabezado: al capturar, logo absoluto a la izquierda y texto centrado en todo el ancho */}
+            <div className={`pb-1 ${capturing ? 'relative' : 'flex items-center justify-between gap-3'}`}>
+              <div className={`flex items-center gap-3 shrink-0 ${capturing ? 'absolute left-0 top-1/2 -translate-y-1/2' : ''}`}>
                 <img src={logo} alt="Lubrimec" className="h-16 w-auto object-contain" />
                 <div className="leading-tight">
                   <p className="text-lg font-extrabold text-foreground">Lubrimec</p>
                   <p className="text-xs text-muted-foreground">Lubricantes y Filtros</p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className={`${capturing ? 'text-center' : 'text-right'}`}>
                 {data?.modelo && (
-                  <p className="text-base font-bold text-foreground">{data.modelo}</p>
+                  <p className={`font-extrabold text-foreground leading-tight ${capturing ? 'text-4xl' : 'text-base'}`}>{data.modelo}</p>
                 )}
-                <p className="text-xs text-muted-foreground">{fechaActual}</p>
+                <p className={`text-muted-foreground ${capturing ? 'text-xl mt-1' : 'text-xs'}`}>{fechaActual}</p>
                 {pct > 0 && (
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <p className={`text-emerald-600 dark:text-emerald-400 font-semibold ${capturing ? 'text-2xl mt-1' : 'text-sm'}`}>
                     Descuento otorgado: {pct}%
                   </p>
                 )}

@@ -1543,6 +1543,8 @@ export default function Cotizador() {
           isOpen={showQuotationModal}
           onClose={() => {
             setShowQuotationModal(false);
+            setSelected(null);
+            setQuery("");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           data={quotationDataForModal || quotationData!}
