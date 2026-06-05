@@ -66,6 +66,7 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
         <img
           src={src}
           alt={alt}
+          crossOrigin="anonymous"
           loading="lazy"
           onError={() => setError(true)}
           className="w-full h-full object-contain"
