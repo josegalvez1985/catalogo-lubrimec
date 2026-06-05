@@ -427,8 +427,8 @@ export default function Cotizador() {
       const data: FiltroAceiteResponse = await res.json();
       setFiltrosAceite(data.items);
 
-      // Si hay un único filtro, seleccionarlo por defecto
-      if (data.items.length === 1) {
+      // Seleccionar el primero por defecto
+      if (data.items.length > 0) {
         setSelectedFiltro(data.items[0].id_marca);
       }
     } catch (e) {
@@ -449,8 +449,8 @@ export default function Cotizador() {
       const data: FiltroAireResponse = await res.json();
       setFiltrosAire(data.items);
 
-      // Si hay un único filtro, seleccionarlo por defecto
-      if (data.items.length === 1) {
+      // Seleccionar el primero por defecto
+      if (data.items.length > 0) {
         setSelectedFiltroAire(data.items[0].id_marca);
       }
     } catch (e) {
@@ -471,8 +471,8 @@ export default function Cotizador() {
       const data: FiltroCombustibleResponse = await res.json();
       setFiltrosCombustible(data.items);
 
-      // Si hay un único filtro, seleccionarlo por defecto
-      if (data.items.length === 1) {
+      // Seleccionar el primero por defecto
+      if (data.items.length > 0) {
         setSelectedFiltroCombustible(data.items[0].id_marca);
       }
     } catch (e) {
@@ -493,8 +493,8 @@ export default function Cotizador() {
       const data: FiltroCajaResponse = await res.json();
       setFiltrosCaja(data.items);
 
-      // Si hay un único filtro, seleccionarlo por defecto
-      if (data.items.length === 1) {
+      // Seleccionar el primero por defecto
+      if (data.items.length > 0) {
         setSelectedFiltroCaja(data.items[0].id_marca);
       }
     } catch (e) {

@@ -1,6 +1,88 @@
 import { useState } from "react";
 import { ChevronDown, X, SlidersHorizontal, PanelLeftClose } from "lucide-react";
 
+type ExpandedSections = {
+  rubro: boolean;
+  viscosidad: boolean;
+  marca: boolean;
+};
+
+function FilterSection({
+  title,
+  section,
+  items,
+  activeId,
+  onSelect,
+  getLabel,
+  expanded,
+  onToggle,
+  onSelectFilter,
+}: {
+  title: string;
+  section: keyof ExpandedSections;
+  items: any[];
+  activeId: number | null;
+  onSelect: (id: number | null) => void;
+  getLabel: (item: any) => string;
+  expanded: boolean;
+  onToggle: () => void;
+  onSelectFilter: (id: number | null, callback: (id: number | null) => void) => void;
+}) {
+  return (
+    <div className="border-b border-border pb-4">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between py-3 px-0 hover:text-primary transition-colors"
+      >
+        <h3 className="font-semibold text-foreground">{title}</h3>
+        <div style={{ transform: `rotate(${expanded ? 0 : -90}deg)`, transition: "transform 0.2s" }}>
+          <ChevronDown className="w-4 h-4" />
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="space-y-2">
+          {items.length === 0 ? (
+            <p className="text-sm text-muted-foreground p-2">Cargando...</p>
+          ) : (
+            <>
+              <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name={section}
+                  checked={activeId === null}
+                  onChange={() => onSelectFilter(null, onSelect)}
+                  className="w-4 h-4 cursor-pointer accent-primary"
+                />
+                <span className="text-sm text-muted-foreground">Todas</span>
+              </label>
+
+              {items.map((item) => {
+                const itemId = item.id_rubro ?? item.id_viscosidad ?? item.id_marca;
+                return (
+                  <label
+                    key={itemId}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="radio"
+                      name={section}
+                      checked={activeId === itemId}
+                      onChange={() => onSelectFilter(itemId, onSelect)}
+                      className="w-4 h-4 cursor-pointer accent-primary"
+                    />
+                    <span className="text-sm text-foreground">{getLabel(item)}</span>
+                  </label>
+                );
+              })}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface FilterSidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -48,75 +130,6 @@ export default function FilterSidebar({
     callback(id);
     onClose();
   };
-
-  const FilterSection = ({
-    title,
-    section,
-    items,
-    activeId,
-    onSelect,
-    getLabel,
-  }: {
-    title: string;
-    section: keyof typeof expandedSections;
-    items: any[];
-    activeId: number | null;
-    onSelect: (id: number | null) => void;
-    getLabel: (item: any) => string;
-  }) => (
-    <div className="border-b border-border pb-4">
-      <button
-        onClick={() => toggleSection(section)}
-        className="w-full flex items-center justify-between py-3 px-0 hover:text-primary transition-colors"
-      >
-        <h3 className="font-semibold text-foreground">{title}</h3>
-        <div
-          style={{ transform: `rotate(${expandedSections[section] ? 0 : -90}deg)`, transition: "transform 0.2s" }}
-        >
-          <ChevronDown className="w-4 h-4" />
-        </div>
-      </button>
-
-      {expandedSections[section] && (
-          <div
-            className="space-y-2"
-          >
-            {items.length === 0 ? (
-              <p className="text-sm text-muted-foreground p-2">Cargando...</p>
-            ) : (
-              <>
-                <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors">
-                  <input
-                    type="radio"
-                    name={section}
-                    checked={activeId === null}
-                    onChange={() => handleSelectFilter(null, onSelect)}
-                    className="w-4 h-4 cursor-pointer accent-primary"
-                  />
-                  <span className="text-sm text-muted-foreground">Todas</span>
-                </label>
-
-                {items.map((item) => (
-                  <label
-                    key={item.id_rubro || item.id_viscosidad || item.id_marca}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="radio"
-                      name={section}
-                      checked={activeId === (item.id_rubro || item.id_viscosidad || item.id_marca)}
-                      onChange={() => handleSelectFilter(item.id_rubro || item.id_viscosidad || item.id_marca, onSelect)}
-                      className="w-4 h-4 cursor-pointer accent-primary"
-                    />
-                    <span className="text-sm text-foreground">{getLabel(item)}</span>
-                  </label>
-                ))}
-              </>
-            )}
-          </div>
-        )}
-    </div>
-  );
 
   const hasActiveFilters = activeRubroId != null || activeViscosidadId != null || activeMarcaId != null;
 
@@ -177,6 +190,9 @@ export default function FilterSidebar({
               activeId={activeRubroId}
               onSelect={onRubroChange}
               getLabel={(item) => item.descripcion_rubro}
+              expanded={expandedSections.rubro}
+              onToggle={() => toggleSection("rubro")}
+              onSelectFilter={handleSelectFilter}
             />
 
             <FilterSection
@@ -186,6 +202,9 @@ export default function FilterSidebar({
               activeId={activeViscosidadId}
               onSelect={onViscosidadChange}
               getLabel={(item) => item.descripcion}
+              expanded={expandedSections.viscosidad}
+              onToggle={() => toggleSection("viscosidad")}
+              onSelectFilter={handleSelectFilter}
             />
 
             <FilterSection
@@ -195,6 +214,9 @@ export default function FilterSidebar({
               activeId={activeMarcaId}
               onSelect={onMarcaChange}
               getLabel={(item) => item.descripcion_marca}
+              expanded={expandedSections.marca}
+              onToggle={() => toggleSection("marca")}
+              onSelectFilter={handleSelectFilter}
             />
           </div>
 
