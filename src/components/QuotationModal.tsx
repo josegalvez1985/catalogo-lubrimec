@@ -161,8 +161,11 @@ export default function QuotationModal({
     const ratioBySide = Math.min(MAX_SIDE / width, MAX_SIDE / height);
     const ratioByArea = Math.sqrt(MAX_AREA / (width * height));
 
-    // Nunca subir de TARGET ni bajar de 1 (mínimo aceptable)
-    return Math.max(1, Math.min(TARGET, ratioBySide, ratioByArea));
+    // Nunca subir de TARGET ni bajar de 1 (mínimo aceptable). Redondeamos a 0.5
+    // para evitar ratios fraccionarios raros (p. ej. 2.37) que suavizan bordes y
+    // texto; un múltiplo de 0.5 mantiene la grilla de píxeles más nítida.
+    const raw = Math.max(1, Math.min(TARGET, ratioBySide, ratioByArea));
+    return Math.max(1, Math.floor(raw * 2) / 2);
   };
 
   // Ancho FIJO del contenido (las filas se renderizan siempre a este ancho, donde
@@ -182,6 +185,13 @@ export default function QuotationModal({
     // Activar layout de 3 columnas y esperar a que React lo pinte antes de medir.
     setCapturing(true);
     await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
+    // Asegurar que las fuentes estén listas antes de capturar: si html-to-image
+    // mide el texto con la fuente aún cargando, la primera imagen puede salir con
+    // métricas erróneas o texto recortado.
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
 
     // Esperar a que TODAS las imágenes del nodo terminen (carguen o fallen) antes de
     // capturar. Sin esto, la primera captura sale incompleta (imágenes aún cargando)
@@ -281,9 +291,6 @@ export default function QuotationModal({
   const handleCopy = async () => {
     setCopying(true);
     try {
-      // Máxima calidad (sin acotar el ancho).
-      const png = await generarPng();
-      if (!png) return;
       // El portapapeles de imágenes sólo existe en contexto seguro (HTTPS/localhost).
       // En HTTP (p. ej. probando por IP de red) navigator.clipboard es undefined:
       // avisamos y descargamos como respaldo en vez de crashear.
@@ -292,11 +299,31 @@ export default function QuotationModal({
         await handleDownload();
         return;
       }
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+
+      // Safari/iOS invalidan el permiso de escritura al portapapeles si entre el
+      // gesto del usuario y el write() transcurre demasiado tiempo (la generación
+      // del PNG es async). Pasar una Promise<Blob> como valor del ClipboardItem
+      // mantiene vivo el gesto: el navegador espera a que la promesa resuelva.
+      // Máxima calidad (sin acotar el ancho).
+      const pngPromise = generarPng().then((png) => {
+        if (!png) throw new Error('No se pudo generar el PNG');
+        return png;
+      });
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': pngPromise }),
+      ]);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (e) {
       console.error('Error copiando imagen:', e);
+      // Fallback: si el portapapeles rechaza la imagen (PNG muy grande en algunos
+      // navegadores, permiso revocado, etc.), no dejar al usuario sin resultado.
+      try {
+        await handleDownload();
+      } catch {
+        alert('No se pudo copiar ni descargar la imagen. Intentá de nuevo.');
+      }
     } finally {
       setCopying(false);
     }
