@@ -14,7 +14,9 @@ import Servicios from "./pages/Servicios";
 import Catalogo from "./pages/Catalogo";
 import Cotizador from "./pages/Cotizador";
 import Contacto from "./pages/Contacto";
+import Carrito from "./pages/Carrito";
 import NotFound from "./pages/NotFound";
+import { CartProvider } from "@/hooks/useCart";
 
 // Sin caché: cada montaje/navegación re-consulta los endpoints en fresco.
 const queryClient = new QueryClient({
@@ -64,6 +66,7 @@ function Layout() {
           <Route path="/catalogo" element={<Catalogo />} />
           <Route path="/cotizador" element={<Cotizador />} />
           <Route path="/contacto" element={<Contacto />} />
+          <Route path="/carrito" element={<Carrito />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
@@ -80,7 +83,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
-        <Layout />
+        <CartProvider>
+          <Layout />
+        </CartProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

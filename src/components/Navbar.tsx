@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone, Wrench, BookOpen, Home, Users, Settings, MessageSquare } from "lucide-react";
+import { Menu, X, Phone, Wrench, BookOpen, Home, Users, Settings, MessageSquare, ShoppingCart } from "lucide-react";
 import PwaInstallButton from "@/components/PwaInstallButton";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useCart } from "@/hooks/useCart";
 import lubrimecLogo from "@/assets/lubrimec-logo.png";
 
 const navLinks = [
@@ -43,6 +44,25 @@ const navLinks = [
     description: "Escribinos, llamanos o visitanos",
   },
 ];
+
+function CartLink({ onClick }: { onClick?: () => void }) {
+  const { totalItems } = useCart();
+  return (
+    <Link
+      to="/carrito"
+      onClick={onClick}
+      aria-label={`Carrito${totalItems > 0 ? ` (${totalItems})` : ""}`}
+      className="relative flex items-center justify-center w-10 h-10 rounded-lg text-foreground hover:bg-secondary/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+    >
+      <ShoppingCart className="w-5 h-5" />
+      {totalItems > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold tabular-nums">
+          {totalItems > 99 ? "99+" : totalItems}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -125,6 +145,7 @@ export default function Navbar() {
             {/* Desktop Right Actions */}
             <div className="hidden lg:flex items-center gap-3">
               <ThemeToggle />
+              <CartLink />
               <a
                 href="https://wa.me/595974759037"
                 target="_blank"
@@ -142,6 +163,7 @@ export default function Navbar() {
             {/* Mobile right actions */}
             <div className="lg:hidden flex items-center gap-2">
               <ThemeToggle />
+              <CartLink />
             <button
               onClick={() => setMobileOpen((v) => !v)}
               aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}

@@ -18,16 +18,19 @@ const Catalogo = () => {
   const [page, setPage] = useState(1);
   const pageSize = 16;
 
+  const parseIds = (key: string): number[] =>
+    (searchParams.get(key) || "")
+      .split(",")
+      .map((s) => Number(s))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") || "");
-  const [activeRubroId, setActiveRubroId] = useState<number | null>(
-    searchParams.get("rubro") ? Number(searchParams.get("rubro")) : null
-  );
-  const [activeViscosidadId, setActiveViscosidadId] = useState<number | null>(
-    searchParams.get("viscosidad") ? Number(searchParams.get("viscosidad")) : null
-  );
-  const [activeMarcaId, setActiveMarcaId] = useState<number | null>(
-    searchParams.get("marca") ? Number(searchParams.get("marca")) : null
+  const [activeRubroIds, setActiveRubroIds] = useState<number[]>(() => parseIds("rubro"));
+  const [activeViscosidadIds, setActiveViscosidadIds] = useState<number[]>(() => parseIds("viscosidad"));
+  const [activeMarcaIds, setActiveMarcaIds] = useState<number[]>(() => parseIds("marca"));
+  const [stockFilter, setStockFilter] = useState<"todos" | "stock" | "sin">(
+    (searchParams.get("stock") as "todos" | "stock" | "sin") || "stock"
   );
   const [selectedArticulo, setSelectedArticulo] = useState<Articulo | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -50,30 +53,29 @@ const Catalogo = () => {
   useEffect(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("q", debouncedSearch);
-    if (activeRubroId) params.set("rubro", String(activeRubroId));
-    if (activeViscosidadId) params.set("viscosidad", String(activeViscosidadId));
-    if (activeMarcaId) params.set("marca", String(activeMarcaId));
+    if (activeRubroIds.length) params.set("rubro", activeRubroIds.join(","));
+    if (activeViscosidadIds.length) params.set("viscosidad", activeViscosidadIds.join(","));
+    if (activeMarcaIds.length) params.set("marca", activeMarcaIds.join(","));
+    if (stockFilter !== "stock") params.set("stock", stockFilter);
     setSearchParams(params, { replace: true });
-  }, [debouncedSearch, activeRubroId, activeViscosidadId, activeMarcaId, setSearchParams]);
+  }, [debouncedSearch, activeRubroIds, activeViscosidadIds, activeMarcaIds, stockFilter, setSearchParams]);
 
-  const handleRubroClick = (rubroId: number | null) => {
-    setActiveRubroId(rubroId);
-    setActiveViscosidadId(null);
-    setActiveMarcaId(null);
+  const toggleId = (setter: React.Dispatch<React.SetStateAction<number[]>>) => (id: number) => {
+    setter((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
     setPage(1);
   };
-  const handleViscosidadClick = (id_viscosidad: number | null) => {
-    setActiveViscosidadId(id_viscosidad);
-    setPage(1);
-  };
-  const handleMarcaClick = (id_marca: number | null) => {
-    setActiveMarcaId(id_marca);
-    setPage(1);
-  };
+  const handleToggleRubro = toggleId(setActiveRubroIds);
+  const handleToggleViscosidad = toggleId(setActiveViscosidadIds);
+  const handleToggleMarca = toggleId(setActiveMarcaIds);
+  const handleClearRubros = () => { setActiveRubroIds([]); setPage(1); };
+  const handleClearViscosidades = () => { setActiveViscosidadIds([]); setPage(1); };
+  const handleClearMarcas = () => { setActiveMarcaIds([]); setPage(1); };
+  const handleStockChange = (val: "todos" | "stock" | "sin") => { setStockFilter(val); setPage(1); };
   const handleClearAll = () => {
-    setActiveRubroId(null);
-    setActiveViscosidadId(null);
-    setActiveMarcaId(null);
+    setActiveRubroIds([]);
+    setActiveViscosidadIds([]);
+    setActiveMarcaIds([]);
+    setStockFilter("stock");
     setPage(1);
   };
 
@@ -94,40 +96,63 @@ const Catalogo = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Prefiltro de stock: base sobre la que se calculan filtros cruzados y resultados
+  const matchesStockFilter = (a: Articulo) => {
+    if (stockFilter === "todos") return true;
+    const tiene = (a.stock ?? 0) > 0;
+    return stockFilter === "stock" ? tiene : !tiene;
+  };
+  const articulosBase = useMemo(
+    () => articulos.filter(matchesStockFilter),
+    [articulos, stockFilter]
+  );
+
+  const rubrosDisponibles = useMemo(() => {
+    let subset = articulosBase;
+    if (activeViscosidadIds.length) subset = subset.filter(a => a.id_viscosidad != null && activeViscosidadIds.includes(a.id_viscosidad));
+    if (activeMarcaIds.length) subset = subset.filter(a => a.id_marca != null && activeMarcaIds.includes(a.id_marca));
+    const ids = new Set(subset.map(a => a.id_rubro).filter(Boolean) as number[]);
+    return rubros.filter(r => ids.has(r.id_rubro));
+  }, [articulosBase, activeViscosidadIds, activeMarcaIds, rubros]);
+
   const viscosidadesDisponibles = useMemo(() => {
-    let subset = activeRubroId
-      ? articulos.filter(a => a.id_rubro === activeRubroId && a.id_viscosidad != null)
-      : articulos.filter(a => a.id_viscosidad != null);
-    if (activeMarcaId) subset = subset.filter(a => a.id_marca === activeMarcaId);
+    let subset = activeRubroIds.length
+      ? articulosBase.filter(a => a.id_rubro != null && activeRubroIds.includes(a.id_rubro) && a.id_viscosidad != null)
+      : articulosBase.filter(a => a.id_viscosidad != null);
+    if (activeMarcaIds.length) subset = subset.filter(a => a.id_marca != null && activeMarcaIds.includes(a.id_marca));
     const ids = new Set(subset.map(a => a.id_viscosidad!));
     return viscosidades.filter(v => ids.has(v.id_viscosidad));
-  }, [articulos, activeRubroId, activeMarcaId, viscosidades]);
+  }, [articulosBase, activeRubroIds, activeMarcaIds, viscosidades]);
 
   const q = debouncedSearch.toLowerCase().trim();
 
   const availableMarcas = useMemo(() => {
-    let subset = activeRubroId
-      ? articulos.filter(a => a.id_rubro === activeRubroId)
-      : articulos;
-    if (activeViscosidadId) subset = subset.filter(a => a.id_viscosidad === activeViscosidadId);
+    let subset = activeRubroIds.length
+      ? articulosBase.filter(a => a.id_rubro != null && activeRubroIds.includes(a.id_rubro))
+      : articulosBase;
+    if (activeViscosidadIds.length) subset = subset.filter(a => a.id_viscosidad != null && activeViscosidadIds.includes(a.id_viscosidad));
     const marcaIdsEnUso = new Set(subset.map(a => a.id_marca).filter(Boolean) as number[]);
     return marcas
       .filter(m => marcaIdsEnUso.has(m.id_marca))
       .sort((a, b) => a.descripcion_marca.localeCompare(b.descripcion_marca));
-  }, [articulos, activeRubroId, activeViscosidadId, marcas]);
+  }, [articulosBase, activeRubroIds, activeViscosidadIds, marcas]);
 
 
   useEffect(() => {
-    if (activeMarcaId && availableMarcas.length > 0 && !availableMarcas.some(m => m.id_marca === activeMarcaId)) {
-      setActiveMarcaId(null);
+    if (activeMarcaIds.length && availableMarcas.length > 0) {
+      const valid = availableMarcas.map(m => m.id_marca);
+      const filtered = activeMarcaIds.filter(id => valid.includes(id));
+      if (filtered.length !== activeMarcaIds.length) setActiveMarcaIds(filtered);
     }
-  }, [activeMarcaId, availableMarcas]);
+  }, [activeMarcaIds, availableMarcas]);
 
   useEffect(() => {
-    if (activeViscosidadId && viscosidadesDisponibles.length > 0 && !viscosidadesDisponibles.some(v => v.id_viscosidad === activeViscosidadId)) {
-      setActiveViscosidadId(null);
+    if (activeViscosidadIds.length && viscosidadesDisponibles.length > 0) {
+      const valid = viscosidadesDisponibles.map(v => v.id_viscosidad);
+      const filtered = activeViscosidadIds.filter(id => valid.includes(id));
+      if (filtered.length !== activeViscosidadIds.length) setActiveViscosidadIds(filtered);
     }
-  }, [activeViscosidadId, viscosidadesDisponibles]);
+  }, [activeViscosidadIds, viscosidadesDisponibles]);
 
   // En catálogo: precio de lista (API) con 30% de descuento
   const articulosConPrecio = articulos.map((a) => ({
@@ -141,10 +166,12 @@ const Catalogo = () => {
     const marca = (a.descripcion_marca || "").toLowerCase();
     const rubro = (a.descripcion_rubro || "").toLowerCase();
     const matchesSearch = q === "" ? true : descripcion.includes(q) || marca.includes(q) || rubro.includes(q);
-    const matchesRubro = activeRubroId ? a.id_rubro === activeRubroId : true;
-    const matchesViscosidad = activeViscosidadId ? a.id_viscosidad === activeViscosidadId : true;
-    const matchesMarca = activeMarcaId ? a.id_marca === activeMarcaId : true;
-    return matchesSearch && matchesRubro && matchesViscosidad && matchesMarca;
+    const matchesRubro = activeRubroIds.length ? (a.id_rubro != null && activeRubroIds.includes(a.id_rubro)) : true;
+    const matchesViscosidad = activeViscosidadIds.length ? (a.id_viscosidad != null && activeViscosidadIds.includes(a.id_viscosidad)) : true;
+    const matchesMarca = activeMarcaIds.length ? (a.id_marca != null && activeMarcaIds.includes(a.id_marca)) : true;
+    const tieneStock = (a.stock ?? 0) > 0;
+    const matchesStock = stockFilter === "todos" ? true : stockFilter === "stock" ? tieneStock : !tieneStock;
+    return matchesSearch && matchesRubro && matchesViscosidad && matchesMarca && matchesStock;
   });
 
   const paginatedArticulos = displayedArticulos.slice(0, page * pageSize);
@@ -160,24 +187,20 @@ const Catalogo = () => {
     if (selectedIndex < displayedArticulos.length - 1) setSelectedArticulo(displayedArticulos[selectedIndex + 1]);
   };
 
-  const activeCategory = useMemo(() => {
-    if (!activeRubroId) return "Todos";
-    const r = rubros.find(r => r.id_rubro === activeRubroId);
-    return r?.descripcion_rubro ?? "Todos";
-  }, [activeRubroId, rubros]);
+  const activeRubroChips = useMemo(
+    () => activeRubroIds.map(id => ({ id, name: rubros.find(r => r.id_rubro === id)?.descripcion_rubro ?? `#${id}` })),
+    [activeRubroIds, rubros]
+  );
+  const activeViscosidadChips = useMemo(
+    () => activeViscosidadIds.map(id => ({ id, name: viscosidades.find(v => v.id_viscosidad === id)?.descripcion ?? `#${id}` })),
+    [activeViscosidadIds, viscosidades]
+  );
+  const activeMarcaChips = useMemo(
+    () => activeMarcaIds.map(id => ({ id, name: marcas.find(m => m.id_marca === id)?.descripcion_marca ?? `#${id}` })),
+    [activeMarcaIds, marcas]
+  );
 
-
-  const activeViscosidadName = useMemo(() => {
-    if (!activeViscosidadId) return null;
-    return viscosidades.find(v => v.id_viscosidad === activeViscosidadId)?.descripcion ?? null;
-  }, [activeViscosidadId, viscosidades]);
-
-  const activeMarcaName = useMemo(() => {
-    if (!activeMarcaId) return null;
-    return marcas.find(m => m.id_marca === activeMarcaId)?.descripcion_marca ?? null;
-  }, [activeMarcaId, marcas]);
-
-  const hasActiveFilters = activeRubroId != null || activeViscosidadId != null || activeMarcaId != null || debouncedSearch !== "";
+  const hasActiveFilters = activeRubroIds.length > 0 || activeViscosidadIds.length > 0 || activeMarcaIds.length > 0 || stockFilter !== "todos" || debouncedSearch !== "";
 
   return (
     <div className="min-h-screen">
@@ -205,15 +228,20 @@ const Catalogo = () => {
         <FilterSidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          rubros={rubros}
+          rubros={rubrosDisponibles}
           viscosidades={viscosidadesDisponibles}
           marcas={availableMarcas}
-          activeRubroId={activeRubroId}
-          activeViscosidadId={activeViscosidadId}
-          activeMarcaId={activeMarcaId}
-          onRubroChange={handleRubroClick}
-          onViscosidadChange={handleViscosidadClick}
-          onMarcaChange={handleMarcaClick}
+          activeRubroIds={activeRubroIds}
+          activeViscosidadIds={activeViscosidadIds}
+          activeMarcaIds={activeMarcaIds}
+          onToggleRubro={handleToggleRubro}
+          onToggleViscosidad={handleToggleViscosidad}
+          onToggleMarca={handleToggleMarca}
+          onClearRubros={handleClearRubros}
+          onClearViscosidades={handleClearViscosidades}
+          onClearMarcas={handleClearMarcas}
+          stockFilter={stockFilter}
+          onStockChange={handleStockChange}
           onClearAll={handleClearAll}
           resultCount={displayedArticulos.length}
         />
@@ -261,24 +289,37 @@ const Catalogo = () => {
                   <button onClick={() => { setSearch(""); setDebouncedSearch(""); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar búsqueda"><X className="w-3 h-3" /></button>
                 </span>
               )}
-              {activeRubroId && (
+              {activeRubroChips.map(chip => (
+                <span key={`r-${chip.id}`} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
+                  Categoría: {chip.name}
+                  <button onClick={() => handleToggleRubro(chip.id)} className="ml-0.5 hover:text-primary/70" aria-label="Quitar categoría"><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+              {activeViscosidadChips.map(chip => (
+                <span key={`v-${chip.id}`} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
+                  Viscosidad: {chip.name}
+                  <button onClick={() => handleToggleViscosidad(chip.id)} className="ml-0.5 hover:text-primary/70" aria-label="Quitar viscosidad"><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+              {activeMarcaChips.map(chip => (
+                <span key={`m-${chip.id}`} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
+                  Marca: {chip.name}
+                  <button onClick={() => handleToggleMarca(chip.id)} className="ml-0.5 hover:text-primary/70" aria-label="Quitar marca"><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+              {stockFilter !== "todos" && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
-                  Categoría: {activeCategory}
-                  <button onClick={() => { setActiveRubroId(null); setActiveViscosidadId(null); setActiveMarcaId(null); setPage(1); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar categoría"><X className="w-3 h-3" /></button>
+                  {stockFilter === "stock" ? "Con stock" : "Sin stock"}
+                  <button onClick={() => handleStockChange("todos")} className="ml-0.5 hover:text-primary/70" aria-label="Quitar filtro de stock"><X className="w-3 h-3" /></button>
                 </span>
               )}
-              {activeViscosidadName && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
-                  Viscosidad: {activeViscosidadName}
-                  <button onClick={() => { setActiveViscosidadId(null); setPage(1); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar viscosidad"><X className="w-3 h-3" /></button>
-                </span>
-              )}
-              {activeMarcaName && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
-                  Marca: {activeMarcaName}
-                  <button onClick={() => { setActiveMarcaId(null); setPage(1); }} className="ml-0.5 hover:text-primary/70" aria-label="Quitar marca"><X className="w-3 h-3" /></button>
-                </span>
-              )}
+              <button
+                onClick={() => { setSearch(""); setDebouncedSearch(""); handleClearAll(); }}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Limpiar todo
+              </button>
             </div>
           )}
 
@@ -338,7 +379,7 @@ const Catalogo = () => {
                 <h3 className="text-lg font-semibold text-foreground mb-1">No se encontraron productos</h3>
                 <p className="text-sm text-muted-foreground mb-3">Los filtros activos no devolvieron resultados</p>
                 <button
-                  onClick={() => { setSearch(""); setDebouncedSearch(""); setActiveRubroId(null); setActiveViscosidadId(null); setActiveMarcaId(null); setPage(1); }}
+                  onClick={() => { setSearch(""); setDebouncedSearch(""); handleClearAll(); }}
                   className="px-4 py-2 rounded-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                 >
                   Limpiar filtros

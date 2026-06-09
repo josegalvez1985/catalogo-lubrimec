@@ -1,20 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Copy, Check, Loader2 } from "lucide-react";
+import { Copy, Check, Loader2, ShoppingCart } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import placeholder from "@/assets/lubrimec-logo.png";
 import { API_BASE } from "@/lib/config";
 import { buildProductCanvas } from "@/lib/productCanvas";
+import { useCart } from "@/hooks/useCart";
+import type { Articulo } from "@/hooks/useArticulos";
 
 interface Props {
-  articulo: {
-    id_articulo: number;
-    descripcion_articulo: string;
-    descripcion_marca?: string | null;
-    tiene_imagen?: number;
-    stock?: number | null;
-    precio?: number | null;
-    precioLista?: number | null;
-  };
+  articulo: Articulo;
   searchQuery?: string;
 }
 
@@ -43,6 +37,8 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
   const [hasError, setHasError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [added, setAdded] = useState(false);
+  const { addItem, isInCart } = useCart();
 
   useEffect(() => {
     const node = cardRef.current;
@@ -151,21 +147,46 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
             </span>
           )}
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={handleCopy}
-              disabled={copying}
-              aria-label="Copiar imagen con precio y stock"
-              className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-            >
-              {copying ? <Loader2 className="w-4 h-4 animate-spin" /> : copied ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            <p>{copying ? "Copiando..." : copied ? "¡Copiado!" : "Copiar imagen del producto"}</p>
-          </TooltipContent>
-        </Tooltip>
+        <div className="flex items-center gap-1.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addItem(articulo, 1);
+                  setAdded(true);
+                  setTimeout(() => setAdded(false), 1500);
+                }}
+                aria-label="Agregar al carrito"
+                className={`p-2 rounded-lg transition-colors ${
+                  isInCart(articulo.id_articulo)
+                    ? "bg-primary/15 text-primary hover:bg-primary/25"
+                    : "bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {added ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <ShoppingCart className="w-4 h-4" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p>{added ? "¡Agregado!" : isInCart(articulo.id_articulo) ? "Agregar otro" : "Agregar al carrito"}</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleCopy}
+                disabled={copying}
+                aria-label="Copiar imagen con precio y stock"
+                className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                {copying ? <Loader2 className="w-4 h-4 animate-spin" /> : copied ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p>{copying ? "Copiando..." : copied ? "¡Copiado!" : "Copiar imagen del producto"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
     </div>
   );

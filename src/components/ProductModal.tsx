@@ -1,11 +1,12 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Copy, Check, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MessageCircle, Download } from "lucide-react";
+import { X, Copy, Check, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MessageCircle, Download, ShoppingCart } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { API_BASE, WHATSAPP_NUMBER } from "@/lib/config";
 import placeholder from "@/assets/lubrimec-logo.png";
 import type { Articulo } from "@/hooks/useArticulos";
 import { buildProductCanvas } from "@/lib/productCanvas";
+import { useCart } from "@/hooks/useCart";
 
 interface ProductModalProps {
   articulo: Articulo | null;
@@ -25,6 +26,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [copying, setCopying] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [added, setAdded] = useState(false);
+  const { addItem } = useCart();
 
   // Swipe táctil
   const touchStartX = useRef<number | null>(null);
@@ -87,6 +90,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
     setCopying(false);
     setDownloading(false);
     setImgLoaded(false);
+    setAdded(false);
   }, [articulo?.id_articulo]);
 
   if (!articulo) return null;
@@ -341,6 +345,18 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     </TooltipContent>
                   </Tooltip>
                 </div>
+
+                <button
+                  onClick={() => {
+                    addItem(articulo, 1);
+                    setAdded(true);
+                    setTimeout(() => setAdded(false), 1500);
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  {added ? <Check className="w-4 h-4 shrink-0" /> : <ShoppingCart className="w-4 h-4 shrink-0" />}
+                  {added ? "¡Agregado al carrito!" : "Agregar al carrito"}
+                </button>
 
                 <a
                   href={whatsappUrl}

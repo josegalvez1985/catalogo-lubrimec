@@ -10,10 +10,10 @@ type ExpandedSections = {
 /* ---------- Sidebar desktop (radios, secciones colapsables) ---------- */
 function FilterSection({
   title,
-  section,
   items,
-  activeId,
-  onSelect,
+  activeIds,
+  onToggleId,
+  onClear,
   getLabel,
   expanded,
   onToggle,
@@ -21,8 +21,9 @@ function FilterSection({
   title: string;
   section: keyof ExpandedSections;
   items: any[];
-  activeId: number | null;
-  onSelect: (id: number | null) => void;
+  activeIds: number[];
+  onToggleId: (id: number) => void;
+  onClear: () => void;
   getLabel: (item: any) => string;
   expanded: boolean;
   onToggle: () => void;
@@ -47,10 +48,9 @@ function FilterSection({
             <>
               <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors">
                 <input
-                  type="radio"
-                  name={section}
-                  checked={activeId === null}
-                  onChange={() => onSelect(null)}
+                  type="checkbox"
+                  checked={activeIds.length === 0}
+                  onChange={onClear}
                   className="w-4 h-4 cursor-pointer accent-primary"
                 />
                 <span className="text-sm text-muted-foreground">Todas</span>
@@ -64,10 +64,9 @@ function FilterSection({
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
                   >
                     <input
-                      type="radio"
-                      name={section}
-                      checked={activeId === itemId}
-                      onChange={() => onSelect(itemId)}
+                      type="checkbox"
+                      checked={activeIds.includes(itemId)}
+                      onChange={() => onToggleId(itemId)}
                       className="w-4 h-4 cursor-pointer accent-primary"
                     />
                     <span className="text-sm text-foreground">{getLabel(item)}</span>
@@ -86,14 +85,16 @@ function FilterSection({
 function ChipGroup({
   title,
   items,
-  activeId,
-  onSelect,
+  activeIds,
+  onToggleId,
+  onClear,
   getLabel,
 }: {
   title: string;
   items: any[];
-  activeId: number | null;
-  onSelect: (id: number | null) => void;
+  activeIds: number[];
+  onToggleId: (id: number) => void;
+  onClear: () => void;
   getLabel: (item: any) => string;
 }) {
   const chipClass = (active: boolean) =>
@@ -110,13 +111,13 @@ function ChipGroup({
         <p className="text-sm text-muted-foreground">Cargando...</p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => onSelect(null)} className={chipClass(activeId === null)}>
+          <button onClick={onClear} className={chipClass(activeIds.length === 0)}>
             Todas
           </button>
           {items.map((item) => {
             const itemId = item.id_rubro ?? item.id_viscosidad ?? item.id_marca;
             return (
-              <button key={itemId} onClick={() => onSelect(itemId)} className={chipClass(activeId === itemId)}>
+              <button key={itemId} onClick={() => onToggleId(itemId)} className={chipClass(activeIds.includes(itemId))}>
                 {getLabel(item)}
               </button>
             );
@@ -133,15 +134,26 @@ interface FilterSidebarProps {
   rubros: Array<{ id_rubro: number; descripcion_rubro: string }>;
   viscosidades: Array<{ id_viscosidad: number; descripcion: string }>;
   marcas: Array<{ id_marca: number; descripcion_marca: string }>;
-  activeRubroId: number | null;
-  activeViscosidadId: number | null;
-  activeMarcaId: number | null;
-  onRubroChange: (id: number | null) => void;
-  onViscosidadChange: (id: number | null) => void;
-  onMarcaChange: (id: number | null) => void;
+  activeRubroIds: number[];
+  activeViscosidadIds: number[];
+  activeMarcaIds: number[];
+  onToggleRubro: (id: number) => void;
+  onToggleViscosidad: (id: number) => void;
+  onToggleMarca: (id: number) => void;
+  onClearRubros: () => void;
+  onClearViscosidades: () => void;
+  onClearMarcas: () => void;
+  stockFilter: "todos" | "stock" | "sin";
+  onStockChange: (val: "todos" | "stock" | "sin") => void;
   onClearAll: () => void;
   resultCount?: number;
 }
+
+const STOCK_OPTIONS: Array<{ value: "todos" | "stock" | "sin"; label: string }> = [
+  { value: "todos", label: "Todos" },
+  { value: "stock", label: "Con stock" },
+  { value: "sin", label: "Sin stock" },
+];
 
 export default function FilterSidebar({
   isOpen,
@@ -149,12 +161,17 @@ export default function FilterSidebar({
   rubros,
   viscosidades,
   marcas,
-  activeRubroId,
-  activeViscosidadId,
-  activeMarcaId,
-  onRubroChange,
-  onViscosidadChange,
-  onMarcaChange,
+  activeRubroIds,
+  activeViscosidadIds,
+  activeMarcaIds,
+  onToggleRubro,
+  onToggleViscosidad,
+  onToggleMarca,
+  onClearRubros,
+  onClearViscosidades,
+  onClearMarcas,
+  stockFilter,
+  onStockChange,
   onClearAll,
   resultCount,
 }: FilterSidebarProps) {
@@ -169,7 +186,7 @@ export default function FilterSidebar({
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const hasActiveFilters = activeRubroId != null || activeViscosidadId != null || activeMarcaId != null;
+  const hasActiveFilters = activeRubroIds.length > 0 || activeViscosidadIds.length > 0 || activeMarcaIds.length > 0 || stockFilter !== "todos";
 
   return (
     <>
@@ -205,9 +222,27 @@ export default function FilterSidebar({
 
         {/* Contenido scrollable (chips) */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-          <ChipGroup title="Categorías" items={rubros} activeId={activeRubroId} onSelect={onRubroChange} getLabel={(i) => i.descripcion_rubro} />
-          <ChipGroup title="Viscosidad" items={viscosidades} activeId={activeViscosidadId} onSelect={onViscosidadChange} getLabel={(i) => i.descripcion} />
-          <ChipGroup title="Marca" items={marcas} activeId={activeMarcaId} onSelect={onMarcaChange} getLabel={(i) => i.descripcion_marca} />
+          <div>
+            <h3 className="font-semibold text-foreground mb-3">Stock</h3>
+            <div className="flex flex-wrap gap-2">
+              {STOCK_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => onStockChange(opt.value)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+                    stockFilter === opt.value
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card/60 text-foreground border-border hover:border-primary/40"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ChipGroup title="Categorías" items={rubros} activeIds={activeRubroIds} onToggleId={onToggleRubro} onClear={onClearRubros} getLabel={(i) => i.descripcion_rubro} />
+          <ChipGroup title="Viscosidad" items={viscosidades} activeIds={activeViscosidadIds} onToggleId={onToggleViscosidad} onClear={onClearViscosidades} getLabel={(i) => i.descripcion} />
+          <ChipGroup title="Marca" items={marcas} activeIds={activeMarcaIds} onToggleId={onToggleMarca} onClear={onClearMarcas} getLabel={(i) => i.descripcion_marca} />
         </div>
 
         {/* Barra de acción fija */}
@@ -259,9 +294,26 @@ export default function FilterSidebar({
           </div>
 
           <div className="space-y-4">
-            <FilterSection title="Categorías" section="rubro" items={rubros} activeId={activeRubroId} onSelect={onRubroChange} getLabel={(i) => i.descripcion_rubro} expanded={expandedSections.rubro} onToggle={() => toggleSection("rubro")} />
-            <FilterSection title="Viscosidad" section="viscosidad" items={viscosidades} activeId={activeViscosidadId} onSelect={onViscosidadChange} getLabel={(i) => i.descripcion} expanded={expandedSections.viscosidad} onToggle={() => toggleSection("viscosidad")} />
-            <FilterSection title="Marca" section="marca" items={marcas} activeId={activeMarcaId} onSelect={onMarcaChange} getLabel={(i) => i.descripcion_marca} expanded={expandedSections.marca} onToggle={() => toggleSection("marca")} />
+            <div className="border-b border-border pb-4">
+              <h3 className="font-semibold text-foreground py-3">Stock</h3>
+              <div className="space-y-2">
+                {STOCK_OPTIONS.map((opt) => (
+                  <label key={opt.value} className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors">
+                    <input
+                      type="radio"
+                      name="stock"
+                      checked={stockFilter === opt.value}
+                      onChange={() => onStockChange(opt.value)}
+                      className="w-4 h-4 cursor-pointer accent-primary"
+                    />
+                    <span className={`text-sm ${opt.value === "todos" ? "text-muted-foreground" : "text-foreground"}`}>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <FilterSection title="Categorías" section="rubro" items={rubros} activeIds={activeRubroIds} onToggleId={onToggleRubro} onClear={onClearRubros} getLabel={(i) => i.descripcion_rubro} expanded={expandedSections.rubro} onToggle={() => toggleSection("rubro")} />
+            <FilterSection title="Viscosidad" section="viscosidad" items={viscosidades} activeIds={activeViscosidadIds} onToggleId={onToggleViscosidad} onClear={onClearViscosidades} getLabel={(i) => i.descripcion} expanded={expandedSections.viscosidad} onToggle={() => toggleSection("viscosidad")} />
+            <FilterSection title="Marca" section="marca" items={marcas} activeIds={activeMarcaIds} onToggleId={onToggleMarca} onClear={onClearMarcas} getLabel={(i) => i.descripcion_marca} expanded={expandedSections.marca} onToggle={() => toggleSection("marca")} />
           </div>
 
           {hasActiveFilters && (
