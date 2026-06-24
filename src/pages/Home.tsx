@@ -12,8 +12,10 @@ import {
   Droplets,
   Filter,
   Settings,
+  ExternalLink,
 } from "lucide-react";
 import lubrimecLogo from "@/assets/lubrimec-logo.png";
+import lubriautoLogo from "@/assets/lubriauto-logo.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -66,7 +68,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* ===== HERO ===== */}
-      <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
+      <section className="relative flex items-center justify-center overflow-hidden pt-20 pb-6">
         <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
           {/* Logo badge */}
           <motion.div
@@ -142,6 +144,55 @@ export default function Home() {
               Cotizá tu mantenimiento
             </Link>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ===== LUBRIAUTO LINK ===== */}
+      <section className="pt-2 pb-8 px-4">
+        <div className="max-w-5xl mx-auto">
+          <motion.a
+            href="https://josegalvez1985.github.io/lubriauto-your-auto-hub/"
+            target="_blank"
+            rel="noopener noreferrer"
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="group flex flex-col sm:flex-row items-center gap-4 sm:gap-5 rounded-3xl bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-transparent border border-sky-500/20 p-5 sm:p-6 hover:border-sky-500/40 hover:shadow-lg hover:shadow-sky-500/10 transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 rounded-3xl bg-white/95 shadow-xl shadow-black/20" />
+              <img
+                src={lubriautoLogo}
+                alt="LubriAuto"
+                className="relative z-10 w-20 h-20 object-contain p-2"
+              />
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <p className="text-xs font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-widest mb-1">
+                Nuestra app compañera
+              </p>
+              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-1.5 leading-tight" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+                TU VEHÍCULO, SIEMPRE<br className="hidden sm:block" /> EN BUENAS MANOS.
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-xl mb-2.5">
+                Lleva el control total de los servicios, cambios de aceite, filtros y repuestos de tu auto en una sola app.
+              </p>
+              <div className="flex flex-wrap justify-center sm:justify-start gap-x-4 gap-y-1 text-xs font-medium text-foreground/80">
+                {["Cambios de aceite", "Repuestos y filtros", "Kilometraje", "Historial seguro"].map((f, i) => (
+                  <span key={f} className="flex items-center gap-1.5">
+                    {i > 0 && <span className="text-sky-500/50">·</span>}
+                    <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-sky-500 text-white font-semibold text-sm shadow-lg shadow-sky-500/25 group-hover:bg-sky-600 transition-all group-hover:scale-105 shrink-0">
+              Abrir LubriAuto
+              <ExternalLink className="w-4 h-4" />
+            </span>
+          </motion.a>
         </div>
       </section>
 
