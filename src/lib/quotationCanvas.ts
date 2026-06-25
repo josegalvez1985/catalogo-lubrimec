@@ -1,3 +1,5 @@
+import { loadCachedImage } from "./imageCache";
+
 export interface QuotationData {
   modelo: string;
   tipoServicio: 'motor' | 'caja';
@@ -513,14 +515,8 @@ function formatGs(n: number): string {
   return new Intl.NumberFormat('es-PY').format(Math.round(n));
 }
 
-async function loadImage(url: string): Promise<HTMLImageElement | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
+function loadImage(url: string): Promise<HTMLImageElement | null> {
+  return loadCachedImage(url);
 }
 
 function drawContain(

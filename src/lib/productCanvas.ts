@@ -1,3 +1,5 @@
+import { loadCachedImage } from "./imageCache";
+
 export interface CanvasProductData {
   descripcion_articulo: string;
   descripcion_marca?: string | null;
@@ -12,16 +14,11 @@ export async function buildProductCanvas(
   articulo: CanvasProductData
 ): Promise<Blob> {
   // ── 1. Cargar imagen ──────────────────────────────────────────────────────
-  // Cargar directo en un <img> reutiliza el caché del navegador (la misma URL
-  // ya se mostró en el modal) en vez de hacer un fetch nuevo + FileReader.
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.src = imgSrc;
-  await new Promise<void>((resolve, reject) => {
-    if (img.complete && img.naturalWidth > 0) return resolve();
-    img.onload = () => resolve();
-    img.onerror = reject;
-  });
+  // Reusa el caché en memoria de la sesión: la primera vez se descarga una
+  // sola vez y queda guardada; copiar/descargar posteriores no reconsultan
+  // al backend. No altera la imagen original (mismo binario del backend).
+  const img = await loadCachedImage(imgSrc);
+  if (!img) throw new Error("No se pudo cargar la imagen del producto");
 
   // ── 2. Constantes de layout ────────────────────────────────────────────────
   const W = 900;
