@@ -16,6 +16,7 @@ export interface Articulo {
   stock?: number | null;
   precio?: number | null;
   precioLista?: number | null;
+  cantidad_vendida?: number | null;
 }
 
 async function fetchArticulos(): Promise<Articulo[]> {
@@ -32,9 +33,11 @@ async function fetchArticulos(): Promise<Articulo[]> {
         ...it,
         id_articulo: Number(it.id_articulo),
         descripcion_articulo: it.descripcion || it.descripcion_articulo || "",
+        descripcion_marca: it.marca || it.descripcion_marca || null,
         id_viscosidad: it.id_viscosidad ? Number(it.id_viscosidad) : null,
         moto_caja: it.moto_caja ?? it.motor_caja ?? null,
         tiene_imagen: it.tiene_imagen ?? 0,
+        cantidad_vendida: it.cantidad_vendida != null ? Number(it.cantidad_vendida) : null,
       });
     }
     url = data.next?.$ref ?? null;

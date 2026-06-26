@@ -11,6 +11,8 @@ import { useRubros } from "@/hooks/useRubros";
 import { useMarcas } from "@/hooks/useMarcas";
 import FilterSidebar from "@/components/FilterSidebar";
 import type { Articulo } from "@/hooks/useArticulos";
+import { computeRankBadges } from "@/lib/salesRanking";
+import type { RankBadge } from "@/lib/salesRanking";
 
 const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -176,6 +178,22 @@ const Catalogo = () => {
 
   const paginatedArticulos = displayedArticulos.slice(0, page * pageSize);
   const hasMore = paginatedArticulos.length < displayedArticulos.length;
+
+  // Ranking por rubro: compara artículos del mismo rubro entre sí
+  const rankBadgeMap = useMemo(() => {
+    const combined = new Map<number, RankBadge>();
+    const byRubro = new Map<number | null | undefined, typeof articulos>();
+    for (const a of articulos) {
+      const key = a.id_rubro ?? null;
+      if (!byRubro.has(key)) byRubro.set(key, []);
+      byRubro.get(key)!.push(a);
+    }
+    for (const grupo of byRubro.values()) {
+      const badges = computeRankBadges(grupo);
+      for (const [id, badge] of badges) combined.set(id, badge);
+    }
+    return combined;
+  }, [articulos]);
 
   const selectedIndex = selectedArticulo
     ? displayedArticulos.findIndex(a => a.id_articulo === selectedArticulo.id_articulo)
@@ -370,7 +388,7 @@ const Catalogo = () => {
                   onClick={() => setSelectedArticulo(art)}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedArticulo(art); } }}
                 >
-                  <ArticleCard articulo={art} searchQuery={debouncedSearch} />
+                  <ArticleCard articulo={art} searchQuery={debouncedSearch} rankBadge={rankBadgeMap.get(art.id_articulo)} />
                 </motion.div>
               ))
             ) : (
@@ -395,8 +413,9 @@ const Catalogo = () => {
             <button
               ref={loadMoreButtonRef}
               onClick={() => {
+                const scrollY = window.scrollY;
                 setPage((p) => p + 1);
-                setTimeout(() => { loadMoreButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 100);
+                requestAnimationFrame(() => { window.scrollTo({ top: scrollY, behavior: "instant" }); });
               }}
               className="px-6 py-3 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-all"
             >
@@ -434,6 +453,7 @@ const Catalogo = () => {
         onNext={handleNextArticulo}
         hasPrev={selectedIndex > 0}
         hasNext={selectedIndex < displayedArticulos.length - 1}
+        rankBadge={selectedArticulo ? rankBadgeMap.get(selectedArticulo.id_articulo) : undefined}
       />
     </div>
   );

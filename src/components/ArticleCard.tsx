@@ -6,10 +6,12 @@ import { API_BASE } from "@/lib/config";
 import { buildProductCanvas } from "@/lib/productCanvas";
 import { useCart } from "@/hooks/useCart";
 import type { Articulo } from "@/hooks/useArticulos";
+import type { RankBadge } from "@/lib/salesRanking";
 
 interface Props {
   articulo: Articulo;
   searchQuery?: string;
+  rankBadge?: RankBadge;
 }
 
 /** Resalta coincidencias de búsqueda en un texto */
@@ -31,7 +33,7 @@ function HighlightText({ text, query }: { text: string; query?: string }) {
   );
 }
 
-const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
+const ArticleCard: React.FC<Props> = ({ articulo, searchQuery, rankBadge }) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -69,7 +71,7 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
     if (copying) return;
     setCopying(true);
     try {
-      const blob = await buildProductCanvas(imgSrc, articulo);
+      const blob = await buildProductCanvas(imgSrc, articulo, rankBadge);
 
       if (navigator.clipboard && typeof ClipboardItem !== "undefined") {
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
@@ -106,6 +108,11 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery }) => {
           loading="lazy"
           onError={() => setHasError(true)}
         />
+        {rankBadge && (
+          <span className={`absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rankBadge.className}`}>
+            {rankBadge.emoji} {rankBadge.label}
+          </span>
+        )}
         {(!hasImage || hasError) && (
           <span className="absolute bottom-2 left-2 text-[10px] font-medium bg-black/60 text-white/80 px-1.5 py-0.5 rounded">
             Sin foto

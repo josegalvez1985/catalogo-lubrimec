@@ -1,4 +1,5 @@
 import { loadCachedImage } from "./imageCache";
+import { computeRankBadges } from "./salesRanking";
 
 export interface QuotationData {
   modelo: string;
@@ -20,6 +21,7 @@ export interface QuotationData {
     id: number;
     nombre: string;
     modelo: string;
+    viscosidad?: string;
     precioAceite: number;
     filtroAceite?: number;
     filtroAire?: number;
@@ -29,6 +31,7 @@ export interface QuotationData {
     descuentoMonto: number;
     totalConDescuento: number;
     imagenUrl?: string;
+    cantidad_vendida?: number;
   }>;
 }
 
@@ -147,8 +150,8 @@ const QUOTE = {
   CARD_GAP: 30,
   CARD_HEADER_H: 60,
   IMG_BOX: 280,
-  FOOTER_H: 180,
-  HEADER_BG: '#f97316',
+  FOOTER_H: 220,
+  HEADER_BG: '#D88700',
   HEADER_TEXT: '#ffffff',
   HEADER_HIGHLIGHT: '#fde047',
   CARD_BORDER: '#e5e7eb',
@@ -230,11 +233,28 @@ async function buildQuoteCanvas(data: QuotationData): Promise<Blob> {
     items.map((it) => (it.imagenUrl ? loadImage(it.imagenUrl) : Promise.resolve(null)))
   );
 
+  // Rangos por viscosidad para el ranking de estrellas
+  const rangosPorViscosidad = new Map<string, { min: number; max: number }>();
+  for (const it of items) {
+    const visc = it.viscosidad ?? '__sin_visc__';
+    const precio = it.precioAceite;
+    if (precio <= 0) continue;
+    const r = rangosPorViscosidad.get(visc);
+    if (!r) rangosPorViscosidad.set(visc, { min: precio, max: precio });
+    else { r.min = Math.min(r.min, precio); r.max = Math.max(r.max, precio); }
+  }
+
+  // Ranking de ventas por ítem
+  const rankBadges = computeRankBadges(items.map(it => ({ id_articulo: it.id, cantidad_vendida: it.cantidad_vendida })));
+
   drawQuoteHeader(ctx, data, headerH);
 
   let y = headerH;
   for (let i = 0; i < items.length; i++) {
-    drawProductCard(ctx, y, items[i], productImages[i]);
+    const visc = items[i].viscosidad ?? '__sin_visc__';
+    const rango = rangosPorViscosidad.get(visc) ?? { min: 0, max: 0 };
+    const badge = rankBadges.get(items[i].id);
+    drawProductCard(ctx, y, items[i], productImages[i], rango.min, rango.max, badge);
     y += QUOTE.CARD_H + QUOTE.CARD_GAP;
   }
 
@@ -257,10 +277,10 @@ function computeHeaderHeight(_cardsH: number): number {
 function drawQuoteHeader(ctx: CanvasRenderingContext2D, data: QuotationData, h: number) {
   const w = QUOTE.W;
 
-  // Fondo naranja del header
+  // Fondo dorado-naranja corporativo del header
   const grad = ctx.createLinearGradient(0, 0, w, 0);
-  grad.addColorStop(0, '#fb923c');
-  grad.addColorStop(1, '#ea580c');
+  grad.addColorStop(0, '#E28A00');
+  grad.addColorStop(1, '#C47800');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
 
@@ -291,25 +311,34 @@ function drawQuoteHeader(ctx: CanvasRenderingContext2D, data: QuotationData, h: 
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   ctx.fillText('COTIZACIÓN DE LUBRICANTES Y FILTROS', w / 2, h * 0.38);
 
-  // Modelo (amarillo, grande, ocupa todo el ancho)
+  // Modelo en mayúsculas (amarillo, grande)
   ctx.fillStyle = QUOTE.HEADER_HIGHLIGHT;
-  const modeloFontSize = fitFontSize(ctx, data.modelo, 'bold', w - 80, 72, 48);
+  const modeloUpper = data.modelo.toUpperCase();
+  const modeloFontSize = fitFontSize(ctx, modeloUpper, 'bold', w - 80, 80, 52);
   ctx.font = `bold ${modeloFontSize}px Arial, sans-serif`;
-  ctx.fillText(data.modelo, w / 2, h * 0.52);
+  ctx.fillText(modeloUpper, w / 2, h * 0.48);
 
-  // Fecha y descuento en la misma línea
+  // Línea descriptiva debajo del modelo
+  ctx.fillStyle = 'rgba(255,255,255,0.90)';
+  ctx.font = '26px Arial, sans-serif';
+  ctx.fillText(`Presupuesto para cambio de aceite y filtros`, w / 2, h * 0.67);
+
+  // Fecha y descuento
   const fecha = data.fecha || new Date().toLocaleDateString('es-PY');
-  const descuentoLabel = data.descuento && data.descuento > 0 ? `  •  DESCUENTO ${data.descuento}%` : '';
-  ctx.font = 'bold 36px Arial, sans-serif';
+  const descuentoLabel = data.descuento && data.descuento > 0 ? `  •  PROMOCIÓN ${data.descuento}% OFF` : '';
+  ctx.font = 'bold 30px Arial, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(`${fecha}${descuentoLabel}`, w / 2, h * 0.80);
+  ctx.fillText(`${fecha}${descuentoLabel}`, w / 2, h * 0.83);
 }
 
 function drawProductCard(
   ctx: CanvasRenderingContext2D,
   yStart: number,
   item: NonNullable<QuotationData['items']>[number],
-  img: HTMLImageElement | null
+  img: HTMLImageElement | null,
+  aceiteMin: number,
+  aceiteMax: number,
+  badge?: { emoji: string; label: string; canvasColor: string; canvasBg: string }
 ) {
   const w = QUOTE.W;
   const x = QUOTE.PAD;
@@ -336,7 +365,36 @@ function drawProductCard(
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(item.nombre, x + 24, yStart + QUOTE.CARD_HEADER_H / 2);
+
+  // Badge de ranking en el header (esquina derecha)
+  if (badge) {
+    const badgeText = `${badge.emoji} ${badge.label}`;
+    ctx.font = 'bold 18px Arial, sans-serif';
+    const btW = ctx.measureText(badgeText).width;
+    const bpx = 14; const bh = 34; const bw = btW + bpx * 2; const br = bh / 2;
+    const bx = x + cardW - bw - 16; const by = yStart + (QUOTE.CARD_HEADER_H - bh) / 2;
+    ctx.fillStyle = badge.canvasBg;
+    ctx.strokeStyle = badge.canvasColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bx + br, by); ctx.lineTo(bx + bw - br, by);
+    ctx.arc(bx + bw - br, by + br, br, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(bx + br, by + bh);
+    ctx.arc(bx + br, by + br, br, Math.PI / 2, (3 * Math.PI) / 2);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = badge.canvasColor;
+    ctx.textAlign = 'left';
+    ctx.fillText(badgeText, bx + bpx, by + bh / 2);
+  }
+
   ctx.textBaseline = 'top';
+
+  // Estrellas solo si hay más de un aceite en el mismo grupo de viscosidad
+  if (aceiteMin !== aceiteMax) {
+    const stars = calcStars(item.precioAceite, aceiteMin, aceiteMax);
+    drawStars(ctx, stars, x + 24, yStart + QUOTE.CARD_HEADER_H + 6, 36);
+  }
 
   // Zona de imagen
   const imgX = x + 24;
@@ -440,6 +498,22 @@ function drawProductCard(
   ctx.textAlign = 'left';
 }
 
+function calcStars(precio: number, min: number, max: number): number {
+  if (min === max) return 3;
+  const ratio = (precio - min) / (max - min);
+  return Math.max(1, Math.min(5, Math.round(1 + ratio * 4)));
+}
+
+function drawStars(ctx: CanvasRenderingContext2D, count: number, x: number, y: number, size = 28) {
+  ctx.font = `${size}px Arial, sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = i < count ? '#FACC15' : '#D1D5DB';
+    ctx.fillText('★', x + i * (size * 0.95), y);
+  }
+}
+
 function drawPriceRow(
   ctx: CanvasRenderingContext2D,
   label: string,
@@ -461,13 +535,23 @@ function drawPriceRow(
 
 function drawQuoteFooter(ctx: CanvasRenderingContext2D, totalH: number) {
   const w = QUOTE.W;
-  const fy = totalH - QUOTE.FOOTER_H + 40;
+  const fy = totalH - QUOTE.FOOTER_H + 20;
+
+  // CTA
+  ctx.fillStyle = QUOTE.NOW;
+  ctx.font = 'bold 26px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Elegí el aceite que preferís y agendá tu cambio.', w / 2, fy);
   ctx.fillStyle = QUOTE.TEXT_MUTED;
   ctx.font = '20px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Presupuesto válido por 5 días a partir de la fecha de emisión.', w / 2, fy);
-  ctx.fillText('Los precios y promociones no aplican los días domingos ni feriados.', w / 2, fy + 32);
-  ctx.fillText('Sujeto a disponibilidad de stock.', w / 2, fy + 64);
+  ctx.fillText('Consultá disponibilidad o agendá tu cambio por WhatsApp  0974 759 037', w / 2, fy + 38);
+
+  // Nota legal
+  ctx.fillStyle = QUOTE.TEXT_MUTED;
+  ctx.font = '18px Arial, sans-serif';
+  ctx.fillText('Presupuesto válido por 5 días a partir de la fecha de emisión.', w / 2, fy + 80);
+  ctx.fillText('Los precios y promociones no aplican los días domingos ni feriados.', w / 2, fy + 108);
+  ctx.fillText('Sujeto a disponibilidad de stock.', w / 2, fy + 136);
   ctx.textAlign = 'left';
 }
 

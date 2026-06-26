@@ -4,6 +4,7 @@ import { X, Download, Copy, Check, Loader2 } from 'lucide-react';
 import { toBlob } from 'html-to-image';
 import { API_BASE } from '@/lib/config';
 import { type QuotationData } from '@/lib/quotationCanvas';
+import { computeRankBadges } from '@/lib/salesRanking';
 import logo from '@/assets/lubrimec-logo.png';
 
 interface ApiAceite {
@@ -82,17 +83,35 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
 
 const fmt = (v: number) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(v))}`;
 
+function calcStars(precio: number, min: number, max: number): number {
+  if (min === max) return 3;
+  const ratio = (precio - min) / (max - min);
+  return Math.round(1 + ratio * 4) as 1 | 2 | 3 | 4 | 5;
+}
+
+function Stars({ count, size = 'sm' }: { count: number; size?: 'sm' | 'lg' }) {
+  const cls = size === 'lg' ? 'text-3xl drop-shadow-sm' : 'text-lg';
+  return (
+    <span className={`${cls} leading-none tracking-tight`} aria-label={`${count} de 5 estrellas`}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={i < count ? 'text-yellow-400' : 'text-gray-300 dark:text-white/20'}>★</span>
+      ))}
+    </span>
+  );
+}
+
 function PriceBlock({
   lista,
   desc,
   size = 'sm',
   align = 'center',
+  inverted = false,
 }: {
   lista?: number;
   desc?: number;
-  // *Big = variantes ampliadas para la imagen generada (más legibles en celular).
   size?: 'sm' | 'lg' | 'smBig' | 'lgBig';
   align?: 'left' | 'center' | 'right';
+  inverted?: boolean;
 }) {
   if (lista == null || lista <= 0) return null;
   const tieneDesc = desc != null && desc > 0 && desc < lista;
@@ -116,16 +135,19 @@ function PriceBlock({
           ? 'text-xs font-bold'
           : 'text-[9px] font-semibold';
   const alignCls = align === 'right' ? 'text-right' : align === 'left' ? 'text-left' : 'text-center';
+  const mutedCls = inverted ? 'text-primary-foreground/60' : 'text-muted-foreground';
+  const mainCls = inverted ? 'text-primary-foreground' : 'text-foreground';
+  const saveCls = inverted ? 'text-white/90' : 'text-emerald-600 dark:text-emerald-400';
   return (
     <div className={`${alignCls} leading-tight`}>
       {tieneDesc ? (
         <>
-          <p className={`${listaCls} text-muted-foreground line-through`}>{fmt(lista)}</p>
-          <p className={`${precioCls} text-foreground`}>{fmt(desc!)}</p>
-          <p className={`${ahorroCls} text-emerald-600 dark:text-emerald-400`}>Ahorrás {fmt(diff)}</p>
+          <p className={`${listaCls} ${mutedCls} line-through`}>{fmt(lista)}</p>
+          <p className={`${precioCls} ${mainCls}`}>{fmt(desc!)}</p>
+          <p className={`${ahorroCls} ${saveCls}`}>Ahorrás {fmt(diff)}</p>
         </>
       ) : (
-        <p className={`${precioCls} text-foreground`}>{fmt(lista)}</p>
+        <p className={`${precioCls} ${mainCls}`}>{fmt(lista)}</p>
       )}
     </div>
   );
@@ -359,6 +381,27 @@ export default function QuotationModal({
     { key: 'caja', tipo: 'Filtro de caja', filtro: filtros.caja },
   ].filter((f) => f.filtro);
 
+  // Ranking de ventas por aceite
+  const aceiteRankBadges = computeRankBadges(
+    (data.items ?? []).map((it) => ({ id_articulo: it.id, cantidad_vendida: it.cantidad_vendida }))
+  );
+
+  // Rangos por viscosidad para ranking de estrellas
+  const viscosidadPorId = new Map<number, string>(
+    (data.items ?? []).map((it) => [it.id, it.viscosidad ?? ''])
+  );
+  const rangosPorViscosidad = new Map<string, { min: number; max: number }>();
+  for (const a of (apiData?.resultado.aceites ?? [])) {
+    const visc = viscosidadPorId.get(a.id) ?? '';
+    const precio = a.precioBase;
+    if (precio <= 0) continue;
+    const r = rangosPorViscosidad.get(visc);
+    if (!r) rangosPorViscosidad.set(visc, { min: precio, max: precio });
+    else { r.min = Math.min(r.min, precio); r.max = Math.max(r.max, precio); }
+  }
+  // Mantener para la condición de "hay más de 1 precio distinto"
+  const aceitePreciosArr = (apiData?.resultado.aceites ?? []).map((a) => a.precioBase).filter((v) => v > 0);
+
   // Suma de filtros (lista y con descuento) para el total por aceite
   const filtrosListaSum = filtrosList.reduce((s, f) => s + (f.filtro!.precio || 0), 0);
   const filtrosDescSum = pct > 0 ? filtrosListaSum * (1 - pct / 100) : filtrosListaSum;
@@ -408,12 +451,17 @@ export default function QuotationModal({
               </div>
               <div className={`${capturing ? 'text-center' : 'text-right'}`}>
                 {data?.modelo && (
-                  <p className={`font-extrabold text-foreground leading-tight ${capturing ? 'text-4xl' : 'text-base'}`}>{data.modelo}</p>
+                  <>
+                    <p className={`font-extrabold text-foreground leading-tight ${capturing ? 'text-4xl' : 'text-base'}`}>{data.modelo}</p>
+                    <p className={`text-muted-foreground ${capturing ? 'text-xl mt-2' : 'text-xs mt-0.5'}`}>
+                      Presupuesto para cambio de aceite y filtros de tu {data.modelo}.
+                    </p>
+                  </>
                 )}
-                <p className={`text-muted-foreground ${capturing ? 'text-xl mt-1' : 'text-xs'}`}>{fechaActual}</p>
+                <p className={`text-muted-foreground ${capturing ? 'text-lg mt-1' : 'text-xs mt-0.5'}`}>{fechaActual}</p>
                 {pct > 0 && (
                   <p className={`text-emerald-600 dark:text-emerald-400 font-semibold ${capturing ? 'text-2xl mt-1' : 'text-sm'}`}>
-                    Descuento otorgado: {pct}%
+                    Promoción aplicada: {pct}% OFF
                   </p>
                 )}
               </div>
@@ -429,6 +477,7 @@ export default function QuotationModal({
                   {filtrosList.map(({ key, tipo, filtro }) => {
                     const filtroDesc = pct > 0 ? filtro!.precio * (1 - pct / 100) : undefined;
                     const filtroImg = filtro!.idArticulo ? imgUrl(filtro!.idArticulo) : undefined;
+                    const filtroStars = null; // un solo filtro por tipo, ranking no aplica
 
                     // ── Captura: tarjeta premium ──
                     if (capturing) {
@@ -446,9 +495,11 @@ export default function QuotationModal({
                             <span className="text-sm font-bold uppercase tracking-widest text-primary">
                               {tipo}
                             </span>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Marca</span>
                             <p className="text-xl font-extrabold text-foreground leading-tight break-words">
                               {filtro!.nombre}
                             </p>
+                            {filtroStars != null && <Stars count={filtroStars} size="lg" />}
                           </div>
                           <div className="shrink-0 self-stretch bg-primary/10 border-l-2 border-primary px-5 py-4 flex flex-col items-end justify-center gap-1 min-w-[12rem]">
                             {filtroDesc != null && filtroDesc < filtro!.precio && (
@@ -480,7 +531,9 @@ export default function QuotationModal({
                           <p className="font-semibold uppercase tracking-wide text-primary text-[10px]">
                             {tipo}
                           </p>
-                          <p className="text-foreground break-words text-xs">{filtro!.nombre}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Marca</p>
+                          <p className="text-foreground break-words text-xs font-semibold">{filtro!.nombre}</p>
+                          {filtroStars != null && <Stars count={filtroStars} size="sm" />}
                         </div>
                         <div className="shrink-0">
                           <PriceBlock lista={filtro!.precio} desc={filtroDesc} align="right" size="sm" />
@@ -496,12 +549,11 @@ export default function QuotationModal({
             {aceites.length > 0 && (
               <div>
                 <h3 className={`font-bold text-foreground mb-2 text-center ${capturing ? 'text-2xl' : 'text-sm'}`}>
-                  {aceites.length === 1 ? 'Aceite' : 'Aceites'}
+                  {aceites.length === 1 ? 'Opción de aceite' : 'Opciones de aceite — elegí la que preferís'}
                 </h3>
                 <div className="space-y-1.5">
                   {aceites.map((a) => {
                     const p = aceitePrecios.get(a.id);
-                    // Fallback: aceite no devuelto por la cotización → precio bruto del catálogo
                     const bruto = 'precioBruto' in a ? a.precioBruto ?? undefined : undefined;
                     const listaAceite = p?.lista ?? bruto;
                     const descAceite = p?.desc ?? (bruto != null ? conDesc(bruto) : undefined);
@@ -512,6 +564,12 @@ export default function QuotationModal({
                       totalLista != null && totalDesc != null && totalDesc < totalLista
                         ? totalLista - totalDesc
                         : 0;
+                    const visc = viscosidadPorId.get(a.id) ?? '';
+                    const rango = rangosPorViscosidad.get(visc);
+                    const aceiteStars = rango && rango.min !== rango.max && listaAceite != null && listaAceite > 0
+                      ? calcStars(listaAceite, rango.min, rango.max)
+                      : null;
+                    const rankBadge = aceiteRankBadges.get(a.id);
 
                     // ── Captura: tarjeta premium impactante ──
                     if (capturing) {
@@ -520,18 +578,24 @@ export default function QuotationModal({
                           key={a.id}
                           className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-lg flex items-stretch"
                         >
-                          {/* Imagen protagonista */}
                           <div className="shrink-0 p-3">
                             <div className="w-44 rounded-xl bg-white border border-border overflow-hidden">
                               <ProductImage src={imgUrl(a.id)} alt={a.nombre} />
                             </div>
                           </div>
 
-                          {/* Nombre + precio del aceite */}
                           <div className="flex-1 min-w-0 py-4 pr-3 flex flex-col justify-center gap-1">
-                            <p className="text-xl font-extrabold text-foreground leading-tight break-words">
-                              {a.nombre}
-                            </p>
+                            <div className="flex items-start gap-2 flex-wrap">
+                              <p className="text-xl font-extrabold text-foreground leading-tight break-words flex-1">
+                                {a.nombre}
+                              </p>
+                              {rankBadge && (
+                                <span className={`shrink-0 text-sm font-bold px-3 py-1 rounded-full ${rankBadge.className}`}>
+                                  {rankBadge.emoji} {rankBadge.label}
+                                </span>
+                              )}
+                            </div>
+                            {aceiteStars != null && <Stars count={aceiteStars} size="lg" />}
                             <div className="flex items-baseline gap-2 flex-wrap">
                               <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                                 Aceite
@@ -540,20 +604,19 @@ export default function QuotationModal({
                             </div>
                           </div>
 
-                          {/* Bloque destacado: TOTAL con filtros */}
                           {tieneTotal && (
-                            <div className="shrink-0 self-stretch bg-primary/10 border-l-2 border-primary px-5 py-4 flex flex-col items-end justify-center gap-1 min-w-[12rem]">
-                              <span className="text-xs font-bold uppercase tracking-widest text-primary">
-                                Total con filtros
+                            <div className="shrink-0 self-stretch bg-primary border-l-4 border-primary/60 px-5 py-4 flex flex-col items-end justify-center gap-1 min-w-[14rem]">
+                              <span className="text-xs font-bold uppercase tracking-widest text-primary-foreground/80">
+                                Total aceite + filtros
                               </span>
                               {totalLista != null && totalDesc != null && totalDesc < totalLista && (
-                                <span className="text-base text-muted-foreground line-through">{fmt(totalLista)}</span>
+                                <span className="text-base text-primary-foreground/60 line-through">{fmt(totalLista)}</span>
                               )}
-                              <span className="text-3xl font-extrabold text-foreground leading-none">
+                              <span className="text-4xl font-extrabold text-primary-foreground leading-none">
                                 {fmt(totalDesc ?? totalLista!)}
                               </span>
                               {ahorroTotal > 0 && (
-                                <span className="mt-1 inline-block rounded-full bg-emerald-500 px-3 py-1 text-sm font-bold text-white">
+                                <span className="mt-1 inline-block rounded-full bg-white/20 px-3 py-1 text-sm font-bold text-primary-foreground">
                                   Ahorrás {fmt(ahorroTotal)}
                                 </span>
                               )}
@@ -563,7 +626,7 @@ export default function QuotationModal({
                       );
                     }
 
-                    // ── Pantalla (no captura): layout responsive existente ──
+                    // ── Pantalla ──
                     return (
                       <div
                         key={a.id}
@@ -573,9 +636,17 @@ export default function QuotationModal({
                           <div className="shrink-0 w-24 sm:w-32">
                             <ProductImage src={imgUrl(a.id)} alt={a.nombre} />
                           </div>
-                          <p className="text-foreground leading-tight break-words min-w-0 font-semibold text-xs">
-                            {a.nombre}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="text-foreground leading-tight break-words font-semibold text-xs">
+                              {a.nombre}
+                            </p>
+                            {rankBadge && (
+                              <span className={`inline-block mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rankBadge.className}`}>
+                                {rankBadge.emoji} {rankBadge.label}
+                              </span>
+                            )}
+                            {aceiteStars != null && <Stars count={aceiteStars} size="sm" />}
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 sm:contents">
                           <div className="leading-tight">
@@ -586,12 +657,12 @@ export default function QuotationModal({
                           </div>
                           <div className="leading-tight">
                             {tieneTotal ? (
-                              <>
-                                <p className="font-semibold uppercase tracking-wide text-primary text-right text-[10px] mb-0.5">
-                                  Total con filtros
+                              <div className="rounded-xl bg-primary px-3 py-2 text-right">
+                                <p className="font-bold uppercase tracking-wide text-primary-foreground/70 text-[10px] mb-0.5">
+                                  Total aceite + filtros
                                 </p>
-                                <PriceBlock lista={totalLista} desc={totalDesc} size="lg" align="right" />
-                              </>
+                                <PriceBlock lista={totalLista} desc={totalDesc} size="lg" align="right" inverted />
+                              </div>
                             ) : (
                               <p className="text-[10px] text-right text-muted-foreground">—</p>
                             )}
@@ -603,6 +674,17 @@ export default function QuotationModal({
                 </div>
               </div>
             )}
+
+            {/* Llamado a la acción */}
+            <div className={`rounded-xl bg-primary/10 border border-primary/30 text-center ${capturing ? 'py-6 px-8' : 'py-3 px-4'}`}>
+              <p className={`font-bold text-primary leading-snug ${capturing ? 'text-2xl' : 'text-sm'}`}>
+                Elegí el aceite que preferís y agendá tu cambio.
+              </p>
+              <p className={`text-muted-foreground mt-1 ${capturing ? 'text-lg' : 'text-xs'}`}>
+                Consultá disponibilidad o agendá tu cambio por WhatsApp{' '}
+                <span className="font-semibold text-foreground">0974 759 037</span>
+              </p>
+            </div>
 
             {/* Nota legal */}
             <div className="border-t border-border pt-4 text-center space-y-0.5">

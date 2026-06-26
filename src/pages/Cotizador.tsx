@@ -15,6 +15,8 @@ import {
 import QuotationModal from "@/components/QuotationModal";
 import type { QuotationData } from "@/lib/quotationCanvas";
 import { useArticulos } from "@/hooks/useArticulos";
+import { computeRankBadges } from "@/lib/salesRanking";
+
 
 // CORS Proxy para desarrollo (comentar en producción)
 const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
@@ -50,30 +52,36 @@ type MarcasResponse = { items: ApiMarca[] };
 type ApiAceite = {
   articulo: string;
   id_articulo: number;
+  cantidad_vendida?: number;
 };
 type AceitesResponse = { items: ApiAceite[] };
+
 type ApiFiltroAceite = {
   descripcion: string;
   id_marca: number;
   id_articulo?: number;
+  cantidad_vendida?: number;
 };
 type FiltroAceiteResponse = { items: ApiFiltroAceite[] };
 type ApiFiltroAire = {
   descripcion: string;
   id_marca: number;
   id_articulo?: number;
+  cantidad_vendida?: number;
 };
 type FiltroAireResponse = { items: ApiFiltroAire[] };
 type ApiFiltroCombustible = {
   descripcion: string;
   id_marca: number;
   id_articulo?: number;
+  cantidad_vendida?: number;
 };
 type FiltroCombustibleResponse = { items: ApiFiltroCombustible[] };
 type ApiFiltroCaja = {
   descripcion: string;
   id_marca: number;
   id_articulo?: number;
+  cantidad_vendida?: number;
 };
 type FiltroCajaResponse = { items: ApiFiltroCaja[] };
 
@@ -340,6 +348,7 @@ export default function Cotizador() {
       descuentoMonto: parseMonto(it.descuento),
       totalConDescuento: it.total_descuento,
       imagenUrl: `${BASE_URL}/articulosimg/${it.id_articulo}`,
+      cantidad_vendida: aceites.find((a) => a.id_articulo === it.id_articulo)?.cantidad_vendida,
     }));
 
     return {
@@ -408,8 +417,11 @@ export default function Cotizador() {
       if (viscosidadData) {
         fetchAceites(viscosidadData.descripcion, selectedMarca);
       }
+    } else {
+      setAceites([]);
+      setAceitesLoading(false);
     }
-  }, [selectedMarca, selectedViscosidad, existencia, viscosidades]);
+  }, [selectedMarca, selectedViscosidad, existencia]);
 
   const toggleAceite = (id: number) => {
     setSelectedAceites((prev) =>
@@ -671,6 +683,7 @@ export default function Cotizador() {
           id: it.id_articulo,
           nombre: it.articulo.replace(/-\d+$/, "").trim(),
           modelo: it.modelo,
+          viscosidad: it.viscosidad,
           precioAceite: it.total_aceite,
           filtroAceite: it.filtro_aceite || undefined,
           filtroAire: it.filtro_aire || undefined,
@@ -1143,7 +1156,7 @@ export default function Cotizador() {
               </h2>
               <div className="flex items-center justify-between gap-2 mb-6">
                 <p className="text-sm text-muted-foreground">
-                  Seleccioná los productos que deseas cotizar
+                  Cada opción es un aceite diferente — elegí el que preferís cotizar.
                 </p>
                 {!aceitesLoading &&
                   aceites.filter((a) => filtrarPorStock(a.id_articulo)).length > 0 && (
@@ -1180,28 +1193,40 @@ export default function Cotizador() {
                 <div className="py-8 text-center text-sm text-muted-foreground">
                   No hay productos disponibles
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {aceites.filter((a) => filtrarPorStock(a.id_articulo)).map((aceite) => (
-                    <label
-                      key={aceite.id_articulo}
-                      className="flex items-center gap-3 p-3 rounded-xl border-2 border-border bg-card hover:bg-secondary/40 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedAceites.includes(aceite.id_articulo)}
-                        onChange={() => toggleAceite(aceite.id_articulo)}
-                        className="w-4 h-4 rounded accent-primary cursor-pointer"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground">
-                          {aceite.articulo}
-                        </p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
+              ) : (() => {
+                const aceitesVisible = aceites.filter((a) => filtrarPorStock(a.id_articulo));
+                const rankMap = computeRankBadges(aceitesVisible);
+                return (
+                  <div className="space-y-2">
+                    {aceitesVisible.map((aceite) => {
+                      const badge = rankMap.get(aceite.id_articulo);
+                      return (
+                        <label
+                          key={aceite.id_articulo}
+                          className="flex items-center gap-3 p-3 rounded-xl border-2 border-border bg-card hover:bg-secondary/40 cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedAceites.includes(aceite.id_articulo)}
+                            onChange={() => toggleAceite(aceite.id_articulo)}
+                            className="w-4 h-4 rounded accent-primary cursor-pointer"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-foreground">
+                              {aceite.articulo}
+                            </p>
+                          </div>
+                          {badge && (
+                            <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
+                              {badge.emoji} {badge.label}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </motion.div>
           )}
 
@@ -1302,32 +1327,43 @@ export default function Cotizador() {
                           <div className="flex items-center justify-center py-6">
                             <Loader2 className="w-5 h-5 animate-spin text-primary" />
                           </div>
-                        ) : (
-                          <div className="flex flex-col gap-2">
-                            {g.items.map((filtro) => {
-                              const active = g.selected === filtro.id_marca;
-                              return (
-                                <button
-                                  key={filtro.id_marca}
-                                  type="button"
-                                  onClick={() => g.onSelect(filtro.id_marca)}
-                                  className={`relative w-full rounded-xl border-2 py-3 px-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                                    active
-                                      ? "border-primary bg-primary/10 text-primary shadow-md"
-                                      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-secondary/40 hover:text-foreground"
-                                  }`}
-                                >
-                                  <span>{filtro.descripcion}</span>
-                                  {active && (
-                                    <span className="absolute top-1 right-1">
-                                      <CheckCircle2 className="w-4 h-4 text-primary" />
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
+                        ) : (() => {
+                          const rankMap = computeRankBadges(g.items.map(f => ({ id_articulo: f.id_marca, cantidad_vendida: f.cantidad_vendida })));
+                          return (
+                            <div className="flex flex-col gap-2">
+                              {g.items.map((filtro) => {
+                                const active = g.selected === filtro.id_marca;
+                                const badge = rankMap.get(filtro.id_marca);
+                                return (
+                                  <button
+                                    key={filtro.id_marca}
+                                    type="button"
+                                    onClick={() => g.onSelect(filtro.id_marca)}
+                                    className={`relative w-full rounded-xl border-2 py-3 px-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                      active
+                                        ? "border-primary bg-primary/10 text-primary shadow-md"
+                                        : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-secondary/40 hover:text-foreground"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span>{filtro.descripcion}</span>
+                                      {badge && (
+                                        <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
+                                          {badge.emoji} {badge.label}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {active && (
+                                      <span className="absolute top-1 right-1">
+                                        <CheckCircle2 className="w-4 h-4 text-primary" />
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>

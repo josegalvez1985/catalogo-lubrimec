@@ -7,6 +7,7 @@ import placeholder from "@/assets/lubrimec-logo.png";
 import type { Articulo } from "@/hooks/useArticulos";
 import { buildProductCanvas } from "@/lib/productCanvas";
 import { useCart } from "@/hooks/useCart";
+import type { RankBadge } from "@/lib/salesRanking";
 
 interface ProductModalProps {
   articulo: Articulo | null;
@@ -16,10 +17,11 @@ interface ProductModalProps {
   onNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  rankBadge?: RankBadge;
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({
-  articulo, isOpen, onClose, onPrev, onNext, hasPrev, hasNext,
+  articulo, isOpen, onClose, onPrev, onNext, hasPrev, hasNext, rankBadge,
 }) => {
   const [zoomed, setZoomed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -104,7 +106,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
     if (copying) return;
     setCopying(true);
     try {
-      const blob = await buildProductCanvas(imgSrc, articulo);
+      const blob = await buildProductCanvas(imgSrc, articulo, rankBadge);
 
       if (navigator.clipboard && typeof ClipboardItem !== "undefined") {
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
@@ -136,7 +138,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
     if (downloading) return;
     setDownloading(true);
     try {
-      const blob = await buildProductCanvas(imgSrc, articulo);
+      const blob = await buildProductCanvas(imgSrc, articulo, rankBadge);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -259,11 +261,18 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   {articulo.descripcion_articulo}
                 </h2>
                 {/* Metadata tags */}
-                {articulo.descripcion_rubro && (
+                {(articulo.descripcion_rubro || rankBadge) && (
                   <div className="flex flex-wrap gap-2 mt-3">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                      {articulo.descripcion_rubro}
-                    </span>
+                    {articulo.descripcion_rubro && (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        {articulo.descripcion_rubro}
+                      </span>
+                    )}
+                    {rankBadge && (
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${rankBadge.className}`}>
+                        {rankBadge.emoji} {rankBadge.label}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
