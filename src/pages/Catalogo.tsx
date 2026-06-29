@@ -133,9 +133,18 @@ const Catalogo = () => {
       ? articulosBase.filter(a => a.id_rubro != null && activeRubroIds.includes(a.id_rubro))
       : articulosBase;
     if (activeViscosidadIds.length) subset = subset.filter(a => a.id_viscosidad != null && activeViscosidadIds.includes(a.id_viscosidad));
-    const marcaIdsEnUso = new Set(subset.map(a => a.id_marca).filter(Boolean) as number[]);
-    return marcas
-      .filter(m => marcaIdsEnUso.has(m.id_marca))
+    // Derivar marcas de los propios artículos (id_marca + descripción reales).
+    // El nombre se toma de `marcas` (endpoint) si existe; si no, del artículo.
+    const nombrePorId = new Map(marcas.map(m => [m.id_marca, m.descripcion_marca]));
+    const vistos = new Map<number, string>();
+    for (const a of subset) {
+      if (a.id_marca == null) continue;
+      if (!vistos.has(a.id_marca)) {
+        vistos.set(a.id_marca, nombrePorId.get(a.id_marca) ?? a.descripcion_marca ?? `Marca ${a.id_marca}`);
+      }
+    }
+    return Array.from(vistos.entries())
+      .map(([id_marca, descripcion_marca]) => ({ id_marca, descripcion_marca }))
       .sort((a, b) => a.descripcion_marca.localeCompare(b.descripcion_marca));
   }, [articulosBase, activeRubroIds, activeViscosidadIds, marcas]);
 
@@ -214,8 +223,13 @@ const Catalogo = () => {
     [activeViscosidadIds, viscosidades]
   );
   const activeMarcaChips = useMemo(
-    () => activeMarcaIds.map(id => ({ id, name: marcas.find(m => m.id_marca === id)?.descripcion_marca ?? `#${id}` })),
-    [activeMarcaIds, marcas]
+    () => activeMarcaIds.map(id => ({
+      id,
+      name: marcas.find(m => m.id_marca === id)?.descripcion_marca
+        ?? articulos.find(a => a.id_marca === id)?.descripcion_marca
+        ?? `#${id}`,
+    })),
+    [activeMarcaIds, marcas, articulos]
   );
 
   const hasActiveFilters = activeRubroIds.length > 0 || activeViscosidadIds.length > 0 || activeMarcaIds.length > 0 || stockFilter !== "todos" || debouncedSearch !== "";

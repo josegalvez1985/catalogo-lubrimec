@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { API_BASE } from "@/lib/config";
 import { useRubros, type Rubro } from "./useRubros";
+import { useMarcas } from "./useMarcas";
 
 export interface Articulo {
   id_articulo: number;
@@ -17,6 +18,7 @@ export interface Articulo {
   precio?: number | null;
   precioLista?: number | null;
   cantidad_vendida?: number | null;
+  valoracion_marca?: number | null;
 }
 
 async function fetchArticulos(): Promise<Articulo[]> {
@@ -34,9 +36,13 @@ async function fetchArticulos(): Promise<Articulo[]> {
         id_articulo: Number(it.id_articulo),
         descripcion_articulo: it.descripcion || it.descripcion_articulo || "",
         descripcion_marca: it.marca || it.descripcion_marca || null,
-        id_viscosidad: it.id_viscosidad ? Number(it.id_viscosidad) : null,
+        id_rubro: it.id_rubro != null ? Number(it.id_rubro) : null,
+        id_marca: it.id_marca != null ? Number(it.id_marca) : null,
+        id_viscosidad: it.id_viscosidad != null ? Number(it.id_viscosidad) : null,
         moto_caja: it.moto_caja ?? it.motor_caja ?? null,
         tiene_imagen: it.tiene_imagen ?? 0,
+        stock: it.stock != null ? Number(it.stock) : null,
+        precio: it.precio != null ? Number(it.precio) : null,
         cantidad_vendida: it.cantidad_vendida != null ? Number(it.cantidad_vendida) : null,
       });
     }
@@ -47,6 +53,7 @@ async function fetchArticulos(): Promise<Articulo[]> {
 
 export function useArticulos() {
   const { rubros } = useRubros();
+  const { marcas } = useMarcas();
 
   const query = useQuery({
     queryKey: ["articulos"],
@@ -56,10 +63,15 @@ export function useArticulos() {
 
   const articulos = useMemo(() => {
     const all = query.data ?? [];
-    if (rubros.length === 0) return all;
-    const validIds = new Set(rubros.map((r: Rubro) => r.id_rubro));
-    return all.filter((a) => a.id_rubro != null && validIds.has(a.id_rubro));
-  }, [query.data, rubros]);
+    const validRubroIds = rubros.length > 0 ? new Set(rubros.map((r: Rubro) => r.id_rubro)) : null;
+    const marcaValoracion = new Map(marcas.map((m) => [m.id_marca, m.valoracion ?? null]));
+    return all
+      .filter((a) => validRubroIds == null || (a.id_rubro != null && validRubroIds.has(a.id_rubro)))
+      .map((a) => ({
+        ...a,
+        valoracion_marca: a.id_marca != null ? (marcaValoracion.get(a.id_marca) ?? null) : null,
+      }));
+  }, [query.data, rubros, marcas]);
 
   return {
     articulos,

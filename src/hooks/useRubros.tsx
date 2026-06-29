@@ -15,7 +15,9 @@ async function fetchRubros(): Promise<Rubro[]> {
     if (!res.ok) throw new Error(`Fetch error ${res.status}`);
     const data = await res.json().catch(() => ({}));
     const pageItems = data.items || [];
-    all.push(...pageItems);
+    for (const it of pageItems) {
+      all.push({ ...it, id_rubro: Number(it.id_rubro) });
+    }
     url = data.next?.$ref ?? null;
   }
   return all;

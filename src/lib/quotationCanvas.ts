@@ -1,11 +1,13 @@
 import { loadCachedImage } from "./imageCache";
 import { computeRankBadges } from "./salesRanking";
+import type { RankBadge } from "./salesRanking";
 
 export interface QuotationData {
   modelo: string;
   tipoServicio: 'motor' | 'caja';
   viscosidad: string;
   marca: string;
+  valoracion_marca?: number | null;
   aceites: string[];
   filtros: {
     aceite?: string;
@@ -32,6 +34,8 @@ export interface QuotationData {
     totalConDescuento: number;
     imagenUrl?: string;
     cantidad_vendida?: number;
+    valoracion?: number | null;
+    rankBadge?: RankBadge;
   }>;
 }
 
@@ -233,17 +237,6 @@ async function buildQuoteCanvas(data: QuotationData): Promise<Blob> {
     items.map((it) => (it.imagenUrl ? loadImage(it.imagenUrl) : Promise.resolve(null)))
   );
 
-  // Rangos por viscosidad para el ranking de estrellas
-  const rangosPorViscosidad = new Map<string, { min: number; max: number }>();
-  for (const it of items) {
-    const visc = it.viscosidad ?? '__sin_visc__';
-    const precio = it.precioAceite;
-    if (precio <= 0) continue;
-    const r = rangosPorViscosidad.get(visc);
-    if (!r) rangosPorViscosidad.set(visc, { min: precio, max: precio });
-    else { r.min = Math.min(r.min, precio); r.max = Math.max(r.max, precio); }
-  }
-
   // Ranking de ventas por ítem
   const rankBadges = computeRankBadges(items.map(it => ({ id_articulo: it.id, cantidad_vendida: it.cantidad_vendida })));
 
@@ -251,10 +244,8 @@ async function buildQuoteCanvas(data: QuotationData): Promise<Blob> {
 
   let y = headerH;
   for (let i = 0; i < items.length; i++) {
-    const visc = items[i].viscosidad ?? '__sin_visc__';
-    const rango = rangosPorViscosidad.get(visc) ?? { min: 0, max: 0 };
     const badge = rankBadges.get(items[i].id);
-    drawProductCard(ctx, y, items[i], productImages[i], rango.min, rango.max, badge);
+    drawProductCard(ctx, y, items[i], productImages[i], badge);
     y += QUOTE.CARD_H + QUOTE.CARD_GAP;
   }
 
@@ -336,8 +327,6 @@ function drawProductCard(
   yStart: number,
   item: NonNullable<QuotationData['items']>[number],
   img: HTMLImageElement | null,
-  aceiteMin: number,
-  aceiteMax: number,
   badge?: { emoji: string; label: string; canvasColor: string; canvasBg: string }
 ) {
   const w = QUOTE.W;
@@ -390,10 +379,9 @@ function drawProductCard(
 
   ctx.textBaseline = 'top';
 
-  // Estrellas solo si hay más de un aceite en el mismo grupo de viscosidad
-  if (aceiteMin !== aceiteMax) {
-    const stars = calcStars(item.precioAceite, aceiteMin, aceiteMax);
-    drawStars(ctx, stars, x + 24, yStart + QUOTE.CARD_HEADER_H + 6, 36);
+  // Estrellas de valoración de marca (del endpoint)
+  if (item.valoracion != null && item.valoracion > 0) {
+    drawStars(ctx, item.valoracion, x + 24, yStart + QUOTE.CARD_HEADER_H + 6, 36);
   }
 
   // Zona de imagen
@@ -496,12 +484,6 @@ function drawProductCard(
   ctx.fillText(`Gs. ${formatGs(item.totalConDescuento)}`, priceMax - 14, py + ahoraH / 2);
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
-}
-
-function calcStars(precio: number, min: number, max: number): number {
-  if (min === max) return 3;
-  const ratio = (precio - min) / (max - min);
-  return Math.max(1, Math.min(5, Math.round(1 + ratio * 4)));
 }
 
 function drawStars(ctx: CanvasRenderingContext2D, count: number, x: number, y: number, size = 28) {

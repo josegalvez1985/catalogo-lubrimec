@@ -5,6 +5,7 @@ import MARCAS_FIXTURE from "@/data/marcas";
 export interface Marca {
   id_marca: number;
   descripcion_marca: string;
+  valoracion?: number | null;
 }
 
 async function fetchMarcas(): Promise<Marca[]> {
@@ -19,6 +20,7 @@ async function fetchMarcas(): Promise<Marca[]> {
       all.push({
         id_marca: Number(item.id_marca),
         descripcion_marca: item.descripcion_marca || item.descripcion || "",
+        valoracion: item.valoracion != null ? Number(item.valoracion) : null,
       });
     }
     url = data.next?.$ref ?? null;

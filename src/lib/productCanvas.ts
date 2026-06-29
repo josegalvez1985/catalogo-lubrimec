@@ -7,6 +7,7 @@ export interface CanvasProductData {
   precio?: number | null;
   precioLista?: number | null;
   stock?: number | null;
+  valoracion_marca?: number | null;
 }
 
 // Tipos de producto conocidos (en orden de longitud desc para matchear primero los más largos)
@@ -165,7 +166,7 @@ export async function buildProductCanvas(
   if (descCurrent) descLines.push(descCurrent);
   const DESC_H = descLines.length * DESC_LINE_H;
 
-  // Marca
+  // Marca (incluye estrellas en la misma línea)
   const MARCA_H = articulo.descripcion_marca ? 40 : 0;
 
   // Precio
@@ -251,6 +252,35 @@ export async function buildProductCanvas(
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
     ctx.fillText(badgeText, bx + bpx, by + bh / 2);
+    ctx.textBaseline = "top";
+  }
+
+  // ── Valoración de marca (sobre imagen, esquina superior izquierda, debajo del ranking) ──
+  if (articulo.valoracion_marca != null && articulo.valoracion_marca > 0) {
+    const starFS = 30;
+    const starGap = 6;
+    const starW = starFS + starGap;
+    const sbPX = 14;
+    const sbH = 48;
+    const sbW = starW * 5 - starGap + sbPX * 2;
+    const sbR = sbH / 2;
+    const sbx = imgX + 12;
+    const sby = imgY + 12 + (rankBadge ? 40 + 10 : 0);
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.beginPath();
+    ctx.moveTo(sbx + sbR, sby); ctx.lineTo(sbx + sbW - sbR, sby);
+    ctx.arc(sbx + sbW - sbR, sby + sbR, sbR, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(sbx + sbR, sby + sbH);
+    ctx.arc(sbx + sbR, sby + sbR, sbR, Math.PI / 2, (3 * Math.PI) / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.font = `${starFS}px Arial, sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    for (let i = 0; i < 5; i++) {
+      ctx.fillStyle = i < articulo.valoracion_marca ? "#facc15" : "rgba(255,255,255,0.3)";
+      ctx.fillText("★", sbx + sbPX + i * starW, sby + sbH / 2);
+    }
     ctx.textBaseline = "top";
   }
 

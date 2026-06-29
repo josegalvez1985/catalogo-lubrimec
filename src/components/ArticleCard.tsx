@@ -108,11 +108,23 @@ const ArticleCard: React.FC<Props> = ({ articulo, searchQuery, rankBadge }) => {
           loading="lazy"
           onError={() => setHasError(true)}
         />
-        {rankBadge && (
-          <span className={`absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rankBadge.className}`}>
-            {rankBadge.emoji} {rankBadge.label}
-          </span>
-        )}
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+          {rankBadge && (
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rankBadge.className}`}>
+              {rankBadge.emoji} {rankBadge.label}
+            </span>
+          )}
+          {articulo.valoracion_marca != null && (
+            <span
+              className="inline-flex items-center gap-0.5 rounded-full bg-black/55 px-1.5 py-0.5 shadow-sm"
+              aria-label={`${articulo.valoracion_marca} de 5 estrellas`}
+            >
+              {Array.from({ length: 5 }, (_, i) => (
+                <span key={i} style={{ fontSize: "10px" }} className={i < articulo.valoracion_marca! ? "text-yellow-400" : "text-white/30"}>★</span>
+              ))}
+            </span>
+          )}
+        </div>
         {(!hasImage || hasError) && (
           <span className="absolute bottom-2 left-2 text-[10px] font-medium bg-black/60 text-white/80 px-1.5 py-0.5 rounded">
             Sin foto

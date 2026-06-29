@@ -15,7 +15,9 @@ import {
 import QuotationModal from "@/components/QuotationModal";
 import type { QuotationData } from "@/lib/quotationCanvas";
 import { useArticulos } from "@/hooks/useArticulos";
+import { useMarcas } from "@/hooks/useMarcas";
 import { computeRankBadges } from "@/lib/salesRanking";
+import type { RankBadge } from "@/lib/salesRanking";
 
 
 // CORS Proxy para desarrollo (comentar en producción)
@@ -47,12 +49,14 @@ type ViscosidadesResponse = { items: ApiViscosidad[] };
 type ApiMarca = {
   aceite: string;
   id_marca: number;
+  valoracion?: number | null;
 };
 type MarcasResponse = { items: ApiMarca[] };
 type ApiAceite = {
   articulo: string;
   id_articulo: number;
   cantidad_vendida?: number;
+  valoracion?: number | null;
 };
 type AceitesResponse = { items: ApiAceite[] };
 
@@ -61,6 +65,7 @@ type ApiFiltroAceite = {
   id_marca: number;
   id_articulo?: number;
   cantidad_vendida?: number;
+  valoracion?: number | null;
 };
 type FiltroAceiteResponse = { items: ApiFiltroAceite[] };
 type ApiFiltroAire = {
@@ -68,6 +73,7 @@ type ApiFiltroAire = {
   id_marca: number;
   id_articulo?: number;
   cantidad_vendida?: number;
+  valoracion?: number | null;
 };
 type FiltroAireResponse = { items: ApiFiltroAire[] };
 type ApiFiltroCombustible = {
@@ -75,6 +81,7 @@ type ApiFiltroCombustible = {
   id_marca: number;
   id_articulo?: number;
   cantidad_vendida?: number;
+  valoracion?: number | null;
 };
 type FiltroCombustibleResponse = { items: ApiFiltroCombustible[] };
 type ApiFiltroCaja = {
@@ -82,6 +89,7 @@ type ApiFiltroCaja = {
   id_marca: number;
   id_articulo?: number;
   cantidad_vendida?: number;
+  valoracion?: number | null;
 };
 type FiltroCajaResponse = { items: ApiFiltroCaja[] };
 
@@ -99,6 +107,7 @@ type CotizacionAPIResponse = {
       totalDescuento: number;
       stock: number;
       unidad: string;
+      valoracion?: number | null;
       imagen?: {
         nombre: string;
         mimeType: string;
@@ -106,10 +115,10 @@ type CotizacionAPIResponse = {
       };
     }>;
     filtros: {
-      aceite?: { id: number; idArticulo?: number; nombre: string; precio: number; imagen?: any };
-      aire?: { id: number; idArticulo?: number; nombre: string; precio: number; imagen?: any };
-      combustible?: { id: number; idArticulo?: number; nombre: string; precio: number; imagen?: any };
-      caja?: { id: number; idArticulo?: number; nombre: string; precio: number; imagen?: any };
+      aceite?: { id: number; idArticulo?: number; nombre: string; precio: number; valoracion?: number | null; rankBadge?: RankBadge; imagen?: any };
+      aire?: { id: number; idArticulo?: number; nombre: string; precio: number; valoracion?: number | null; rankBadge?: RankBadge; imagen?: any };
+      combustible?: { id: number; idArticulo?: number; nombre: string; precio: number; valoracion?: number | null; rankBadge?: RankBadge; imagen?: any };
+      caja?: { id: number; idArticulo?: number; nombre: string; precio: number; valoracion?: number | null; rankBadge?: RankBadge; imagen?: any };
     };
     totales: {
       sinDescuento: number;
@@ -147,6 +156,7 @@ const parseMonto = (s: string | number): number => {
 
 export default function Cotizador() {
   const { articulos: catalogoArticulos } = useArticulos();
+  const { marcas: marcasCatalogo } = useMarcas();
   const precioBrutoPorId = useMemo(
     () => new Map(catalogoArticulos.map((a) => [a.id_articulo, a.precio ?? null])),
     [catalogoArticulos]
@@ -330,6 +340,19 @@ export default function Cotizador() {
     const filterValue = tipoServicio === "motor" ? "M" : "C";
     return viscosidades.filter((v) => v.motor_caja === filterValue);
   }, [viscosidades, tipoServicio]);
+
+  // Valoración por id_marca (del catálogo de marcas)
+  const valoracionPorMarca = useMemo(
+    () => new Map(marcasCatalogo.map((m) => [m.id_marca, m.valoracion ?? null])),
+    [marcasCatalogo]
+  );
+
+  // Valoración de la marca de aceite seleccionada
+  const valoracionMarcaSel = useMemo(() => {
+    if (!selectedMarca) return null;
+    const m = marcas.find((x) => x.id_marca === selectedMarca);
+    return m?.valoracion ?? valoracionPorMarca.get(selectedMarca) ?? null;
+  }, [selectedMarca, marcas, valoracionPorMarca]);
 
   // Construir datos para el modal
   const quotationData: QuotationData | null = useMemo(() => {
@@ -604,6 +627,7 @@ export default function Cotizador() {
 
       const aceitesCotizados = raw.items.map((it) => {
         const totalLista = parseMonto(it.total);
+        const aceiteSrc = aceitesDisponibles.find((a) => a.id_articulo === it.id_articulo);
         return {
           id: it.id_articulo,
           nombre: it.articulo.replace(/-\d+$/, "").trim(),
@@ -615,6 +639,7 @@ export default function Cotizador() {
           totalDescuento: descuentoParam > 0 ? totalLista * (1 - descuentoParam / 100) : parseMonto(it.total_descuento),
           stock: it.stock,
           unidad: it.cod_unidad_medida,
+          valoracion: aceiteSrc?.valoracion ?? valoracionMarcaSel,
         };
       });
 
@@ -622,20 +647,20 @@ export default function Cotizador() {
       if (tipoServicioOracle === "M") {
         if (first.filtro_aceite > 0 && selectedFiltro) {
           const f = filtrosAceite.find((x) => x.id_marca === selectedFiltro);
-          filtros.aceite = { id: selectedFiltro, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de aceite", precio: first.filtro_aceite };
+          filtros.aceite = { id: selectedFiltro, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de aceite", precio: first.filtro_aceite, valoracion: f?.valoracion ?? valoracionPorMarca.get(selectedFiltro) ?? null, rankBadge: computeRankBadges(filtrosAceite.map(x => ({ id_articulo: x.id_marca, cantidad_vendida: x.cantidad_vendida }))).get(selectedFiltro) };
         }
         if (first.filtro_aire > 0 && selectedFiltroAire) {
           const f = filtrosAire.find((x) => x.id_marca === selectedFiltroAire);
-          filtros.aire = { id: selectedFiltroAire, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de aire", precio: first.filtro_aire };
+          filtros.aire = { id: selectedFiltroAire, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de aire", precio: first.filtro_aire, valoracion: f?.valoracion ?? valoracionPorMarca.get(selectedFiltroAire) ?? null, rankBadge: computeRankBadges(filtrosAire.map(x => ({ id_articulo: x.id_marca, cantidad_vendida: x.cantidad_vendida }))).get(selectedFiltroAire) };
         }
         if (first.filtro_combustible > 0 && selectedFiltroCombustible) {
           const f = filtrosCombustible.find((x) => x.id_marca === selectedFiltroCombustible);
-          filtros.combustible = { id: selectedFiltroCombustible, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de combustible", precio: first.filtro_combustible };
+          filtros.combustible = { id: selectedFiltroCombustible, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de combustible", precio: first.filtro_combustible, valoracion: f?.valoracion ?? valoracionPorMarca.get(selectedFiltroCombustible) ?? null, rankBadge: computeRankBadges(filtrosCombustible.map(x => ({ id_articulo: x.id_marca, cantidad_vendida: x.cantidad_vendida }))).get(selectedFiltroCombustible) };
         }
       } else if (tipoServicioOracle === "C") {
         if (first.filtro_caja > 0 && selectedFiltroCaja) {
           const f = filtrosCaja.find((x) => x.id_marca === selectedFiltroCaja);
-          filtros.caja = { id: selectedFiltroCaja, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de caja", precio: first.filtro_caja };
+          filtros.caja = { id: selectedFiltroCaja, idArticulo: f?.id_articulo, nombre: f?.descripcion || "Filtro de caja", precio: first.filtro_caja, valoracion: f?.valoracion ?? valoracionPorMarca.get(selectedFiltroCaja) ?? null, rankBadge: computeRankBadges(filtrosCaja.map(x => ({ id_articulo: x.id_marca, cantidad_vendida: x.cantidad_vendida }))).get(selectedFiltroCaja) };
         }
       }
 
@@ -666,11 +691,20 @@ export default function Cotizador() {
       setCotizacionAPI(data);
 
       // Construir quotationData con items aquí para asegurar que tengan datos
+      const marcaSeleccionada = marcas.find(m => m.id_marca === selectedMarca);
+      const valoracionMarca = marcaSeleccionada
+        ? (marcaSeleccionada.valoracion ?? marcasCatalogo.find(mc => mc.id_marca === marcaSeleccionada.id_marca)?.valoracion ?? null)
+        : null;
+
+      // Badge de ranking de aceites calculado con el grupo COMPLETO (no solo lo cotizado)
+      const aceiteBadges = computeRankBadges(aceitesDisponibles);
+
       const quotationDataWithItems: QuotationData = {
         modelo: selected!,
         tipoServicio,
         viscosidad: filteredViscosidades.find(v => v.id_viscosidad === selectedViscosidad)?.descripcion || "",
-        marca: marcas.find(m => m.id_marca === selectedMarca)?.aceite || "",
+        marca: marcaSeleccionada?.aceite || "",
+        valoracion_marca: valoracionMarca,
         aceites: raw.items.map(it => it.articulo.replace(/-\d+$/, "").trim()),
         filtros: {
           aceite: filtrosAceite.find((f) => f.id_marca === selectedFiltro)?.descripcion,
@@ -679,21 +713,27 @@ export default function Cotizador() {
           caja: filtrosCaja.find((f) => f.id_marca === selectedFiltroCaja)?.descripcion,
         },
         descuento: descuentoParam,
-        items: raw.items.map((it) => ({
-          id: it.id_articulo,
-          nombre: it.articulo.replace(/-\d+$/, "").trim(),
-          modelo: it.modelo,
-          viscosidad: it.viscosidad,
-          precioAceite: it.total_aceite,
-          filtroAceite: it.filtro_aceite || undefined,
-          filtroAire: it.filtro_aire || undefined,
-          filtroCombustible: it.filtro_combustible || undefined,
-          filtroCaja: it.filtro_caja || undefined,
-          total: parseMonto(it.total),
-          descuentoMonto: parseMonto(it.descuento),
-          totalConDescuento: it.total_descuento,
-          imagenUrl: `${BASE_URL}/articulosimg/${it.id_articulo}`,
-        })),
+        items: raw.items.map((it) => {
+          const aceiteSrc = aceitesDisponibles.find((a) => a.id_articulo === it.id_articulo);
+          return {
+            id: it.id_articulo,
+            nombre: it.articulo.replace(/-\d+$/, "").trim(),
+            modelo: it.modelo,
+            viscosidad: it.viscosidad,
+            precioAceite: it.total_aceite,
+            filtroAceite: it.filtro_aceite || undefined,
+            filtroAire: it.filtro_aire || undefined,
+            filtroCombustible: it.filtro_combustible || undefined,
+            filtroCaja: it.filtro_caja || undefined,
+            total: parseMonto(it.total),
+            descuentoMonto: parseMonto(it.descuento),
+            totalConDescuento: it.total_descuento,
+            imagenUrl: `${BASE_URL}/articulosimg/${it.id_articulo}`,
+            cantidad_vendida: aceiteSrc?.cantidad_vendida,
+            valoracion: aceiteSrc?.valoracion ?? valoracionMarca,
+            rankBadge: aceiteBadges.get(it.id_articulo),
+          };
+        }),
       };
 
       setQuotationDataForModal(quotationDataWithItems);
@@ -1053,13 +1093,23 @@ export default function Cotizador() {
                         key={marca.id_marca}
                         type="button"
                         onClick={() => setSelectedMarca(marca.id_marca)}
-                        className={`relative rounded-xl border-2 py-3 px-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                        className={`relative rounded-xl border-2 py-3 px-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex flex-col items-center gap-1 ${
                           active
                             ? "border-primary bg-primary/10 text-primary shadow-md"
                             : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-secondary/40 hover:text-foreground"
                         }`}
                       >
-                        {marca.aceite}
+                        <span>{marca.aceite}</span>
+                        {(() => {
+                          const val = marca.valoracion ?? valoracionPorMarca.get(marca.id_marca) ?? null;
+                          return val != null ? (
+                            <span className="inline-flex gap-px leading-none" aria-label={`${val} de 5 estrellas`}>
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <span key={i} style={{ fontSize: "11px" }} className={i < val ? "text-yellow-400" : "text-gray-300 dark:text-white/20"}>★</span>
+                              ))}
+                            </span>
+                          ) : null;
+                        })()}
                         {active && (
                           <span className="absolute top-1 right-1">
                             <CheckCircle2 className="w-4 h-4 text-primary" />
@@ -1215,6 +1265,16 @@ export default function Cotizador() {
                             <p className="text-sm font-semibold text-foreground">
                               {aceite.articulo}
                             </p>
+                            {(() => {
+                              const val = aceite.valoracion ?? valoracionMarcaSel;
+                              return val != null ? (
+                                <span className="inline-flex gap-px leading-none mt-0.5" aria-label={`${val} de 5 estrellas`}>
+                                  {Array.from({ length: 5 }, (_, i) => (
+                                    <span key={i} style={{ fontSize: "11px" }} className={i < val ? "text-yellow-400" : "text-gray-300 dark:text-white/20"}>★</span>
+                                  ))}
+                                </span>
+                              ) : null;
+                            })()}
                           </div>
                           {badge && (
                             <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
@@ -1346,7 +1406,19 @@ export default function Cotizador() {
                                     }`}
                                   >
                                     <div className="flex items-center justify-between gap-2">
-                                      <span>{filtro.descripcion}</span>
+                                      <div className="flex flex-col items-start gap-0.5 min-w-0">
+                                        <span>{filtro.descripcion}</span>
+                                        {(() => {
+                                          const val = filtro.valoracion ?? valoracionPorMarca.get(filtro.id_marca) ?? null;
+                                          return val != null ? (
+                                            <span className="inline-flex gap-px leading-none" aria-label={`${val} de 5 estrellas`}>
+                                              {Array.from({ length: 5 }, (_, i) => (
+                                                <span key={i} style={{ fontSize: "11px" }} className={i < val ? "text-yellow-400" : "text-gray-300 dark:text-white/20"}>★</span>
+                                              ))}
+                                            </span>
+                                          ) : null;
+                                        })()}
+                                      </div>
                                       {badge && (
                                         <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
                                           {badge.emoji} {badge.label}
@@ -1567,6 +1639,7 @@ export default function Cotizador() {
               id: a.id_articulo,
               nombre: a.articulo.replace(/-\d+$/, "").trim(),
               precioBruto: precioBrutoPorId.get(a.id_articulo) ?? null,
+              valoracion: a.valoracion ?? valoracionMarcaSel,
             }))}
           apiData={cotizacionAPI?.resultado ? { resultado: cotizacionAPI.resultado } : undefined}
         />

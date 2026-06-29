@@ -18,14 +18,15 @@ import Carrito from "./pages/Carrito";
 import NotFound from "./pages/NotFound";
 import { CartProvider } from "@/hooks/useCart";
 
-// Sin caché: cada montaje/navegación re-consulta los endpoints en fresco.
+// Caché de 5 min: evita refetch en cada navegación/foco. Un producto nuevo
+// cargado en APEX aparece tras expirar el staleTime (~5 min) o con un reload.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 0, // los datos se consideran obsoletos al instante
-      gcTime: 0, // no retener nada en memoria al desmontar
-      refetchOnMount: "always",
-      refetchOnWindowFocus: true,
+      staleTime: 5 * 60 * 1000, // datos frescos por 5 minutos
+      gcTime: 10 * 60 * 1000, // retener en memoria 10 minutos
+      refetchOnMount: false, // no re-consultar si hay datos frescos
+      refetchOnWindowFocus: false, // no recargar al volver a la pestaña
       refetchOnReconnect: true,
     },
   },

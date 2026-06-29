@@ -236,6 +236,23 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   setImgLoaded(true);
                 }}
               />
+              <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
+                {rankBadge && (
+                  <span className={`inline-flex items-center text-xs font-bold px-2 py-0.5 rounded-full ${rankBadge.className}`}>
+                    {rankBadge.emoji} {rankBadge.label}
+                  </span>
+                )}
+                {articulo.valoracion_marca != null && (
+                  <span
+                    className="inline-flex items-center gap-0.5 rounded-full bg-black/55 px-2.5 py-1 shadow-sm"
+                    aria-label={`${articulo.valoracion_marca} de 5 estrellas`}
+                  >
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <span key={i} style={{ fontSize: "13px" }} className={i < articulo.valoracion_marca! ? "text-yellow-400" : "text-white/30"}>★</span>
+                    ))}
+                  </span>
+                )}
+              </div>
               <button
                 className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-white/80 hover:bg-black/60 transition"
                 onClick={(e) => { e.stopPropagation(); setZoomed(true); }}
@@ -261,18 +278,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   {articulo.descripcion_articulo}
                 </h2>
                 {/* Metadata tags */}
-                {(articulo.descripcion_rubro || rankBadge) && (
+                {articulo.descripcion_rubro && (
                   <div className="flex flex-wrap gap-2 mt-3">
-                    {articulo.descripcion_rubro && (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                        {articulo.descripcion_rubro}
-                      </span>
-                    )}
-                    {rankBadge && (
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${rankBadge.className}`}>
-                        {rankBadge.emoji} {rankBadge.label}
-                      </span>
-                    )}
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      {articulo.descripcion_rubro}
+                    </span>
                   </div>
                 )}
               </div>

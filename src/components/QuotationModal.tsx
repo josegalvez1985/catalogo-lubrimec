@@ -4,7 +4,7 @@ import { X, Download, Copy, Check, Loader2 } from 'lucide-react';
 import { toBlob } from 'html-to-image';
 import { API_BASE } from '@/lib/config';
 import { type QuotationData } from '@/lib/quotationCanvas';
-import { computeRankBadges } from '@/lib/salesRanking';
+import { computeRankBadges, type RankBadge } from '@/lib/salesRanking';
 import logo from '@/assets/lubrimec-logo.png';
 
 interface ApiAceite {
@@ -16,6 +16,7 @@ interface ApiAceite {
   totalDescuento: number;
   stock: number;
   unidad: string;
+  valoracion?: number | null;
   imagen?: {
     nombre: string;
     mimeType: string;
@@ -28,6 +29,8 @@ interface ApiFiltro {
   idArticulo?: number;
   nombre: string;
   precio: number;
+  valoracion?: number | null;
+  rankBadge?: RankBadge;
   imagen?: any;
 }
 
@@ -53,7 +56,7 @@ interface QuotationModalProps {
   /** @deprecated ya no se muestran en la cotización; se mantienen para compatibilidad del llamador */
   cantidadLitros?: string;
   cantidadGalones?: string;
-  aceitesSeleccionados?: Array<{ id: number; nombre: string; precioBruto?: number | null }>;
+  aceitesSeleccionados?: Array<{ id: number; nombre: string; precioBruto?: number | null; valoracion?: number | null }>;
   apiData?: {
     resultado: ApiCotizacionResultado;
   };
@@ -83,18 +86,13 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
 
 const fmt = (v: number) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(v))}`;
 
-function calcStars(precio: number, min: number, max: number): number {
-  if (min === max) return 3;
-  const ratio = (precio - min) / (max - min);
-  return Math.round(1 + ratio * 4) as 1 | 2 | 3 | 4 | 5;
-}
-
-function Stars({ count, size = 'sm' }: { count: number; size?: 'sm' | 'lg' }) {
-  const cls = size === 'lg' ? 'text-3xl drop-shadow-sm' : 'text-lg';
+/** Estrellas de valoración de marca (fijas, del endpoint /marcas) */
+function MarcaStars({ valoracion, size = 'sm' }: { valoracion: number; size?: 'sm' | 'lg' }) {
+  const px = size === 'lg' ? '24px' : '13px';
   return (
-    <span className={`${cls} leading-none tracking-tight`} aria-label={`${count} de 5 estrellas`}>
+    <span className="inline-flex gap-px leading-none" aria-label={`${valoracion} de 5 estrellas`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < count ? 'text-yellow-400' : 'text-gray-300 dark:text-white/20'}>★</span>
+        <span key={i} style={{ fontSize: px }} className={i < valoracion ? 'text-yellow-400' : 'text-gray-300 dark:text-white/20'}>★</span>
       ))}
     </span>
   );
@@ -381,26 +379,16 @@ export default function QuotationModal({
     { key: 'caja', tipo: 'Filtro de caja', filtro: filtros.caja },
   ].filter((f) => f.filtro);
 
-  // Ranking de ventas por aceite
+  // Ranking de ventas por aceite: usa el badge precalculado en el item (grupo completo)
+  // y cae al recálculo local con cantidad_vendida si no viniera.
   const aceiteRankBadges = computeRankBadges(
     (data.items ?? []).map((it) => ({ id_articulo: it.id, cantidad_vendida: it.cantidad_vendida }))
   );
-
-  // Rangos por viscosidad para ranking de estrellas
-  const viscosidadPorId = new Map<number, string>(
-    (data.items ?? []).map((it) => [it.id, it.viscosidad ?? ''])
-  );
-  const rangosPorViscosidad = new Map<string, { min: number; max: number }>();
-  for (const a of (apiData?.resultado.aceites ?? [])) {
-    const visc = viscosidadPorId.get(a.id) ?? '';
-    const precio = a.precioBase;
-    if (precio <= 0) continue;
-    const r = rangosPorViscosidad.get(visc);
-    if (!r) rangosPorViscosidad.set(visc, { min: precio, max: precio });
-    else { r.min = Math.min(r.min, precio); r.max = Math.max(r.max, precio); }
+  const aceiteBadgeById = new Map<number, RankBadge>();
+  for (const it of data.items ?? []) {
+    const b = it.rankBadge ?? aceiteRankBadges.get(it.id);
+    if (b) aceiteBadgeById.set(it.id, b);
   }
-  // Mantener para la condición de "hay más de 1 precio distinto"
-  const aceitePreciosArr = (apiData?.resultado.aceites ?? []).map((a) => a.precioBase).filter((v) => v > 0);
 
   // Suma de filtros (lista y con descuento) para el total por aceite
   const filtrosListaSum = filtrosList.reduce((s, f) => s + (f.filtro!.precio || 0), 0);
@@ -459,6 +447,20 @@ export default function QuotationModal({
                   </>
                 )}
                 <p className={`text-muted-foreground ${capturing ? 'text-lg mt-1' : 'text-xs mt-0.5'}`}>{fechaActual}</p>
+                {data?.marca && (
+                  <div className={`flex items-center justify-end gap-1.5 flex-wrap ${capturing ? 'mt-2' : 'mt-0.5'}`}>
+                    <span className={`text-muted-foreground ${capturing ? 'text-lg' : 'text-xs'}`}>
+                      Marca: <span className="font-semibold text-foreground">{data.marca}</span>
+                    </span>
+                    {data.valoracion_marca != null && (
+                      <span className="inline-flex gap-px leading-none" aria-label={`${data.valoracion_marca} de 5 estrellas`}>
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <span key={i} style={{ fontSize: capturing ? '22px' : '13px' }} className={i < data.valoracion_marca! ? 'text-yellow-400' : 'text-gray-300 dark:text-white/20'}>★</span>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {pct > 0 && (
                   <p className={`text-emerald-600 dark:text-emerald-400 font-semibold ${capturing ? 'text-2xl mt-1' : 'text-sm'}`}>
                     Promoción aplicada: {pct}% OFF
@@ -477,8 +479,6 @@ export default function QuotationModal({
                   {filtrosList.map(({ key, tipo, filtro }) => {
                     const filtroDesc = pct > 0 ? filtro!.precio * (1 - pct / 100) : undefined;
                     const filtroImg = filtro!.idArticulo ? imgUrl(filtro!.idArticulo) : undefined;
-                    const filtroStars = null; // un solo filtro por tipo, ranking no aplica
-
                     // ── Captura: tarjeta premium ──
                     if (capturing) {
                       return (
@@ -499,7 +499,12 @@ export default function QuotationModal({
                             <p className="text-xl font-extrabold text-foreground leading-tight break-words">
                               {filtro!.nombre}
                             </p>
-                            {filtroStars != null && <Stars count={filtroStars} size="lg" />}
+                            {filtro!.rankBadge && (
+                              <span className={`self-start text-sm font-bold px-3 py-1 rounded-full ${filtro!.rankBadge.className}`}>
+                                {filtro!.rankBadge.emoji} {filtro!.rankBadge.label}
+                              </span>
+                            )}
+                            {filtro!.valoracion != null && <MarcaStars valoracion={filtro!.valoracion} size="lg" />}
                           </div>
                           <div className="shrink-0 self-stretch bg-primary/10 border-l-2 border-primary px-5 py-4 flex flex-col items-end justify-center gap-1 min-w-[12rem]">
                             {filtroDesc != null && filtroDesc < filtro!.precio && (
@@ -533,7 +538,12 @@ export default function QuotationModal({
                           </p>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Marca</p>
                           <p className="text-foreground break-words text-xs font-semibold">{filtro!.nombre}</p>
-                          {filtroStars != null && <Stars count={filtroStars} size="sm" />}
+                          {filtro!.rankBadge && (
+                            <span className={`inline-block mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filtro!.rankBadge.className}`}>
+                              {filtro!.rankBadge.emoji} {filtro!.rankBadge.label}
+                            </span>
+                          )}
+                          {filtro!.valoracion != null && <MarcaStars valoracion={filtro!.valoracion} size="sm" />}
                         </div>
                         <div className="shrink-0">
                           <PriceBlock lista={filtro!.precio} desc={filtroDesc} align="right" size="sm" />
@@ -564,12 +574,7 @@ export default function QuotationModal({
                       totalLista != null && totalDesc != null && totalDesc < totalLista
                         ? totalLista - totalDesc
                         : 0;
-                    const visc = viscosidadPorId.get(a.id) ?? '';
-                    const rango = rangosPorViscosidad.get(visc);
-                    const aceiteStars = rango && rango.min !== rango.max && listaAceite != null && listaAceite > 0
-                      ? calcStars(listaAceite, rango.min, rango.max)
-                      : null;
-                    const rankBadge = aceiteRankBadges.get(a.id);
+                    const rankBadge = aceiteBadgeById.get(a.id);
 
                     // ── Captura: tarjeta premium impactante ──
                     if (capturing) {
@@ -595,7 +600,7 @@ export default function QuotationModal({
                                 </span>
                               )}
                             </div>
-                            {aceiteStars != null && <Stars count={aceiteStars} size="lg" />}
+                            {'valoracion' in a && a.valoracion != null && <MarcaStars valoracion={a.valoracion} size="lg" />}
                             <div className="flex items-baseline gap-2 flex-wrap">
                               <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                                 Aceite
@@ -645,7 +650,7 @@ export default function QuotationModal({
                                 {rankBadge.emoji} {rankBadge.label}
                               </span>
                             )}
-                            {aceiteStars != null && <Stars count={aceiteStars} size="sm" />}
+                            {'valoracion' in a && a.valoracion != null && <MarcaStars valoracion={a.valoracion} size="sm" />}
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 sm:contents">
