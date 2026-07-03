@@ -175,7 +175,13 @@ export default function QuotationModal({
     if (!width || !height) return 2.5;
 
     const MAX_SIDE = 16384; // límite de ancho/alto de canvas
-    const MAX_AREA = 16_000_000; // ~16MP de margen seguro para iOS/Safari
+    // Tope de área según navegador: iOS/Safari limita el canvas a ~16MP; el resto
+    // (Chrome/Edge/Firefox, desktop y Android) soporta mucho más, así una lista
+    // larga mantiene el ratio alto y no sale pixelada.
+    const ua = navigator.userAgent;
+    const isIOS = /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const isSafari = /Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR/.test(ua);
+    const MAX_AREA = isIOS || isSafari ? 16_000_000 : 64_000_000;
     const TARGET = 2.5; // calidad HD deseada
 
     const ratioBySide = Math.min(MAX_SIDE / width, MAX_SIDE / height);
