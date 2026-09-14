@@ -165,11 +165,11 @@ const Catalogo = () => {
     }
   }, [activeViscosidadIds, viscosidadesDisponibles]);
 
-  // En catálogo: precio de lista (API) con 30% de descuento
+  // En catálogo: precio de lista (API) con 40% de descuento
   const articulosConPrecio = articulos.map((a) => ({
     ...a,
     precioLista: a.precio ?? null,
-    precio: a.precio != null ? Math.round(a.precio * 0.7) : a.precio,
+    precio: a.precio != null ? Math.round(a.precio * 0.6) : a.precio,
   }));
 
   const displayedArticulos = articulosConPrecio.filter((a) => {
