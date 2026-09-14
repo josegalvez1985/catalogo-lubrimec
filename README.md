@@ -148,7 +148,7 @@ VITE_API_BASE=https://oracleapex.com/ords
 ### Cotizador (`/cotizador`)
 - Wizard de pasos: vehículo → viscosidad/marca → existencia → cantidad y descuento → aceites → filtros → cotización.
 - Selector de **existencia**: "Con Stock" filtra por disponibilidad; "Todos" muestra todo sin controlar stock.
-- Campo de **descuento %** con valor por defecto **30** (editable, 0–100).
+- Campo de **descuento %** con valor por defecto **40** (editable, 0–100).
 - Consulta los precios y el descuento aplicado a la API de Oracle APEX.
 - Modal de cotización con imagen exportable:
   - **Descargar** PNG en máxima resolución (`pixelRatio` dinámico para no exceder los límites de canvas del navegador).

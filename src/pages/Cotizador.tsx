@@ -223,7 +223,7 @@ export default function Cotizador() {
   const [selectedFiltroCaja, setSelectedFiltroCaja] = useState<number | null>(
     null
   );
-  const [descuento, setDescuento] = useState<string>("30");
+  const [descuento, setDescuento] = useState<string>("40");
   const [cantidadLitros, setCantidadLitros] = useState<string>("4");
   const [cantidadGalones, setCantidadGalones] = useState<string>("1");
   const [showQuotationModal, setShowQuotationModal] = useState(false);
