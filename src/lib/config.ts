@@ -6,3 +6,7 @@ const DEFAULT_BASE = import.meta.env.MODE === "development" ? "/ords" : "https:/
 export const API_BASE = (import.meta.env.VITE_API_BASE as string) || DEFAULT_BASE;
 
 export const WHATSAPP_NUMBER = "595974759037";
+
+// Descuento fijo sobre el precio de lista. Lo usan el catálogo y el cotizador;
+// el usuario no puede modificarlo.
+export const DESCUENTO_PORCENTAJE = 40;

@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone, Wrench, BookOpen, Home, Users, Settings, MessageSquare, ShoppingCart } from "lucide-react";
-import PwaInstallButton from "@/components/PwaInstallButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCart } from "@/hooks/useCart";
-import lubrimecLogo from "@/assets/lubrimec-logo.png";
+import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
 
 const navLinks = [
   {
@@ -157,7 +156,6 @@ export default function Navbar() {
                 </svg>
                 WhatsApp
               </a>
-              <PwaInstallButton compact />
             </div>
 
             {/* Mobile right actions */}
@@ -209,7 +207,20 @@ export default function Navbar() {
             >
               {/* Drawer header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <div></div>
+                <Link
+                  to="/"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2"
+                  aria-label="Ir al inicio"
+                >
+                  <img src={lubrimecLogo} alt="" className="w-8 h-8 object-contain" />
+                  <span
+                    className="text-lg font-bold tracking-widest text-foreground"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    LUBRIMEC
+                  </span>
+                </Link>
                 <button
                   onClick={() => setMobileOpen(false)}
                   aria-label="Cerrar menú"
@@ -271,9 +282,6 @@ export default function Navbar() {
                   <Phone className="w-4 h-4" />
                   +595 974 759 037
                 </a>
-                <div className="flex justify-center">
-                  <PwaInstallButton compact />
-                </div>
               </div>
             </motion.div>
           </>

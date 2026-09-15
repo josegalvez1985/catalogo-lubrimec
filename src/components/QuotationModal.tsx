@@ -6,6 +6,7 @@ import { API_BASE } from '@/lib/config';
 import { type QuotationData } from '@/lib/quotationCanvas';
 import { computeRankBadges, type RankBadge } from '@/lib/salesRanking';
 import logo from '@/assets/lubrimec-logo.png';
+import { toast } from 'sonner';
 
 interface ApiAceite {
   id: number;
@@ -321,7 +322,7 @@ export default function QuotationModal({
       // En HTTP (p. ej. probando por IP de red) navigator.clipboard es undefined:
       // avisamos y descargamos como respaldo en vez de crashear.
       if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
-        alert('Copiar requiere una conexión segura (HTTPS). Descargando la imagen…');
+        toast.info('Copiar requiere una conexión segura (HTTPS)', { description: 'Descargando la imagen…' });
         await handleDownload();
         return;
       }
@@ -348,7 +349,7 @@ export default function QuotationModal({
       try {
         await handleDownload();
       } catch {
-        alert('No se pudo copiar ni descargar la imagen. Intentá de nuevo.');
+        toast.error('No se pudo copiar ni descargar la imagen', { description: 'Intentá de nuevo.' });
       }
     } finally {
       setCopying(false);

@@ -1,9 +1,11 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, Check, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MessageCircle, Download, ShoppingCart } from "lucide-react";
+import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import ProductPlaceholder from "@/components/ProductPlaceholder";
 import { API_BASE, WHATSAPP_NUMBER } from "@/lib/config";
-import placeholder from "@/assets/lubrimec-logo.png";
+import lubrimecLogo from "@/assets/lubrimec-logo.png";
 import type { Articulo } from "@/hooks/useArticulos";
 import { buildProductCanvas } from "@/lib/productCanvas";
 import { useCart } from "@/hooks/useCart";
@@ -20,6 +22,8 @@ interface ProductModalProps {
   rankBadge?: RankBadge;
 }
 
+const fmt = (n: number) => new Intl.NumberFormat("es-PY").format(n);
+
 const ProductModal: React.FC<ProductModalProps> = ({
   articulo, isOpen, onClose, onPrev, onNext, hasPrev, hasNext, rankBadge,
 }) => {
@@ -28,8 +32,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [copying, setCopying] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const [added, setAdded] = useState(false);
-  const { addItem } = useCart();
+  const { addItem, getCantidad } = useCart();
 
   // Swipe táctil
   const touchStartX = useRef<number | null>(null);
@@ -53,25 +58,38 @@ const ProductModal: React.FC<ProductModalProps> = ({
     touchStartY.current = null;
   };
 
-  // Keyboard + back button
-  React.useEffect(() => {
+  // El padre recrea estos handlers en cada render. Se leen desde un ref para
+  // que el efecto de abajo corra una sola vez por apertura del modal.
+  const latest = useRef({ onClose, onPrev, onNext, hasPrev, hasNext, zoomed });
+  latest.current = { onClose, onPrev, onNext, hasPrev, hasNext, zoomed };
+
+  // Teclado + botón "Atrás" del celular
+  useEffect(() => {
     if (!isOpen) return;
 
-    // Empujar una entrada al historial para capturar el botón "Atrás" del celular
+    // Una sola entrada de historial por apertura: "Atrás" cierra el modal
     window.history.pushState({ modal: true }, "");
+    let closedByBack = false;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const h = latest.current;
       if (e.key === "Escape") {
-        if (zoomed) setZoomed(false);
-        else onClose();
+        if (h.zoomed) setZoomed(false);
+        else h.onClose();
       }
-      if (e.key === "ArrowLeft" && hasPrev) onPrev?.();
-      if (e.key === "ArrowRight" && hasNext) onNext?.();
+      if (e.key === "ArrowLeft" && h.hasPrev) h.onPrev?.();
+      if (e.key === "ArrowRight" && h.hasNext) h.onNext?.();
     };
 
     const handlePopState = () => {
-      if (zoomed) setZoomed(false);
-      else onClose();
+      if (latest.current.zoomed) {
+        // "Atrás" con la imagen ampliada solo cierra el zoom
+        setZoomed(false);
+        window.history.pushState({ modal: true }, "");
+      } else {
+        closedByBack = true;
+        latest.current.onClose();
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -82,31 +100,45 @@ const ProductModal: React.FC<ProductModalProps> = ({
       document.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("popstate", handlePopState);
       document.body.style.overflow = "";
+      // Cerrado con X, fondo o Escape: quitar la entrada que agregamos
+      if (!closedByBack && window.history.state?.modal) window.history.back();
     };
-  }, [isOpen, onClose, onPrev, onNext, hasPrev, hasNext, zoomed]);
+  }, [isOpen]);
 
   // Reset al cambiar de producto
-  React.useEffect(() => {
+  useEffect(() => {
     setZoomed(false);
     setCopied(false);
     setCopying(false);
     setDownloading(false);
     setImgLoaded(false);
+    setImgError(false);
     setAdded(false);
   }, [articulo?.id_articulo]);
 
   if (!articulo) return null;
 
-  const hasImage = articulo.tiene_imagen === 1;
-  const imgSrc = hasImage
-    ? `${API_BASE}/josegalvez/paginaweb/articulosimg/${articulo.id_articulo}`
-    : placeholder;
+  const showImage = articulo.tiene_imagen === 1 && !imgError;
+  const imgUrl = `${API_BASE}/josegalvez/paginaweb/articulosimg/${articulo.id_articulo}`;
+  // Sin foto real, la imagen compartida lleva el logo
+  const canvasSrc = showImage ? imgUrl : lubrimecLogo;
+
+  const stock = articulo.stock ?? 0;
+  const tieneStock = stock > 0;
+  const enCarrito = getCantidad(articulo.id_articulo);
+  const limiteAlcanzado = articulo.stock != null && enCarrito >= stock;
+
+  const tieneDescuento =
+    articulo.precio != null && articulo.precioLista != null && articulo.precioLista > articulo.precio;
+  const pctDescuento = tieneDescuento
+    ? Math.round((1 - articulo.precio! / articulo.precioLista!) * 100)
+    : 0;
 
   const handleCopy = async () => {
     if (copying) return;
     setCopying(true);
     try {
-      const blob = await buildProductCanvas(imgSrc, articulo, rankBadge);
+      const blob = await buildProductCanvas(canvasSrc, articulo, rankBadge);
 
       if (navigator.clipboard && typeof ClipboardItem !== "undefined") {
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
@@ -120,13 +152,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
         const text = [
           articulo.descripcion_articulo,
           articulo.descripcion_marca ? `Marca: ${articulo.descripcion_marca}` : "",
-          articulo.precio != null ? `Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)}` : "",
-          articulo.stock != null && articulo.stock > 0 ? `${articulo.stock} en stock` : "Sin stock",
+          articulo.precio != null ? `Gs. ${fmt(articulo.precio)}` : "",
+          tieneStock ? `${stock} en stock` : "Sin stock",
         ].filter(Boolean).join(" — ");
         await navigator.clipboard.writeText(text);
         setCopied(true);
       } catch {
-        alert("No se pudo copiar. Revisa que la conexión sea segura (HTTPS).");
+        toast.error("No se pudo copiar", { description: "Revisá que la conexión sea segura (HTTPS)." });
       }
     } finally {
       setCopying(false);
@@ -138,7 +170,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
     if (downloading) return;
     setDownloading(true);
     try {
-      const blob = await buildProductCanvas(imgSrc, articulo, rankBadge);
+      const blob = await buildProductCanvas(canvasSrc, articulo, rankBadge);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -149,14 +181,21 @@ const ProductModal: React.FC<ProductModalProps> = ({
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert("No se pudo generar la imagen.");
+      toast.error("No se pudo generar la imagen", { description: "Intentá de nuevo." });
     } finally {
       setDownloading(false);
     }
   };
 
+  const handleAdd = () => {
+    if (!tieneStock || limiteAlcanzado) return;
+    addItem(articulo, 1);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
   const whatsappMsg = encodeURIComponent(
-    `Hola, consulto por: ${articulo.descripcion_articulo}${articulo.precio != null ? ` (Gs. ${new Intl.NumberFormat("es-PY").format(articulo.precio)})` : ""}`
+    `Hola, consulto por: ${articulo.descripcion_articulo}${articulo.precio != null ? ` (Gs. ${fmt(articulo.precio)})` : ""}`
   );
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappMsg}`;
 
@@ -215,27 +254,31 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            {/* Image con skeleton mientras carga */}
+            {/* Imagen con skeleton mientras carga */}
             <div
-              className="relative w-full bg-white flex items-center justify-center p-4 sm:p-6 cursor-zoom-in"
+              className={`relative w-full bg-white flex items-center justify-center p-4 sm:p-6 ${showImage ? "cursor-zoom-in" : ""}`}
               style={{ minHeight: "220px", maxHeight: "42vh" }}
-              onClick={() => setZoomed(true)}
+              onClick={() => showImage && setZoomed(true)}
             >
-              {/* Skeleton */}
-              {!imgLoaded && (
-                <div className="absolute inset-0 bg-gray-100 animate-pulse rounded-t-2xl" />
+              {showImage ? (
+                <>
+                  {!imgLoaded && (
+                    <div className="absolute inset-0 bg-gray-100 animate-pulse rounded-t-2xl" />
+                  )}
+                  <img
+                    src={imgUrl}
+                    alt={articulo.descripcion_articulo}
+                    className={`max-w-full object-contain transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+                    style={{ maxHeight: "38vh" }}
+                    onLoad={() => setImgLoaded(true)}
+                    onError={() => setImgError(true)}
+                  />
+                </>
+              ) : (
+                <div className="w-full h-[180px]">
+                  <ProductPlaceholder rubro={articulo.descripcion_rubro} iconClassName="w-24 h-24" />
+                </div>
               )}
-              <img
-                src={imgSrc}
-                alt={articulo.descripcion_articulo}
-                className={`max-w-full object-contain transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
-                style={{ maxHeight: "38vh" }}
-                onLoad={() => setImgLoaded(true)}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = placeholder;
-                  setImgLoaded(true);
-                }}
-              />
               <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
                 {rankBadge && (
                   <span className={`inline-flex items-center text-xs font-bold px-2 py-0.5 rounded-full ${rankBadge.className}`}>
@@ -244,22 +287,32 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 )}
                 {articulo.valoracion_marca != null && (
                   <span
-                    className="inline-flex items-center gap-0.5 rounded-full bg-black/55 px-2.5 py-1 shadow-sm"
-                    aria-label={`${articulo.valoracion_marca} de 5 estrellas`}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-xs text-white/90 shadow-sm"
+                    title="Valoración de la marca"
+                    aria-label={`Marca valorada con ${articulo.valoracion_marca} de 5 estrellas`}
                   >
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <span key={i} style={{ fontSize: "13px" }} className={i < articulo.valoracion_marca! ? "text-yellow-400" : "text-white/30"}>★</span>
-                    ))}
+                    Marca
+                    <span className="inline-flex gap-0.5 text-sm" aria-hidden="true">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <span key={i} className={i < articulo.valoracion_marca! ? "text-yellow-400" : "text-white/30"}>★</span>
+                      ))}
+                    </span>
                   </span>
                 )}
               </div>
-              <button
-                className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-white/80 hover:bg-black/60 transition"
-                onClick={(e) => { e.stopPropagation(); setZoomed(true); }}
-                aria-label="Ampliar imagen"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </button>
+              {showImage ? (
+                <button
+                  className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-white/80 hover:bg-black/60 transition"
+                  onClick={(e) => { e.stopPropagation(); setZoomed(true); }}
+                  aria-label="Ampliar imagen"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+              ) : (
+                <span className="absolute bottom-3 left-3 text-xs font-medium bg-black/60 text-white/90 px-1.5 py-0.5 rounded">
+                  Sin foto
+                </span>
+              )}
             </div>
 
             {/* Indicador de swipe en mobile */}
@@ -280,7 +333,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 {/* Metadata tags */}
                 {articulo.descripcion_rubro && (
                   <div className="flex flex-wrap gap-2 mt-3">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                       {articulo.descripcion_rubro}
                     </span>
                   </div>
@@ -296,17 +349,22 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <div className="flex items-end justify-between gap-4">
                 {articulo.precio != null ? (
                   <div>
-                    {articulo.precioLista != null && articulo.precioLista > articulo.precio && (
-                      <p className="text-sm text-muted-foreground line-through">
-                        Precio lista: Gs. {new Intl.NumberFormat("es-PY").format(articulo.precioLista)}
-                      </p>
+                    {tieneDescuento && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground line-through">
+                          Gs. {fmt(articulo.precioLista!)}
+                        </span>
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                          -{pctDescuento}%
+                        </span>
+                      </div>
                     )}
                     <p className="text-2xl font-bold text-primary">
-                      Gs. {new Intl.NumberFormat("es-PY").format(articulo.precio)}
+                      Gs. {fmt(articulo.precio)}
                     </p>
-                    {articulo.precioLista != null && articulo.precioLista > articulo.precio && (
+                    {tieneDescuento && (
                       <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                        Ahorrás Gs. {new Intl.NumberFormat("es-PY").format(articulo.precioLista - articulo.precio)}
+                        Ahorrás Gs. {fmt(articulo.precioLista! - articulo.precio)}
                       </p>
                     )}
                   </div>
@@ -314,22 +372,47 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   <p className="text-sm text-muted-foreground italic">Precio no disponible</p>
                 )}
 
-                {articulo.stock != null && articulo.stock > 0 ? (
+                {tieneStock ? (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    {articulo.stock} en stock
+                    {stock} en stock
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-red-500/15 text-red-400">
-                    <span className="w-2 h-2 rounded-full bg-red-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-red-500/15 text-red-600 dark:text-red-400">
+                    <span className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400" />
                     Sin stock
                   </span>
                 )}
               </div>
 
-              {/* Action buttons */}
+              {/* Acciones: primero comprar/consultar, después compartir */}
               <div className="space-y-2 pt-2">
-                <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleAdd}
+                  disabled={!tieneStock || limiteAlcanzado}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {added ? <Check className="w-4 h-4 shrink-0" /> : <ShoppingCart className="w-4 h-4 shrink-0" />}
+                  {added
+                    ? "¡Agregado al carrito!"
+                    : !tieneStock
+                      ? "Sin stock"
+                      : limiteAlcanzado
+                        ? "Ya tenés todo el stock en el carrito"
+                        : "Agregar al carrito"}
+                </button>
+
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 shrink-0" />
+                  {tieneStock ? "Consultar por este producto" : "Consultar disponibilidad"}
+                </a>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
@@ -364,35 +447,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-
-                <button
-                  onClick={() => {
-                    addItem(articulo, 1);
-                    setAdded(true);
-                    setTimeout(() => setAdded(false), 1500);
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                >
-                  {added ? <Check className="w-4 h-4 shrink-0" /> : <ShoppingCart className="w-4 h-4 shrink-0" />}
-                  {added ? "¡Agregado al carrito!" : "Agregar al carrito"}
-                </button>
-
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4 shrink-0" />
-                  Consultar por este producto
-                </a>
               </div>
             </div>
           </motion.div>
 
           {/* Fullscreen zoom overlay */}
           <AnimatePresence>
-            {zoomed && (
+            {zoomed && showImage && (
               <motion.div
                 className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 cursor-zoom-out"
                 initial={{ opacity: 0 }}
@@ -408,12 +469,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   <ZoomOut className="w-5 h-5" />
                 </button>
                 <img
-                  src={imgSrc}
+                  src={imgUrl}
                   alt={articulo.descripcion_articulo}
                   className="max-w-[95vw] max-h-[95vh] object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = placeholder;
-                  }}
                 />
               </motion.div>
             )}

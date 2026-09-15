@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Search, PackageSearch, X, Menu } from "lucide-react";
+import { ArrowUp, Search, PackageSearch, X, Menu, Percent } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useArticulos } from "@/hooks/useArticulos";
 import { useViscosidades } from "@/hooks/useViscosidades";
@@ -13,6 +13,7 @@ import FilterSidebar from "@/components/FilterSidebar";
 import type { Articulo } from "@/hooks/useArticulos";
 import { computeRankBadges } from "@/lib/salesRanking";
 import type { RankBadge } from "@/lib/salesRanking";
+import { DESCUENTO_PORCENTAJE } from "@/lib/config";
 
 const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -165,11 +166,11 @@ const Catalogo = () => {
     }
   }, [activeViscosidadIds, viscosidadesDisponibles]);
 
-  // En catálogo: precio de lista (API) con 40% de descuento
+  // En catálogo: precio de lista (API) con el descuento fijo aplicado
   const articulosConPrecio = articulos.map((a) => ({
     ...a,
     precioLista: a.precio ?? null,
-    precio: a.precio != null ? Math.round(a.precio * 0.6) : a.precio,
+    precio: a.precio != null ? Math.round(a.precio * (1 - DESCUENTO_PORCENTAJE / 100)) : a.precio,
   }));
 
   const displayedArticulos = articulosConPrecio.filter((a) => {
@@ -232,7 +233,7 @@ const Catalogo = () => {
     [activeMarcaIds, marcas, articulos]
   );
 
-  const hasActiveFilters = activeRubroIds.length > 0 || activeViscosidadIds.length > 0 || activeMarcaIds.length > 0 || stockFilter !== "todos" || debouncedSearch !== "";
+  const hasActiveFilters = activeRubroIds.length > 0 || activeViscosidadIds.length > 0 || activeMarcaIds.length > 0 || stockFilter !== "stock" || debouncedSearch !== "";
 
   return (
     <div className="min-h-screen">
@@ -246,11 +247,15 @@ const Catalogo = () => {
       {/* Page header */}
       <div className="pt-24 pb-8 px-4 bg-gradient-to-b from-card/40 to-transparent border-b border-border">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
             CATÁLOGO DE PRODUCTOS
           </h1>
           <p className="text-muted-foreground text-sm">
             Lubricantes, aceites, filtros y más — filtrá por categoría, marca y viscosidad.
+          </p>
+          <p className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+            <Percent className="w-4 h-4" />
+            {DESCUENTO_PORCENTAJE}% de descuento en todos los productos
           </p>
         </div>
       </div>
@@ -276,12 +281,13 @@ const Catalogo = () => {
           onStockChange={handleStockChange}
           onClearAll={handleClearAll}
           resultCount={displayedArticulos.length}
+          loading={articulosLoading}
         />
 
         {/* Main content */}
         <main className="flex-1 w-full">
         {/* Sticky search bar */}
-        <div className="sticky top-16 z-40 pb-4 pt-3 px-4">
+        <div className={`sticky top-16 z-40 pb-4 pt-3 px-4 bg-background/95 backdrop-blur-md transition-shadow ${isScrolled ? "border-b border-border shadow-sm" : ""}`}>
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -291,7 +297,7 @@ const Catalogo = () => {
               <Menu className="w-5 h-5" />
             </button>
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Buscar productos, marcas, rubros..."
@@ -339,10 +345,10 @@ const Catalogo = () => {
                   <button onClick={() => handleToggleMarca(chip.id)} className="ml-0.5 hover:text-primary/70" aria-label="Quitar marca"><X className="w-3 h-3" /></button>
                 </span>
               ))}
-              {stockFilter !== "todos" && (
+              {stockFilter !== "stock" && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
-                  {stockFilter === "stock" ? "Con stock" : "Sin stock"}
-                  <button onClick={() => handleStockChange("todos")} className="ml-0.5 hover:text-primary/70" aria-label="Quitar filtro de stock"><X className="w-3 h-3" /></button>
+                  {stockFilter === "todos" ? "Incluye sin stock" : "Solo sin stock"}
+                  <button onClick={() => handleStockChange("stock")} className="ml-0.5 hover:text-primary/70" aria-label="Volver a mostrar solo productos con stock"><X className="w-3 h-3" /></button>
                 </span>
               )}
               <button

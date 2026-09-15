@@ -1,14 +1,32 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Trash2, Minus, Plus, MessageCircle, ArrowLeft } from "lucide-react";
-import { useCart } from "@/hooks/useCart";
+import { toast } from "sonner";
+import { useCart, type CartItem } from "@/hooks/useCart";
+import ProductPlaceholder from "@/components/ProductPlaceholder";
 import { API_BASE, WHATSAPP_NUMBER } from "@/lib/config";
-import placeholder from "@/assets/lubrimec-logo.png";
 
 const fmt = (n: number) => new Intl.NumberFormat("es-PY").format(n);
 
+function CartItemImage({ item }: { item: CartItem }) {
+  const [hasError, setHasError] = useState(false);
+  if (item.tiene_imagen !== 1 || hasError) {
+    return <ProductPlaceholder rubro={item.descripcion_rubro} iconClassName="w-10 h-10" />;
+  }
+  return (
+    <img
+      src={`${API_BASE}/josegalvez/paginaweb/articulosimg/${item.id_articulo}`}
+      alt={item.descripcion_articulo}
+      className="max-w-full max-h-full object-contain"
+      loading="lazy"
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 const Carrito = () => {
-  const { items, totalItems, totalPrecio, setCantidad, removeItem, clear } = useCart();
+  const { items, totalItems, totalPrecio, setCantidad, removeItem, clear, restore } = useCart();
 
   const buildWhatsappUrl = () => {
     const lineas = items.map((i) => {
@@ -22,11 +40,20 @@ const Carrito = () => {
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
   };
 
+  // Vaciar sin confirmación previa, pero con "Deshacer" por si fue un toque accidental
+  const handleVaciar = () => {
+    const snapshot = items;
+    clear();
+    toast("Carrito vaciado", {
+      action: { label: "Deshacer", onClick: () => restore(snapshot) },
+    });
+  };
+
   return (
     <div className="min-h-screen">
       <div className="pt-24 pb-8 px-4 bg-gradient-to-b from-card/40 to-transparent border-b border-border">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
             CARRITO
           </h1>
           <p className="text-muted-foreground text-sm">
@@ -54,11 +81,8 @@ const Carrito = () => {
             <div className="space-y-3">
               <AnimatePresence mode="popLayout">
                 {items.map((item) => {
-                  const imgSrc =
-                    item.tiene_imagen === 1
-                      ? `${API_BASE}/josegalvez/paginaweb/articulosimg/${item.id_articulo}`
-                      : placeholder;
                   const sub = (item.precio ?? 0) * item.cantidad;
+                  const alMaximo = item.stock != null && item.stock > 0 && item.cantidad >= item.stock;
                   return (
                     <motion.div
                       key={item.id_articulo}
@@ -67,16 +91,10 @@ const Carrito = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.2 }}
-                      className="flex gap-4 bg-card/60 backdrop-blur-sm border border-border rounded-xl p-3 sm:p-4"
+                      className="flex gap-4 bg-card border border-border rounded-xl p-3 sm:p-4"
                     >
                       <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 bg-white rounded-lg flex items-center justify-center overflow-hidden">
-                        <img
-                          src={imgSrc}
-                          alt={item.descripcion_articulo}
-                          className="max-w-full max-h-full object-contain"
-                          loading="lazy"
-                          onError={(e) => { (e.target as HTMLImageElement).src = placeholder; }}
-                        />
+                        <CartItemImage item={item} />
                       </div>
 
                       <div className="flex-1 min-w-0 flex flex-col">
@@ -91,6 +109,9 @@ const Carrito = () => {
                         ) : (
                           <p className="text-xs text-muted-foreground italic mt-1">Precio a consultar</p>
                         )}
+                        {alMaximo && (
+                          <p className="text-xs text-muted-foreground mt-0.5">Máximo disponible: {item.stock}</p>
+                        )}
 
                         <div className="mt-auto pt-2 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1 border border-border rounded-lg">
@@ -104,7 +125,8 @@ const Carrito = () => {
                             <span className="w-8 text-center text-sm font-medium tabular-nums">{item.cantidad}</span>
                             <button
                               onClick={() => setCantidad(item.id_articulo, item.cantidad + 1)}
-                              className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-r-lg transition"
+                              disabled={alMaximo}
+                              className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-r-lg transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                               aria-label="Agregar uno"
                             >
                               <Plus className="w-4 h-4" />
@@ -132,7 +154,7 @@ const Carrito = () => {
             </div>
 
             {/* Resumen */}
-            <div className="mt-6 bg-card/60 backdrop-blur-sm border border-border rounded-xl p-4 sm:p-5">
+            <div className="mt-6 bg-card border border-border rounded-xl p-4 sm:p-5">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-base font-semibold text-foreground">Total</span>
                 <span className="text-2xl font-bold text-primary tabular-nums">Gs. {fmt(totalPrecio)}</span>
@@ -152,7 +174,7 @@ const Carrito = () => {
                   Seguir comprando
                 </Link>
                 <button
-                  onClick={clear}
+                  onClick={handleVaciar}
                   className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-destructive transition"
                 >
                   <Trash2 className="w-4 h-4" />

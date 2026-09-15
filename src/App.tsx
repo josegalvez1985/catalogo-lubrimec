@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import HomeButton from "@/components/HomeButton";
 import heroBanner from "@/assets/hero-banner.jpg";
 import Home from "./pages/Home";
 import Nosotros from "./pages/Nosotros";
@@ -41,23 +40,29 @@ function ScrollToTop() {
 }
 
 function Layout() {
+  const { pathname } = useLocation();
+  // La foto de fondo solo va en la Home: en catálogo, cotizador y carrito un
+  // fondo liso mejora la lectura y hace el scroll más liviano.
+  const showHeroBackground = pathname === "/";
+
   return (
     <div className="relative flex flex-col min-h-screen">
-      {/* Fondo global con el mismo efecto del hero del Home (fijo en todas las páginas) */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <img
-          src={heroBanner}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover opacity-95 dark:opacity-100"
-        />
-        {/* Tinte: claro en tema claro, oscuro en tema oscuro */}
-        <div className="absolute inset-0 bg-background/40 dark:bg-black/40" />
-        {/* Degradado hacia el fondo de la página */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
-        {/* Glow radial ámbar */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_hsl(36_90%_50%_/_0.10)_0%,_transparent_70%)]" />
-      </div>
+      {showHeroBackground && (
+        <div className="fixed inset-0 -z-10 overflow-hidden">
+          <img
+            src={heroBanner}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover opacity-95 dark:opacity-100"
+          />
+          {/* Tinte: claro en tema claro, oscuro en tema oscuro */}
+          <div className="absolute inset-0 bg-background/40 dark:bg-black/40" />
+          {/* Degradado hacia el fondo de la página */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
+          {/* Glow radial ámbar */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_hsl(36_90%_50%_/_0.10)_0%,_transparent_70%)]" />
+        </div>
+      )}
       <Navbar />
       <div className="flex-1">
         <Routes>
@@ -72,7 +77,6 @@ function Layout() {
         </Routes>
       </div>
       <Footer />
-      <HomeButton />
     </div>
   );
 }

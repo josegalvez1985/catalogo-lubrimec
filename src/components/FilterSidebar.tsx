@@ -17,6 +17,7 @@ function FilterSection({
   getLabel,
   expanded,
   onToggle,
+  loading,
 }: {
   title: string;
   section: keyof ExpandedSections;
@@ -27,6 +28,7 @@ function FilterSection({
   getLabel: (item: any) => string;
   expanded: boolean;
   onToggle: () => void;
+  loading: boolean;
 }) {
   return (
     <div className="border-b border-border pb-4">
@@ -43,7 +45,9 @@ function FilterSection({
       {expanded && (
         <div className="space-y-2">
           {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground p-2">Cargando...</p>
+            <p className="text-sm text-muted-foreground p-2">
+              {loading ? "Cargando..." : "Sin opciones con los filtros elegidos"}
+            </p>
           ) : (
             <>
               <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors">
@@ -89,6 +93,7 @@ function ChipGroup({
   onToggleId,
   onClear,
   getLabel,
+  loading,
 }: {
   title: string;
   items: any[];
@@ -96,6 +101,7 @@ function ChipGroup({
   onToggleId: (id: number) => void;
   onClear: () => void;
   getLabel: (item: any) => string;
+  loading: boolean;
 }) {
   const chipClass = (active: boolean) =>
     `px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
@@ -108,7 +114,9 @@ function ChipGroup({
     <div>
       <h3 className="font-semibold text-foreground mb-3">{title}</h3>
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Cargando...</p>
+        <p className="text-sm text-muted-foreground">
+          {loading ? "Cargando..." : "Sin opciones con los filtros elegidos"}
+        </p>
       ) : (
         <div className="flex flex-wrap gap-2">
           <button onClick={onClear} className={chipClass(activeIds.length === 0)}>
@@ -147,6 +155,7 @@ interface FilterSidebarProps {
   onStockChange: (val: "todos" | "stock" | "sin") => void;
   onClearAll: () => void;
   resultCount?: number;
+  loading?: boolean;
 }
 
 const STOCK_OPTIONS: Array<{ value: "todos" | "stock" | "sin"; label: string }> = [
@@ -174,6 +183,7 @@ export default function FilterSidebar({
   onStockChange,
   onClearAll,
   resultCount,
+  loading = false,
 }: FilterSidebarProps) {
   const [expandedSections, setExpandedSections] = useState({
     rubro: true,
@@ -186,7 +196,7 @@ export default function FilterSidebar({
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const hasActiveFilters = activeRubroIds.length > 0 || activeViscosidadIds.length > 0 || activeMarcaIds.length > 0 || stockFilter !== "todos";
+  const hasActiveFilters = activeRubroIds.length > 0 || activeViscosidadIds.length > 0 || activeMarcaIds.length > 0 || stockFilter !== "stock";
 
   return (
     <>
@@ -240,9 +250,9 @@ export default function FilterSidebar({
               ))}
             </div>
           </div>
-          <ChipGroup title="Categorías" items={rubros} activeIds={activeRubroIds} onToggleId={onToggleRubro} onClear={onClearRubros} getLabel={(i) => i.descripcion_rubro} />
-          <ChipGroup title="Viscosidad" items={viscosidades} activeIds={activeViscosidadIds} onToggleId={onToggleViscosidad} onClear={onClearViscosidades} getLabel={(i) => i.descripcion} />
-          <ChipGroup title="Marca" items={marcas} activeIds={activeMarcaIds} onToggleId={onToggleMarca} onClear={onClearMarcas} getLabel={(i) => i.descripcion_marca} />
+          <ChipGroup title="Categorías" items={rubros} activeIds={activeRubroIds} onToggleId={onToggleRubro} onClear={onClearRubros} getLabel={(i) => i.descripcion_rubro} loading={loading} />
+          <ChipGroup title="Viscosidad" items={viscosidades} activeIds={activeViscosidadIds} onToggleId={onToggleViscosidad} onClear={onClearViscosidades} getLabel={(i) => i.descripcion} loading={loading} />
+          <ChipGroup title="Marca" items={marcas} activeIds={activeMarcaIds} onToggleId={onToggleMarca} onClear={onClearMarcas} getLabel={(i) => i.descripcion_marca} loading={loading} />
         </div>
 
         {/* Barra de acción fija */}
@@ -311,9 +321,9 @@ export default function FilterSidebar({
                 ))}
               </div>
             </div>
-            <FilterSection title="Categorías" section="rubro" items={rubros} activeIds={activeRubroIds} onToggleId={onToggleRubro} onClear={onClearRubros} getLabel={(i) => i.descripcion_rubro} expanded={expandedSections.rubro} onToggle={() => toggleSection("rubro")} />
-            <FilterSection title="Viscosidad" section="viscosidad" items={viscosidades} activeIds={activeViscosidadIds} onToggleId={onToggleViscosidad} onClear={onClearViscosidades} getLabel={(i) => i.descripcion} expanded={expandedSections.viscosidad} onToggle={() => toggleSection("viscosidad")} />
-            <FilterSection title="Marca" section="marca" items={marcas} activeIds={activeMarcaIds} onToggleId={onToggleMarca} onClear={onClearMarcas} getLabel={(i) => i.descripcion_marca} expanded={expandedSections.marca} onToggle={() => toggleSection("marca")} />
+            <FilterSection title="Categorías" section="rubro" items={rubros} activeIds={activeRubroIds} onToggleId={onToggleRubro} onClear={onClearRubros} getLabel={(i) => i.descripcion_rubro} expanded={expandedSections.rubro} onToggle={() => toggleSection("rubro")} loading={loading} />
+            <FilterSection title="Viscosidad" section="viscosidad" items={viscosidades} activeIds={activeViscosidadIds} onToggleId={onToggleViscosidad} onClear={onClearViscosidades} getLabel={(i) => i.descripcion} expanded={expandedSections.viscosidad} onToggle={() => toggleSection("viscosidad")} loading={loading} />
+            <FilterSection title="Marca" section="marca" items={marcas} activeIds={activeMarcaIds} onToggleId={onToggleMarca} onClear={onClearMarcas} getLabel={(i) => i.descripcion_marca} expanded={expandedSections.marca} onToggle={() => toggleSection("marca")} loading={loading} />
           </div>
 
           {hasActiveFilters && (

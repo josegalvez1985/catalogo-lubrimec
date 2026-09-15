@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Wrench,
@@ -11,13 +11,28 @@ import {
   X,
   ChevronDown,
   Calculator,
+  Cog,
+  Droplets,
+  Wind,
+  Fuel,
+  Filter,
+  Tag,
+  Beaker,
+  Package,
+  PackageCheck,
+  ListChecks,
+  Percent,
+  RotateCcw,
+  type LucideIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import QuotationModal from "@/components/QuotationModal";
 import type { QuotationData } from "@/lib/quotationCanvas";
 import { useArticulos } from "@/hooks/useArticulos";
 import { useMarcas } from "@/hooks/useMarcas";
 import { computeRankBadges } from "@/lib/salesRanking";
 import type { RankBadge } from "@/lib/salesRanking";
+import { DESCUENTO_PORCENTAJE } from "@/lib/config";
 
 
 // CORS Proxy para desarrollo (comentar en producción)
@@ -154,6 +169,14 @@ const parseMonto = (s: string | number): number => {
   return Number(String(s).replace(/[^\d-]/g, "")) || 0;
 };
 
+const listaNombres = (nombres: string[]) => (
+  <ul className="mt-1 list-disc pl-4">
+    {nombres.map((n) => (
+      <li key={n}>{n}</li>
+    ))}
+  </ul>
+);
+
 export default function Cotizador() {
   const { articulos: catalogoArticulos } = useArticulos();
   const { marcas: marcasCatalogo } = useMarcas();
@@ -223,7 +246,6 @@ export default function Cotizador() {
   const [selectedFiltroCaja, setSelectedFiltroCaja] = useState<number | null>(
     null
   );
-  const [descuento, setDescuento] = useState<string>("40");
   const [cantidadLitros, setCantidadLitros] = useState<string>("4");
   const [cantidadGalones, setCantidadGalones] = useState<string>("1");
   const [showQuotationModal, setShowQuotationModal] = useState(false);
@@ -395,7 +417,7 @@ export default function Cotizador() {
         caja: filtrosCaja.find((f) => f.id_marca === selectedFiltroCaja)
           ?.descripcion,
       },
-      descuento: descuento ? parseFloat(descuento) : undefined,
+      descuento: DESCUENTO_PORCENTAJE,
       items: rawCotizacionItems.length > 0 ? items : undefined,
     };
   }, [
@@ -415,7 +437,6 @@ export default function Cotizador() {
     selectedFiltroCombustible,
     filtrosCaja,
     selectedFiltroCaja,
-    descuento,
     rawCotizacionItems,
   ]);
 
@@ -543,19 +564,19 @@ export default function Cotizador() {
   const fetchCotizacionAPI = async () => {
     // Validaciones previas
     if (!selected) {
-      alert("Por favor selecciona un modelo");
+      toast.error("Seleccioná un modelo");
       return;
     }
     if (selectedAceites.length === 0) {
-      alert("Por favor selecciona al menos un producto");
+      toast.error("Seleccioná al menos un producto");
       return;
     }
     if (!selectedViscosidad) {
-      alert("Por favor selecciona una viscosidad");
+      toast.error("Seleccioná una viscosidad");
       return;
     }
     if (!selectedMarca) {
-      alert("Por favor selecciona una marca");
+      toast.error("Seleccioná una marca");
       return;
     }
 
@@ -573,7 +594,7 @@ export default function Cotizador() {
       const idAceitesParam = selectedAceites.join(",");
       const litrosParam = cantidadLitros || "4";
       const galonesParam = cantidadGalones || "1";
-      const descuentoParam = descuento ? parseInt(descuento) : 0;
+      const descuentoParam = DESCUENTO_PORCENTAJE;
 
       // El endpoint matchea el modelo CON espacios (igual que los endpoints de filtros)
       const modeloParam = selected;
@@ -614,13 +635,19 @@ export default function Cotizador() {
         const nombresFaltantes = aceitesDisponibles
           .filter((a) => idsFaltantes.includes(a.id_articulo))
           .map((a) => a.articulo.replace(/-\d+$/, "").trim());
-        const lista = nombresFaltantes.length > 0
-          ? `:\n• ${nombresFaltantes.join("\n• ")}`
-          : ` (IDs: ${idsFaltantes.join(", ")})`;
-        alert(
-          `Estos productos no se pudieron cotizar y no aparecen en la cotización${lista}.\n\n` +
-          "No tienen precio o stock cargado para este modelo. El resto se cotizó normalmente."
-        );
+        toast.warning("Algunos productos no se pudieron cotizar", {
+          description: (
+            <>
+              {nombresFaltantes.length > 0
+                ? listaNombres(nombresFaltantes)
+                : <p>IDs: {idsFaltantes.join(", ")}</p>}
+              <p className="mt-1">
+                No tienen precio o stock cargado para este modelo. El resto se cotizó normalmente.
+              </p>
+            </>
+          ),
+          duration: 10000,
+        });
       }
 
       const first = raw.items[0];
@@ -631,7 +658,7 @@ export default function Cotizador() {
         return {
           id: it.id_articulo,
           nombre: it.articulo.replace(/-\d+$/, "").trim(),
-          // Precio del aceite solo (lista). El descuento se aplica con el % cargado en el front.
+          // Precio del aceite solo (lista). El descuento fijo (DESCUENTO_PORCENTAJE) se aplica en el front.
           precioBase: it.total_aceite,
           precioDescuento: descuentoParam > 0 ? it.total_aceite * (1 - descuentoParam / 100) : it.total_aceite,
           // Total del item con filtros: lista (it.total) y con descuento calculado en el front.
@@ -739,33 +766,41 @@ export default function Cotizador() {
       setQuotationDataForModal(quotationDataWithItems);
       setShowQuotationModal(true);
     } catch (e) {
-      let errorMsg = "No se pudo generar la cotización. Intentá nuevamente.";
+      let titulo = "No se pudo generar la cotización";
+      let detalle: ReactNode = "Intentá nuevamente.";
 
       if (e instanceof TypeError && e.message === "Failed to fetch") {
-        errorMsg = "No se pudo conectar con el servidor. Verificá tu conexión.";
+        titulo = "No se pudo conectar con el servidor";
+        detalle = "Verificá tu conexión e intentá de nuevo.";
       } else if (e instanceof Error) {
         const status = (e as Error & { status?: number }).status;
         if (e.name === "AbortError") {
-          errorMsg = "La solicitud tardó demasiado. Intentá nuevamente.";
+          titulo = "La solicitud tardó demasiado";
         } else if (status === 404) {
           // El endpoint de cotización no encontró resultado para esta combinación.
-          errorMsg =
-            "No encontramos una cotización para esa combinación. Revisá el modelo, la viscosidad, la marca y los filtros seleccionados.";
+          titulo = "No encontramos una cotización para esa combinación";
+          detalle = "Revisá el modelo, la viscosidad, la marca y los filtros seleccionados.";
         } else if (status && status >= 500) {
-          errorMsg = "El servidor tuvo un problema. Intentá de nuevo en unos minutos.";
+          titulo = "El servidor tuvo un problema";
+          detalle = "Intentá de nuevo en unos minutos.";
         } else if (e.message === "Respuesta sin datos de cotización") {
           const nombres = aceites
             .filter((a) => selectedAceites.includes(a.id_articulo))
             .map((a) => a.articulo.replace(/-\d+$/, "").trim());
-          const lista = nombres.length > 0 ? `:\n• ${nombres.join("\n• ")}` : "";
-          errorMsg =
-            `No se pudo cotizar alguno de los productos seleccionados${lista}.\n\n` +
-            "Probá deseleccionando uno por uno para identificar cuál no tiene precio cargado, o elegí otro producto.";
+          titulo = "No se pudo cotizar alguno de los productos seleccionados";
+          detalle = (
+            <>
+              {nombres.length > 0 && listaNombres(nombres)}
+              <p className="mt-1">
+                Probá deseleccionando uno por uno para identificar cuál no tiene precio cargado, o elegí otro producto.
+              </p>
+            </>
+          );
         }
       }
 
       console.error("❌ ERROR OBTENIENDO COTIZACIÓN:", e);
-      alert(errorMsg);
+      toast.error(titulo, { description: detalle, duration: 10000 });
     } finally {
       setLoadingCotizacion(false);
     }
@@ -787,6 +822,42 @@ export default function Cotizador() {
     setOpen(true);
     inputRef.current?.focus();
   };
+
+  const handleNuevaCotizacion = () => {
+    setSelected(null);
+    setQuery("");
+    setTipoServicio("motor");
+    setSelectedViscosidad(null);
+    setExistencia("stock");
+    setSelectedMarca(null);
+    setMarcas([]);
+    setSelectedAceites([]);
+    setAceites([]);
+    setFiltrosAceite([]);
+    setFiltrosAire([]);
+    setFiltrosCombustible([]);
+    setFiltrosCaja([]);
+    setSelectedFiltro(null);
+    setSelectedFiltroAire(null);
+    setSelectedFiltroCombustible(null);
+    setSelectedFiltroCaja(null);
+    setCantidadLitros("4");
+    setCantidadGalones("1");
+    setRawCotizacionItems([]);
+    setCotizacionAPI(null);
+    setQuotationDataForModal(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Progreso del wizard: el paso actual es el primero sin completar
+  const pasos = [
+    { label: "Modelo", done: !!selected },
+    { label: "Viscosidad", done: !!selectedViscosidad },
+    { label: "Marca", done: !!selectedMarca },
+    { label: "Productos", done: selectedAceites.length > 0 },
+    { label: "Cotizar", done: false },
+  ];
+  const pasoActual = pasos.findIndex((p) => !p.done);
 
   return (
     <div className="min-h-screen">
@@ -812,6 +883,34 @@ export default function Cotizador() {
           <p className="text-muted-foreground text-sm ml-13">
             Seleccioná el modelo de tu vehículo para comenzar la cotización.
           </p>
+        </div>
+      </div>
+
+      {/* Progreso */}
+      <div className="sticky top-16 z-30 bg-background/95 backdrop-blur-md border-b border-border">
+        <div className="max-w-3xl mx-auto px-4 py-3">
+          <p className="text-xs font-semibold text-foreground mb-2">
+            Paso {pasoActual + 1} de {pasos.length}
+            <span className="text-muted-foreground font-normal"> · {pasos[pasoActual].label}</span>
+          </p>
+          <ol className="grid grid-cols-5 gap-1.5" aria-label="Progreso de la cotización">
+            {pasos.map((paso, i) => (
+              <li key={paso.label} aria-current={i === pasoActual ? "step" : undefined} className="min-w-0">
+                <div
+                  className={`h-1.5 rounded-full transition-colors duration-300 ${
+                    i < pasoActual ? "bg-primary" : i === pasoActual ? "bg-primary/40" : "bg-secondary"
+                  }`}
+                />
+                <span
+                  className={`mt-1 hidden sm:block truncate text-xs ${
+                    i <= pasoActual ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {paso.label}
+                </span>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
 
@@ -921,6 +1020,23 @@ export default function Cotizador() {
             )}
           </div>
 
+          {/* Error */}
+          {error && !loading && (
+            <div className="mt-4 flex flex-col items-center justify-center py-8 px-4 rounded-2xl border border-red-500/30 bg-red-500/5 text-center">
+              <AlertCircle className="w-7 h-7 text-red-500 dark:text-red-400 mb-2" />
+              <p className="text-sm font-semibold text-foreground mb-1">
+                No se pudieron cargar los modelos
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">{error}</p>
+              <button
+                onClick={fetchModelos}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition"
+              >
+                <RefreshCw className="w-4 h-4" /> Reintentar
+              </button>
+            </div>
+          )}
+
           {/* Tipo de servicio */}
           {selected && (
             <motion.div
@@ -930,7 +1046,7 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-primary" /> Tipo de servicio
+                <ListChecks className="w-5 h-5 text-primary" /> Tipo de servicio
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
                 ¿Para qué sistema necesitás el aceite?
@@ -938,10 +1054,10 @@ export default function Cotizador() {
               <div className="grid grid-cols-2 gap-3">
                 {(
                   [
-                    { value: "motor", label: "Motor", icon: "🔧" },
-                    { value: "caja", label: "Caja", icon: "⚙️" },
-                  ] as { value: TipoServicio; label: string; icon: string }[]
-                ).map(({ value, label, icon }) => {
+                    { value: "motor", label: "Motor", icon: Wrench },
+                    { value: "caja", label: "Caja", icon: Cog },
+                  ] as { value: TipoServicio; label: string; icon: LucideIcon }[]
+                ).map(({ value, label, icon: Icon }) => {
                   const active = tipoServicio === value;
                   return (
                     <button
@@ -954,7 +1070,7 @@ export default function Cotizador() {
                           : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-secondary/40 hover:text-foreground"
                       }`}
                     >
-                      <span className="text-2xl leading-none">{icon}</span>
+                      <Icon className="w-6 h-6" />
                       <span>{label}</span>
                       {active && (
                         <span className="absolute top-2 right-2">
@@ -977,7 +1093,7 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-primary" /> Viscosidad
+                <Droplets className="w-5 h-5 text-primary" /> Viscosidad
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
                 Seleccioná la viscosidad del aceite
@@ -1024,7 +1140,7 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-primary" /> Existencia
+                <PackageCheck className="w-5 h-5 text-primary" /> Existencia
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
                 ¿Qué productos deseas ver?
@@ -1032,10 +1148,10 @@ export default function Cotizador() {
               <div className="grid grid-cols-2 gap-3">
                 {(
                   [
-                    { value: "stock", label: "Con Stock", icon: "📦" },
-                    { value: "todos", label: "Todos", icon: "📋" },
-                  ] as { value: Existencia; label: string; icon: string }[]
-                ).map(({ value, label, icon }) => {
+                    { value: "stock", label: "Con Stock", icon: PackageCheck },
+                    { value: "todos", label: "Todos", icon: Package },
+                  ] as { value: Existencia; label: string; icon: LucideIcon }[]
+                ).map(({ value, label, icon: Icon }) => {
                   const active = existencia === value;
                   return (
                     <button
@@ -1048,7 +1164,7 @@ export default function Cotizador() {
                           : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-secondary/40 hover:text-foreground"
                       }`}
                     >
-                      <span className="text-2xl leading-none">{icon}</span>
+                      <Icon className="w-6 h-6" />
                       <span>{label}</span>
                       {active && (
                         <span className="absolute top-2 right-2">
@@ -1071,7 +1187,7 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <Car className="w-5 h-5 text-primary" /> Marca
+                <Tag className="w-5 h-5 text-primary" /> Marca
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
                 Seleccioná la marca del aceite
@@ -1132,12 +1248,12 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-primary" /> Cantidad y Descuento
+                <Beaker className="w-5 h-5 text-primary" /> Cantidad y descuento
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Especificá cantidades y descuento
+                ¿Cuánto aceite lleva tu vehículo? Revisá el manual; si no estás seguro, dejá el valor sugerido y lo confirmamos por WhatsApp.
               </p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 {/* Litros */}
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-2 block">
@@ -1151,6 +1267,9 @@ export default function Cotizador() {
                     onChange={(e) => setCantidadLitros(e.target.value)}
                     className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    Para aceites que se venden por litro
+                  </p>
                 </div>
 
                 {/* Galones */}
@@ -1166,29 +1285,19 @@ export default function Cotizador() {
                     onChange={(e) => setCantidadGalones(e.target.value)}
                     className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    Para aceites que se venden por galón
+                  </p>
                 </div>
 
-                {/* Descuento */}
-                <div>
-                  <label className="text-xs font-semibold text-foreground mb-2 block">
-                    Descuento %
-                  </label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="1"
-                    min="0"
-                    max="100"
-                    value={descuento}
-                    onChange={(e) => {
-                      const n = e.target.value.replace(/\D/g, "");
-                      if (n === "") return setDescuento("");
-                      setDescuento(String(Math.min(100, parseInt(n, 10))));
-                    }}
-                    placeholder="0"
-                    className="w-full bg-card border-2 border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
+              </div>
+              {/* Descuento fijo: informativo, no editable */}
+              <div className="mt-4 flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+                <Percent className="w-5 h-5 text-primary shrink-0" />
+                <p className="text-sm text-foreground">
+                  <span className="font-bold text-primary">{DESCUENTO_PORCENTAJE}% de descuento</span>{" "}
+                  aplicado automáticamente sobre el precio de lista.
+                </p>
               </div>
             </motion.div>
           )}
@@ -1202,7 +1311,7 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-primary" /> Productos
+                <Package className="w-5 h-5 text-primary" /> Productos
               </h2>
               <div className="flex items-center justify-between gap-2 mb-6">
                 <p className="text-sm text-muted-foreground">
@@ -1290,7 +1399,7 @@ export default function Cotizador() {
             </motion.div>
           )}
 
-          {/* Marca del filtros */}
+          {/* Marca de los filtros */}
           {selected &&
             selectedAceites.length > 0 &&
             ((tipoServicio === "motor" &&
@@ -1309,7 +1418,7 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-primary" /> Marca del filtros
+                <Filter className="w-5 h-5 text-primary" /> Marca de los filtros
               </h2>
 
               {(() => {
@@ -1319,7 +1428,7 @@ export default function Cotizador() {
                         {
                           key: "aceite",
                           label: "Filtro de aceite",
-                          icon: "🛢️",
+                          icon: Droplets,
                           loading: filtrosLoading,
                           items: filtrosAceite,
                           selected: selectedFiltro,
@@ -1328,7 +1437,7 @@ export default function Cotizador() {
                         {
                           key: "aire",
                           label: "Filtro de aire",
-                          icon: "💨",
+                          icon: Wind,
                           loading: filtrosAireLoading,
                           items: filtrosAire,
                           selected: selectedFiltroAire,
@@ -1337,7 +1446,7 @@ export default function Cotizador() {
                         {
                           key: "combustible",
                           label: "Filtro de combustible",
-                          icon: "⛽",
+                          icon: Fuel,
                           loading: filtrosCombustibleLoading,
                           items: filtrosCombustible,
                           selected: selectedFiltroCombustible,
@@ -1348,7 +1457,7 @@ export default function Cotizador() {
                         {
                           key: "caja",
                           label: "Filtro de caja",
-                          icon: "⚙️",
+                          icon: Cog,
                           loading: filtrosCajaLoading,
                           items: filtrosCaja,
                           selected: selectedFiltroCaja,
@@ -1376,9 +1485,7 @@ export default function Cotizador() {
                         className="rounded-2xl border border-border bg-card/40 p-4"
                       >
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="text-base leading-none">
-                            {g.icon}
-                          </span>
+                          <g.icon className="w-4 h-4 text-primary" />
                           <p className="text-sm font-semibold text-foreground/90">
                             {g.label}
                           </p>
@@ -1442,51 +1549,6 @@ export default function Cotizador() {
                 );
               })()}
             </motion.div>
-          )}
-
-          {/* Botón Generar Cotización */}
-          {selected && selectedAceites.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-12"
-            >
-              <button
-                onClick={fetchCotizacionAPI}
-                disabled={loadingCotizacion}
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-bold text-lg hover:shadow-lg hover:from-primary/90 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loadingCotizacion ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    Generando...
-                  </>
-                ) : (
-                  <>
-                    <Calculator className="w-6 h-6" />
-                    Generar Cotización
-                  </>
-                )}
-              </button>
-            </motion.div>
-          )}
-
-          {/* Error */}
-          {error && !loading && (
-            <div className="mt-4 flex flex-col items-center justify-center py-8 px-4 rounded-2xl border border-red-500/30 bg-red-500/5 text-center">
-              <AlertCircle className="w-7 h-7 text-red-400 mb-2" />
-              <p className="text-sm font-semibold text-foreground mb-1">
-                No se pudieron cargar los modelos
-              </p>
-              <p className="text-xs text-muted-foreground mb-4">{error}</p>
-              <button
-                onClick={fetchModelos}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition"
-              >
-                <RefreshCw className="w-4 h-4" /> Reintentar
-              </button>
-            </div>
           )}
 
           {/* Selected summary */}
@@ -1593,11 +1655,11 @@ export default function Cotizador() {
                         </span>
                       </p>
                     )}
-                  {selectedAceites.length > 0 && Number(descuento) > 0 && (
+                  {selectedAceites.length > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Descuento:{" "}
                       <span className="text-primary font-semibold">
-                        {descuento}%
+                        {DESCUENTO_PORCENTAJE}%
                       </span>
                     </p>
                   )}
@@ -1605,15 +1667,52 @@ export default function Cotizador() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Botón Generar Cotización: después del resumen, para revisar antes de cotizar */}
+          {selected && selectedAceites.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-6"
+            >
+              <button
+                onClick={fetchCotizacionAPI}
+                disabled={loadingCotizacion}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-bold text-lg hover:shadow-lg hover:from-primary/90 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingCotizacion ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="w-6 h-6" />
+                    Generar Cotización
+                  </>
+                )}
+              </button>
+            </motion.div>
+          )}
+
           {selected && (
-            <div className="mt-10 flex justify-center">
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={handleNuevaCotizacion}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-border bg-card text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/40 transition"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Nueva cotización
+              </button>
               <button
                 type="button"
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-border bg-card text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/40 transition"
               >
                 <ChevronDown className="w-4 h-4 rotate-180" />
-                Volver al inicio
+                Volver arriba
               </button>
             </div>
           )}
@@ -1624,12 +1723,7 @@ export default function Cotizador() {
       {(quotationDataForModal || quotationData) && (
         <QuotationModal
           isOpen={showQuotationModal}
-          onClose={() => {
-            setShowQuotationModal(false);
-            setSelected(null);
-            setQuery("");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
+          onClose={() => setShowQuotationModal(false)}
           data={quotationDataForModal || quotationData!}
           cantidadLitros={cantidadLitros || "4"}
           cantidadGalones={cantidadGalones || "1"}

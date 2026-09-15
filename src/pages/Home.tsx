@@ -14,8 +14,8 @@ import {
   Settings,
   ExternalLink,
 } from "lucide-react";
-import lubrimecLogo from "@/assets/lubrimec-logo.png";
-import lubriautoLogo from "@/assets/lubriauto-logo.png";
+import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
+import lubriautoLogo from "@/assets/lubriauto-logo-sm.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -89,16 +89,8 @@ export default function Home() {
           </motion.div>
 
           {/* Headline */}
-          <motion.h1
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            custom={1}
-            className="text-6xl sm:text-7xl md:text-8xl font-bold text-foreground dark:text-white tracking-wider mb-4 drop-shadow-[0_2px_12px_rgba(255,255,255,0.6)] dark:drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]"
-            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-          >
-            LUBRIMEC
-          </motion.h1>
+          {/* El logo ya muestra el nombre: el h1 queda solo para lectores de pantalla y buscadores */}
+          <h1 className="sr-only">Lubrimec, Lubricantes y filtros</h1>
 
           <motion.p
             variants={fadeUp}
