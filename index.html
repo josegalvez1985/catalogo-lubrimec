@@ -1,8 +1,11 @@
 <!doctype html>
 <html lang="es">
   <head>
-      <link rel="icon" type="image/png" href="lubrimec-logo.png" />
-      <link rel="apple-touch-icon" href="lubrimec-logo.png" />
+      <!-- Íconos cuadrados: Google solo muestra el favicon en los resultados si es cuadrado (múltiplo de 48px) -->
+      <link rel="icon" href="/favicon.ico" sizes="any" />
+      <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+      <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1a1710" />
@@ -39,7 +42,7 @@
     <meta property="og:title" content="Lubrimec, Lubricantes y Filtros" />
     <meta property="og:description" content="Tu lubricentro de confianza en Capiatá. Catálogo de aceites, filtros y mantenimiento automotriz." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://www.lubrimec.shop/lubrimec-logo.png" />
+    <meta property="og:image" content="https://www.lubrimec.shop/icon-512.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
     <meta property="og:site_name" content="Lubrimec, Lubricantes y Filtros" />
@@ -48,7 +51,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Lubrimec, Lubricantes y Filtros" />
     <meta name="twitter:description" content="Tu lubricentro de confianza en Capiatá. Catálogo de aceites, filtros y mantenimiento automotriz." />
-    <meta name="twitter:image" content="https://www.lubrimec.shop/lubrimec-logo.png" />
+    <meta name="twitter:image" content="https://www.lubrimec.shop/icon-512.png" />
     <meta name="twitter:site" content="@lubrimec" />
 
     <!-- Structured Data -->
@@ -66,23 +69,26 @@
         "addressLocality": "Capiatá",
         "addressCountry": "PY"
       },
-      "image": "https://www.lubrimec.shop/assets/lubrimec-logo.png"
+      "image": "https://www.lubrimec.shop/icon-512.png",
+      "logo": "https://www.lubrimec.shop/icon-512.png"
     }
     </script>
-    <script type="module" crossorigin src="/assets/index-CJjFKwu1.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BZTFqylF.css">
+    <script type="module" crossorigin src="/assets/index-C36-xsbB.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-FQ1qVTTM.css">
   </head>
 
   <body>
     <script>
       (function () {
+        var t = null;
         try {
-          var t = localStorage.getItem('lubrimec-theme');
-          if (!t) t = 'dark';
-          if (t === 'dark') document.documentElement.classList.add('dark');
-        } catch (e) {
-          document.documentElement.classList.add('dark');
+          t = localStorage.getItem('lubrimec-theme');
+        } catch (e) {}
+        // Sin preferencia guardada: respetar el tema del sistema
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
+        if (t === 'dark') document.documentElement.classList.add('dark');
       })();
     </script>
     <div id="root"></div>
