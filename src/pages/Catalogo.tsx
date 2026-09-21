@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Search, PackageSearch, X, Menu, Percent } from "lucide-react";
+import { ArrowUp, Search, PackageSearch, X, Menu, Percent, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useArticulos } from "@/hooks/useArticulos";
 import { useViscosidades } from "@/hooks/useViscosidades";
@@ -253,10 +253,21 @@ const Catalogo = () => {
           <p className="text-muted-foreground text-sm">
             Lubricantes, aceites, filtros y más — filtrá por categoría, marca y viscosidad.
           </p>
-          <p className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-            <Percent className="w-4 h-4" />
-            {DESCUENTO_PORCENTAJE}% de descuento en todos los productos
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <p className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              <Percent className="w-4 h-4" />
+              {DESCUENTO_PORCENTAJE}% de descuento en todos los productos
+            </p>
+            {/* El que compra por volumen quiere el armador de pedidos, no el
+                catálogo de a un producto: el acceso va justo donde mira el precio. */}
+            <Link
+              to="/mayorista"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium text-muted-foreground border border-border hover:text-foreground hover:bg-secondary/50 transition"
+            >
+              <ClipboardList className="w-4 h-4" />
+              ¿Comprás por volumen? Armá tu pedido mayorista
+            </Link>
+          </div>
         </div>
       </div>
 

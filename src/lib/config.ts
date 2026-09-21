@@ -10,3 +10,7 @@ export const WHATSAPP_NUMBER = "595974759037";
 // Descuento fijo sobre el precio de lista. Lo usan el catálogo y el cotizador;
 // el usuario no puede modificarlo.
 export const DESCUENTO_PORCENTAJE = 40;
+
+// Descuento de la página mayorista. Hoy coincide con el minorista, pero se
+// declara aparte para poder moverlo sin tocar el precio del catálogo.
+export const DESCUENTO_MAYORISTA = 40;

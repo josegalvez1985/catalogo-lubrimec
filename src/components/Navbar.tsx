@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone, Wrench, BookOpen, Home, Users, Settings, MessageSquare, ShoppingCart } from "lucide-react";
+import { Menu, X, Phone, Wrench, BookOpen, Home, Users, Settings, MessageSquare, ShoppingCart, ClipboardList } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCart } from "@/hooks/useCart";
 import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
@@ -35,6 +35,12 @@ const navLinks = [
     href: "/cotizador",
     icon: Wrench,
     description: "Cotizá el mantenimiento de tu auto",
+  },
+  {
+    label: "Mayorista",
+    href: "/mayorista",
+    icon: ClipboardList,
+    description: "Armá tu pedido por volumen",
   },
   {
     label: "Contacto",

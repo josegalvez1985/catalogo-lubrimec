@@ -26,6 +26,8 @@ Sitio web multi-página con navegación moderna que incluye landing, informació
 | `/servicios` | **Servicios** | 6 servicios con precios "desde", proceso de trabajo |
 | `/catalogo` | **Catálogo** | Listado de productos con búsqueda y filtros (rubro, marca, viscosidad) |
 | `/cotizador` | **Cotizador** | Formulario multi-paso para cotizar mantenimiento (envía a WhatsApp) |
+| `/mayorista` | **Pedido mayorista** | Armador de pedidos por volumen con imagen exportable |
+| `/carrito` | **Carrito** | Pedido minorista armado desde el catálogo (envía a WhatsApp) |
 | `/contacto` | **Contacto** | Formulario, métodos de contacto, mapa embed, horarios y FAQ |
 | `*` | **404** | Página no encontrada |
 
@@ -154,6 +156,16 @@ VITE_API_BASE=https://oracleapex.com/ords
   - **Descargar** PNG en máxima resolución (`pixelRatio` dinámico para no exceder los límites de canvas del navegador).
   - **Copiar** al portapapeles con ancho acotado (~1080px) para que WhatsApp no recomprima tan agresivamente el texto al pegar.
 - Genera mensaje formateado y abre WhatsApp con la cotización detallada.
+
+### Pedido mayorista (`/mayorista`)
+- Armador de pedidos pensado para quien compra por volumen: lista densa de filas (foto, precio, stock) en vez de tarjetas, para elegir muchos productos rápido.
+- Un toque en la fila agrega el producto; la cantidad se **escribe** en el campo del stepper (pedir 24 unidades no requiere 24 clics).
+- Panel "Mi pedido" fijo a la derecha en escritorio; en móvil es una barra inferior que abre una hoja con el mismo panel.
+- Pedir más que el stock actual está permitido (se avisa en la fila): el stock es una referencia, el pedido se confirma por WhatsApp.
+- El pedido se guarda en `localStorage` (`lubrimec_lista_mayorista`), separado del carrito minorista para que vaciar uno no borre el otro.
+- Modal con el documento del pedido (tipo remito, con número y fecha) y tres salidas: **Descargar** PNG, **Copiar** al portapapeles y **Enviar** por WhatsApp.
+- Descuento en `DESCUENTO_MAYORISTA` (`src/lib/config.ts`). Hoy es 40%, igual que el minorista, pero se declara aparte para poder moverlo sin tocar el catálogo.
+- Entradas al armador: menú principal y footer, más un enlace en el banner de descuento del catálogo.
 
 ### Contacto (`/contacto`)
 - Formulario validado que abre WhatsApp con el mensaje formateado (sin backend).

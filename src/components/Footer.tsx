@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, Settings, MessageSquare } from "lucide-react";
+import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, Settings, MessageSquare, ClipboardList } from "lucide-react";
 import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
 
 const navLinks = [
@@ -8,6 +8,7 @@ const navLinks = [
   { label: "Servicios", href: "/servicios", icon: Settings },
   { label: "Catálogo", href: "/catalogo", icon: BookOpen },
   { label: "Cotizador", href: "/cotizador", icon: Wrench },
+  { label: "Pedido mayorista", href: "/mayorista", icon: ClipboardList },
   { label: "Contacto", href: "/contacto", icon: MessageSquare },
 ];
 

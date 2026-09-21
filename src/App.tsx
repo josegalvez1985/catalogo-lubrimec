@@ -14,8 +14,10 @@ import Catalogo from "./pages/Catalogo";
 import Cotizador from "./pages/Cotizador";
 import Contacto from "./pages/Contacto";
 import Carrito from "./pages/Carrito";
+import Mayorista from "./pages/Mayorista";
 import NotFound from "./pages/NotFound";
 import { CartProvider } from "@/hooks/useCart";
+import { ListaMayoristaProvider } from "@/hooks/useListaMayorista";
 
 // Caché de 5 min: evita refetch en cada navegación/foco. Un producto nuevo
 // cargado en APEX aparece tras expirar el staleTime (~5 min) o con un reload.
@@ -41,8 +43,8 @@ function ScrollToTop() {
 
 function Layout() {
   const { pathname } = useLocation();
-  // La foto de fondo solo va en la Home: en catálogo, cotizador y carrito un
-  // fondo liso mejora la lectura y hace el scroll más liviano.
+  // La foto de fondo solo va en la Home: en catálogo, cotizador, carrito y
+  // mayorista un fondo liso mejora la lectura y hace el scroll más liviano.
   const showHeroBackground = pathname === "/";
 
   return (
@@ -73,6 +75,7 @@ function Layout() {
           <Route path="/cotizador" element={<Cotizador />} />
           <Route path="/contacto" element={<Contacto />} />
           <Route path="/carrito" element={<Carrito />} />
+          <Route path="/mayorista" element={<Mayorista />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
@@ -89,7 +92,9 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTop />
         <CartProvider>
-          <Layout />
+          <ListaMayoristaProvider>
+            <Layout />
+          </ListaMayoristaProvider>
         </CartProvider>
       </BrowserRouter>
     </TooltipProvider>
