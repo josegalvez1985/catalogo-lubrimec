@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Título, descripción, og:*, twitter:* y canonical se reescriben por
+         página desde src/lib/seo.ts (al compilar y al navegar). -->
+    <title>Servicios de lubricentro en Capiatá | Lubrimec</title>
+    <meta name="description" content="Cambio de aceite y filtros, mantenimiento preventivo, cambio de líquidos y asesoría técnica para tu vehículo en Capiatá, Paraguay." />
+    <link rel="canonical" href="https://www.lubrimec.shop/servicios" />
+
+    <!-- Logo como favicon. Google lo muestra en los resultados si es cuadrado,
+         múltiplo de 48px y rastreable; el de 192px es el que suele elegir. -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#1a1710" />
+    <meta name="google-site-verification" content="z0283-HT7I_FcfKQhRXQJLYjvNAjMoMK8JGb4fEoL80" />
+    <meta name="google-site-verification" content="kfHDAUIEi-FF6xVydrc5AKCWSM51_zcjKkfaP6976eA" />
+
+    <!-- SPA redirect: decodifica la ruta que 404.html guardó en el query y
+         restaura la URL real antes de que arranque React Router. -->
+    <script>
+      (function () {
+        var l = window.location;
+        if (l.search[1] === "/") {
+          var decoded = l.search
+            .slice(1)
+            .split("&")
+            .map(function (s) {
+              return s.replace(/~and~/g, "&");
+            })
+            .join("?");
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      })();
+    </script>
+    <meta name="author" content="Lubrimec" />
+
+    <meta property="og:title" content="Servicios de lubricentro en Capiatá | Lubrimec" />
+    <meta property="og:description" content="Cambio de aceite y filtros, mantenimiento preventivo, cambio de líquidos y asesoría técnica para tu vehículo en Capiatá, Paraguay." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_PY" />
+    <meta property="og:image" content="https://www.lubrimec.shop/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:site_name" content="Lubrimec" />
+    <meta property="og:url" content="https://www.lubrimec.shop/servicios" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Servicios de lubricentro en Capiatá | Lubrimec" />
+    <meta name="twitter:description" content="Cambio de aceite y filtros, mantenimiento preventivo, cambio de líquidos y asesoría técnica para tu vehículo en Capiatá, Paraguay." />
+    <meta name="twitter:image" content="https://www.lubrimec.shop/icon-512.png" />
+    <meta name="twitter:site" content="@lubrimec" />
+
+    <!-- Datos estructurados.
+         WebSite: le dice a Google que el nombre del sitio es "Lubrimec" (lo que
+         aparece arriba del resultado, en vez de "lubrimec.shop").
+         AutoPartsStore: ficha del negocio con logo, dirección y redes. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://www.lubrimec.shop/#website",
+          "name": "Lubrimec",
+          "alternateName": ["Lubrimec Lubricantes y Filtros", "Lubrimec Capiatá"],
+          "url": "https://www.lubrimec.shop/",
+          "inLanguage": "es-PY",
+          "publisher": { "@id": "https://www.lubrimec.shop/#negocio" }
+        },
+        {
+          "@type": "AutoPartsStore",
+          "@id": "https://www.lubrimec.shop/#negocio",
+          "name": "Lubrimec",
+          "description": "Lubricentro en Capiatá: aceites, filtros, grasas, líquidos automotrices y servicio de cambio de aceite.",
+          "url": "https://www.lubrimec.shop/",
+          "telephone": "+595974759037",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Ruta 2 Km 20",
+            "addressLocality": "Capiatá",
+            "addressRegion": "Central",
+            "addressCountry": "PY"
+          },
+          "hasMap": "https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7",
+          "image": "https://www.lubrimec.shop/icon-512.png",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.lubrimec.shop/icon-512.png",
+            "width": 512,
+            "height": 512
+          },
+          "sameAs": [
+            "https://www.facebook.com/share/1GZELpwy3D/",
+            "https://www.instagram.com/lubrimec7",
+            "https://www.tiktok.com/@lubrimec4"
+          ]
+        }
+      ]
+    }
+    </script>
+    <script type="module" crossorigin src="/assets/index--52j3ekS.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BjdU4bFa.css">
+  </head>
+
+  <body>
+    <script>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem('lubrimec-theme');
+        } catch (e) {}
+        // Sin preferencia guardada: respetar el tema del sistema
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        if (t === 'dark') document.documentElement.classList.add('dark');
+      })();
+    </script>
+    <div id="root"></div>
+  </body>
+</html>

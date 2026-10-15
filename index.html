@@ -1,19 +1,24 @@
 <!doctype html>
 <html lang="es">
   <head>
-      <!-- Íconos cuadrados: Google solo muestra el favicon en los resultados si es cuadrado (múltiplo de 48px) -->
-      <link rel="icon" href="/favicon.ico" sizes="any" />
-      <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
-      <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Título, descripción, og:*, twitter:* y canonical se reescriben por
+         página desde src/lib/seo.ts (al compilar y al navegar). -->
+    <title>Lubrimec | Lubricentro en Capiatá – Aceites y Filtros</title>
+    <meta name="description" content="Lubricentro en Capiatá, Ruta 2 Km 20. Aceites, filtros, grasas y cambio de aceite para tu vehículo. Mirá precios y stock en línea y pedí por WhatsApp." />
+    <link rel="canonical" href="https://www.lubrimec.shop/" />
+
+    <!-- Logo como favicon. Google lo muestra en los resultados si es cuadrado,
+         múltiplo de 48px y rastreable; el de 192px es el que suele elegir. -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#1a1710" />
     <meta name="google-site-verification" content="z0283-HT7I_FcfKQhRXQJLYjvNAjMoMK8JGb4fEoL80" />
     <meta name="google-site-verification" content="kfHDAUIEi-FF6xVydrc5AKCWSM51_zcjKkfaP6976eA" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <!-- Página en español -->
-    <title>Lubrimec, Lubricantes y Filtros</title>
 
     <!-- SPA redirect: decodifica la ruta que 404.html guardó en el query y
          restaura la URL real antes de que arranque React Router. -->
@@ -36,44 +41,73 @@
         }
       })();
     </script>
-    <meta name="description" content="Lubrimec, Lubricantes y Filtros: tu lubricentro de confianza en Capiatá. Catálogo de aceites, filtros, grasas y servicio de mantenimiento automotriz." />
     <meta name="author" content="Lubrimec" />
 
-    <meta property="og:title" content="Lubrimec, Lubricantes y Filtros" />
-    <meta property="og:description" content="Tu lubricentro de confianza en Capiatá. Catálogo de aceites, filtros y mantenimiento automotriz." />
+    <meta property="og:title" content="Lubrimec | Lubricentro en Capiatá – Aceites y Filtros" />
+    <meta property="og:description" content="Lubricentro en Capiatá, Ruta 2 Km 20. Aceites, filtros, grasas y cambio de aceite para tu vehículo. Mirá precios y stock en línea y pedí por WhatsApp." />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_PY" />
     <meta property="og:image" content="https://www.lubrimec.shop/icon-512.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
-    <meta property="og:site_name" content="Lubrimec, Lubricantes y Filtros" />
+    <meta property="og:site_name" content="Lubrimec" />
     <meta property="og:url" content="https://www.lubrimec.shop/" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Lubrimec, Lubricantes y Filtros" />
-    <meta name="twitter:description" content="Tu lubricentro de confianza en Capiatá. Catálogo de aceites, filtros y mantenimiento automotriz." />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Lubrimec | Lubricentro en Capiatá – Aceites y Filtros" />
+    <meta name="twitter:description" content="Lubricentro en Capiatá, Ruta 2 Km 20. Aceites, filtros, grasas y cambio de aceite para tu vehículo. Mirá precios y stock en línea y pedí por WhatsApp." />
     <meta name="twitter:image" content="https://www.lubrimec.shop/icon-512.png" />
     <meta name="twitter:site" content="@lubrimec" />
 
-    <!-- Structured Data -->
+    <!-- Datos estructurados.
+         WebSite: le dice a Google que el nombre del sitio es "Lubrimec" (lo que
+         aparece arriba del resultado, en vez de "lubrimec.shop").
+         AutoPartsStore: ficha del negocio con logo, dirección y redes. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "LocalBusiness",
-      "name": "Lubrimec",
-      "description": "Tu lubricentro de confianza. Catálogo de aceites, filtros, grasas y líquidos automotrices.",
-      "url": "https://www.lubrimec.shop/",
-      "telephone": "+595974759037",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "Ruta 2 Km 20",
-        "addressLocality": "Capiatá",
-        "addressCountry": "PY"
-      },
-      "image": "https://www.lubrimec.shop/icon-512.png",
-      "logo": "https://www.lubrimec.shop/icon-512.png"
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://www.lubrimec.shop/#website",
+          "name": "Lubrimec",
+          "alternateName": ["Lubrimec Lubricantes y Filtros", "Lubrimec Capiatá"],
+          "url": "https://www.lubrimec.shop/",
+          "inLanguage": "es-PY",
+          "publisher": { "@id": "https://www.lubrimec.shop/#negocio" }
+        },
+        {
+          "@type": "AutoPartsStore",
+          "@id": "https://www.lubrimec.shop/#negocio",
+          "name": "Lubrimec",
+          "description": "Lubricentro en Capiatá: aceites, filtros, grasas, líquidos automotrices y servicio de cambio de aceite.",
+          "url": "https://www.lubrimec.shop/",
+          "telephone": "+595974759037",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Ruta 2 Km 20",
+            "addressLocality": "Capiatá",
+            "addressRegion": "Central",
+            "addressCountry": "PY"
+          },
+          "hasMap": "https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7",
+          "image": "https://www.lubrimec.shop/icon-512.png",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.lubrimec.shop/icon-512.png",
+            "width": 512,
+            "height": 512
+          },
+          "sameAs": [
+            "https://www.facebook.com/share/1GZELpwy3D/",
+            "https://www.instagram.com/lubrimec7",
+            "https://www.tiktok.com/@lubrimec4"
+          ]
+        }
+      ]
     }
     </script>
-    <script type="module" crossorigin src="/assets/index-CqEtPEVo.js"></script>
+    <script type="module" crossorigin src="/assets/index--52j3ekS.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-BjdU4bFa.css">
   </head>
 
