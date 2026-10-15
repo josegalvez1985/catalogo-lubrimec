@@ -135,6 +135,7 @@ VITE_API_BASE=https://oracleapex.com/ords
 - `GET ${API_BASE}/josegalvez/paginaweb/marcas`
 - `GET ${API_BASE}/josegalvez/paginaweb/viscosidades`
 - `GET ${API_BASE}/josegalvez/paginaweb/articulosimg/{id}` — Imagen binaria del producto
+- `GET|POST ${API_BASE}/josegalvez/paginaweb/visitas?cod_empresa=24` — Contador de visitas del footer, único y acumulado (`{"total"}`, arranca en 1865). El POST suma una visita y se hace una vez por sesión del navegador. Tabla y handlers en `sql/visitas.sql`.
 
 ## Funcionalidades destacadas
 
@@ -191,6 +192,8 @@ GitHub Pages no conoce las rutas de React Router, por lo que al recargar o entra
 
 - `public/404.html` guarda la ruta solicitada en un query y redirige al `index.html`.
 - Un script en el `<head>` de `index.html` decodifica ese query y restaura la URL real antes de que arranque React Router.
+
+Para las rutas conocidas eso no alcanza para Google: `404.html` responde HTTP 404 y la página no se indexa. Por eso el build genera además `dist/catalogo.html`, `dist/cotizador.html`, etc. (plugin `seoPages` en `vite.config.ts`), copias de `index.html` con el título, la descripción y el canonical de cada página. GitHub Pages sirve `/catalogo` desde `catalogo.html` con 200. Los textos de cada página están en `src/lib/seo.ts`; `<SeoMeta />` los actualiza al navegar dentro de la SPA. Una ruta nueva se agrega ahí y en `public/sitemap.xml`.
 
 ## Notas adicionales
 

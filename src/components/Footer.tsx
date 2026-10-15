@@ -1,6 +1,27 @@
 import { Link } from "react-router-dom";
-import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, Settings, MessageSquare, ClipboardList } from "lucide-react";
+import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, Settings, MessageSquare, ClipboardList, Eye } from "lucide-react";
 import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
+import { useVisitas } from "@/hooks/useVisitas";
+
+const formatNumero = (n: number) => n.toLocaleString("es-PY");
+
+// Si la API falla o todavía no respondió no se muestra nada: un "0 visitas"
+// o un error en el footer se ve peor que no tener contador.
+function ContadorVisitas() {
+  const { visitas } = useVisitas();
+  if (!visitas) return null;
+
+  return (
+    <p
+      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-background/60 text-xs text-muted-foreground"
+      aria-label={`${formatNumero(visitas.total)} visitas`}
+    >
+      <Eye className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+      <span className="font-semibold text-foreground tabular-nums">{formatNumero(visitas.total)}</span>
+      visitas
+    </p>
+  );
+}
 
 const navLinks = [
   { label: "Inicio", href: "/", icon: Home },
@@ -102,6 +123,7 @@ export default function Footer() {
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Lubrimec. Todos los derechos reservados.
           </p>
+          <ContadorVisitas />
           <p className="text-xs text-muted-foreground">
             Capiatá, Paraguay
           </p>

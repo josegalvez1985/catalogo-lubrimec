@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SeoMeta from "@/components/SeoMeta";
 import heroBanner from "@/assets/hero-banner.jpg";
 import Home from "./pages/Home";
 import Nosotros from "./pages/Nosotros";
@@ -91,6 +92,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
+        <SeoMeta />
         <CartProvider>
           <ListaMayoristaProvider>
             <Layout />
