@@ -247,7 +247,7 @@ POST paginaweb/asistente ───────►  PKG_PW_IA.preguntar
    BEGIN PKG_PW_IA.probar_herramienta('buscar_productos', '{"texto":"20w50"}'); END;
    BEGIN PKG_PW_IA.probar_herramienta('buscar_vehiculo', '{"texto":"hilux"}'); END;
    ```
-5. `ASISTENTE_HABILITADO` (`src/lib/config.ts`) hoy lo muestra solo con `npm run dev`. Para producción se pasa a `true` y se hace push.
+5. `ASISTENTE_HABILITADO` (`src/lib/config.ts`) está en `true`: el botón sale en producción. Para esconderlo, `false` y push.
 
 **Configuración** (`PW_IA_CONFIG`, se cambia con `UPDATE` y `COMMIT`, sin volver a correr el script): `MODELO` (`claude-haiku-5-5`), `ESFUERZO` (`low` / `medium` / `high`), `LIMITE_DISPOSITIVO` (30), `LIMITE_TOTAL` (100).
 

@@ -16,7 +16,6 @@ export const DESCUENTO_PORCENTAJE = 40;
 export const DESCUENTO_MAYORISTA = 40;
 
 // El asistente (botón flotante con chat, src/components/Asistente.tsx).
-// Por ahora solo en desarrollo (npm run dev). Pasarlo a true para producción
-// recién cuando sql/asistente.sql esté corrido y la clave cargada: si no, el
-// botón aparece pero no responde.
-export const ASISTENTE_HABILITADO = import.meta.env.DEV;
+// Necesita sql/asistente-vistas.sql y sql/asistente.sql corridos y la clave
+// cargada: si no, el botón aparece pero responde que no está disponible.
+export const ASISTENTE_HABILITADO = true;
