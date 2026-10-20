@@ -14,3 +14,9 @@ export const DESCUENTO_PORCENTAJE = 40;
 // Descuento de la página mayorista. Hoy coincide con el minorista, pero se
 // declara aparte para poder moverlo sin tocar el precio del catálogo.
 export const DESCUENTO_MAYORISTA = 40;
+
+// El asistente (botón flotante con chat, src/components/Asistente.tsx).
+// Por ahora solo en desarrollo (npm run dev). Pasarlo a true para producción
+// recién cuando sql/asistente.sql esté corrido y la clave cargada: si no, el
+// botón aparece pero no responde.
+export const ASISTENTE_HABILITADO = import.meta.env.DEV;

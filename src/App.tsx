@@ -7,6 +7,8 @@ import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SeoMeta from "@/components/SeoMeta";
+import { Asistente } from "@/components/Asistente";
+import { ASISTENTE_HABILITADO } from "@/lib/config";
 import heroBanner from "@/assets/hero-banner.jpg";
 import Home from "./pages/Home";
 import Nosotros from "./pages/Nosotros";
@@ -81,6 +83,7 @@ function Layout() {
         </Routes>
       </div>
       <Footer />
+      {ASISTENTE_HABILITADO && <Asistente />}
     </div>
   );
 }

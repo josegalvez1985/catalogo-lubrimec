@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import tikTokIcon from "@/assets/icons/tik-tok.svg";
 import whatsappIcon from "@/assets/icons/whatsapp.svg";
+import { HORARIOS, PREGUNTAS_FRECUENTES } from "@/data/negocio";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -60,38 +61,8 @@ const CONTACT_METHODS = [
   },
 ];
 
-const HOURS = [
-  { day: "Lunes – Viernes", time: "9:00 – 19:00" },
-  { day: "Sábado", time: "9:00 – 17:00" },
-  { day: "Domingo", time: "Cerrado", closed: true },
-];
-
-const FAQ = [
-  {
-    q: "¿Necesito agendar turno?",
-    a: "Recomendamos agendar para evitar esperas, pero también atendemos por orden de llegada. Podés escribirnos por WhatsApp para coordinar.",
-  },
-  {
-    q: "¿Qué métodos de pago aceptan?",
-    a: "Aceptamos efectivo, transferencia bancaria y tarjetas de débito/crédito. Consultá por opciones de financiación para servicios mayores.",
-  },
-  {
-    q: "¿Trabajan con todas las marcas de vehículos?",
-    a: "Sí, trabajamos con todas las marcas y modelos: autos, motos, pickups, 4x4, utilitarios y camiones livianos.",
-  },
-  {
-    q: "¿Cuánto tarda un cambio de aceite?",
-    a: "Aproximadamente 30 minutos. Si querés agregar más servicios (filtros, líquidos), el tiempo puede extenderse hasta 1 hora.",
-  },
-  {
-    q: "¿Dan garantía por los trabajos?",
-    a: "Sí, todos nuestros servicios cuentan con garantía. Te explicamos los términos al momento de coordinar el servicio.",
-  },
-  {
-    q: "¿Puedo llevar mi propio aceite o filtro?",
-    a: "Sí, podés llevar productos propios. Solo cobramos la mano de obra del servicio. Nos asesoramos sobre la calidad del producto antes.",
-  },
-];
+const HOURS = HORARIOS;
+const FAQ = PREGUNTAS_FRECUENTES;
 
 export default function Contacto() {
   const [name, setName] = useState("");

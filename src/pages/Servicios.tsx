@@ -16,6 +16,7 @@ import {
   Car,
   ArrowRight,
 } from "lucide-react";
+import { SERVICIOS, type ServicioId } from "@/data/negocio";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -26,86 +27,18 @@ const fadeUp = {
   }),
 };
 
-const SERVICES = [
-  {
-    icon: Droplets,
-    title: "Cambio de aceite",
-    desc: "Cambio rápido y profesional con aceites mineral, semisintético o sintético según las recomendaciones del fabricante de tu vehículo.",
-    includes: [
-      "Drenaje completo del aceite usado",
-      "Cambio de filtro de aceite",
-      "Verificación de niveles",
-      "Limpieza del cárter",
-    ],
-    priceFrom: "120.000",
-    color: "amber",
-  },
-  {
-    icon: Filter,
-    title: "Cambio de filtros",
-    desc: "Reemplazo de filtros de aire, combustible y habitáculo. Mantenimiento esencial para el rendimiento del motor y la calidad del aire.",
-    includes: [
-      "Filtro de aire del motor",
-      "Filtro de combustible",
-      "Filtro de habitáculo (polen)",
-      "Filtro de aceite",
-    ],
-    priceFrom: "35.000",
-    color: "sky",
-  },
-  {
-    icon: Settings,
-    title: "Mantenimiento preventivo",
-    desc: "Plan integral según kilometraje y tipo de vehículo. Detectamos a tiempo problemas antes de que se vuelvan costosos.",
-    includes: [
-      "Revisión general del vehículo",
-      "Cambio de aceite y filtros",
-      "Verificación de líquidos",
-      "Inspección visual de componentes",
-    ],
-    priceFrom: "200.000",
-    color: "emerald",
-  },
-  {
-    icon: Gauge,
-    title: "Revisión técnica",
-    desc: "Diagnóstico completo del estado de tu vehículo. Te entregamos un reporte detallado con recomendaciones.",
-    includes: [
-      "Revisión de frenos y suspensión",
-      "Estado de neumáticos",
-      "Sistema eléctrico básico",
-      "Reporte escrito",
-    ],
-    priceFrom: "80.000",
-    color: "purple",
-  },
-  {
-    icon: Droplets,
-    title: "Cambio de líquidos",
-    desc: "Renovación de líquidos esenciales: frenos, refrigerante, dirección hidráulica y caja de cambios.",
-    includes: [
-      "Líquido de frenos",
-      "Refrigerante / Anticongelante",
-      "Líquido de dirección",
-      "Aceite de caja",
-    ],
-    priceFrom: "50.000",
-    color: "rose",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Asesoría técnica",
-    desc: "Te ayudamos a elegir los productos correctos para tu vehículo. Sin compromiso, con honestidad.",
-    includes: [
-      "Recomendación de aceite ideal",
-      "Selección de filtros",
-      "Consejos de mantenimiento",
-      "Consulta sin costo",
-    ],
-    priceFrom: "0",
-    color: "primary",
-  },
-];
+// Los textos y precios están en src/data/negocio.ts (los usa también el
+// asistente); acá, solo cómo se ve cada servicio.
+const ESTILO: Record<ServicioId, { icon: typeof Droplets; color: string }> = {
+  aceite: { icon: Droplets, color: "amber" },
+  filtros: { icon: Filter, color: "sky" },
+  preventivo: { icon: Settings, color: "emerald" },
+  revision: { icon: Gauge, color: "purple" },
+  liquidos: { icon: Droplets, color: "rose" },
+  asesoria: { icon: ShieldCheck, color: "primary" },
+};
+
+const SERVICES = SERVICIOS.map((s) => ({ ...s, ...ESTILO[s.id] }));
 
 const PROCESS = [
   {

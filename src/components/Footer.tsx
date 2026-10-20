@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, Settings, MessageSquare, ClipboardList, Eye } from "lucide-react";
 import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
 import { useVisitas } from "@/hooks/useVisitas";
+import { HORARIOS } from "@/data/negocio";
 
 const formatNumero = (n: number) => n.toLocaleString("es-PY");
 
@@ -110,8 +111,11 @@ export default function Footer() {
               <li className="flex items-start gap-2.5 text-sm text-muted-foreground">
                 <Clock className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
                 <div>
-                  <p>Lun – Vie: 7:00 – 18:00</p>
-                  <p>Sáb: 7:00 – 13:00</p>
+                  {HORARIOS.filter((h) => !h.closed).map((h) => (
+                    <p key={h.day}>
+                      {h.short}: {h.time}
+                    </p>
+                  ))}
                 </div>
               </li>
             </ul>

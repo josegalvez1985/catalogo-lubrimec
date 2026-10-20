@@ -13,7 +13,7 @@ import FilterSidebar from "@/components/FilterSidebar";
 import type { Articulo } from "@/hooks/useArticulos";
 import { computeRankBadges } from "@/lib/salesRanking";
 import type { RankBadge } from "@/lib/salesRanking";
-import { DESCUENTO_PORCENTAJE } from "@/lib/config";
+import { ASISTENTE_HABILITADO, DESCUENTO_PORCENTAJE } from "@/lib/config";
 
 const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -469,7 +469,7 @@ const Catalogo = () => {
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             type="button"
             aria-label="Volver arriba"
-            className="fixed right-5 bottom-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-2xl shadow-primary/30 ring-1 ring-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className={`fixed right-5 ${ASISTENTE_HABILITADO ? "bottom-24" : "bottom-6"} z-50 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-2xl shadow-primary/30 ring-1 ring-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50`}
           >
             <ArrowUp className="h-5 w-5" />
           </motion.button>
