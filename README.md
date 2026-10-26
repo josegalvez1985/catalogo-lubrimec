@@ -1,6 +1,6 @@
 # Lubrimec — Sitio Web
 
-Sitio web e-commerce/catálogo de **LUBRIMEC**, lubricentro ubicado en Capiatá, Paraguay. Construido como Single Page Application (SPA) con React.
+Sitio web e-commerce/catálogo de **LUBRIMEC**, lubricentro ubicado en San Lorenzo, Paraguay. Construido como Single Page Application (SPA) con React.
 
 **Producción:** [https://www.lubrimec.shop](https://www.lubrimec.shop)
 
@@ -293,4 +293,4 @@ Para las rutas conocidas eso no alcanza para Google: `404.html` responde HTTP 40
 
 ---
 
-© 2026 Lubrimec — Capiatá, Paraguay
+© 2026 Lubrimec — San Lorenzo, Paraguay

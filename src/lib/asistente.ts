@@ -19,7 +19,7 @@
 import { useSyncExternalStore } from "react";
 
 import { API_BASE, DESCUENTO_MAYORISTA, DESCUENTO_PORCENTAJE, WHATSAPP_NUMBER } from "@/lib/config";
-import { DIRECCION, HORARIOS, PREGUNTAS_FRECUENTES, SERVICIOS, TELEFONO } from "@/data/negocio";
+import { DIRECCION, HORARIOS, MAPA_URL, PREGUNTAS_FRECUENTES, SERVICIOS, TELEFONO } from "@/data/negocio";
 
 export const ASISTENTE_URL = `${API_BASE}/josegalvez/paginaweb/asistente`;
 export const DISPOSITIVO_KEY = "lubrimec_dispositivo";
@@ -206,7 +206,7 @@ export function armarGuia(): string {
 LUBRIMEC es un lubricentro en ${DIRECCION} (Paraguay): venta de aceites, filtros, grasas y líquidos automotrices, y servicio de cambio de aceite y mantenimiento.
 
 - WhatsApp y teléfono: ${TELEFONO} (https://wa.me/${WHATSAPP_NUMBER}). Es el canal para pedidos, turnos y consultas.
-- Cómo llegar: https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7
+- Cómo llegar: ${MAPA_URL}
 
 Horarios:
 ${horarios}

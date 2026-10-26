@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import tikTokIcon from "@/assets/icons/tik-tok.svg";
 import whatsappIcon from "@/assets/icons/whatsapp.svg";
-import { HORARIOS, PREGUNTAS_FRECUENTES } from "@/data/negocio";
+import { DIRECCION, HORARIOS, MAPA_EMBED_URL, MAPA_URL, PREGUNTAS_FRECUENTES } from "@/data/negocio";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -51,8 +51,8 @@ const CONTACT_METHODS = [
   {
     icon: MapPin,
     label: "Dirección",
-    value: "Capiatá, Ruta 2 Km 20",
-    href: "https://www.google.com/maps/place/Lubrimec+Lubricantes+y+Filtros/@-25.3484096,-57.465288,982m/data=!3m2!1e3!4b1!4m6!3m5!1s0x945dadf4417f96ff:0x1d849c9152d9290d!8m2!3d-25.3484145!4d-57.4627131!16s%2Fg%2F11vy_cz7dj?hl=es-US&entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D",
+    value: DIRECCION,
+    href: MAPA_URL,
     desc: "Ver en Google Maps",
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-400/10",
@@ -372,7 +372,7 @@ export default function Contacto() {
           >
             <iframe
               title="Ubicación Lubrimec"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3586.216543209876!2d-57.4652880!3d-25.3484096!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x945dadf4417f96ff%3A0x1d849c9152d9290d!2sLubrimec%20Lubricantes%20y%20Filtros!5e0!3m2!1ses!2spy!4v1630704235678"
+              src={MAPA_EMBED_URL}
               width="100%"
               height="420"
               style={{ border: 0, filter: "grayscale(20%) contrast(1.05)" }}
@@ -384,7 +384,7 @@ export default function Contacto() {
 
           <div className="mt-4 flex justify-center">
             <a
-              href="https://www.google.com/maps/place/Lubrimec+Lubricantes+y+Filtros/@-25.3484096,-57.465288,982m/data=!3m2!1e3!4b1!4m6!3m5!1s0x945dadf4417f96ff:0x1d849c9152d9290d!8m2!3d-25.3484145!4d-57.4627131!16s%2Fg%2F11vy_cz7dj?hl=es-US&entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D"
+              href={MAPA_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all hover:scale-105 shadow-md shadow-primary/20"

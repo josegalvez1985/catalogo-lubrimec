@@ -18,9 +18,9 @@ export interface PageMeta {
 // Google corta el título en ~60 caracteres y la descripción en ~155.
 export const PAGE_META: Record<string, PageMeta> = {
   "/": {
-    title: "Lubrimec | Lubricentro en Capiatá – Aceites y Filtros",
+    title: "Lubrimec | Lubricentro en San Lorenzo – Aceites y Filtros",
     description:
-      "Lubricentro en Capiatá, Ruta 2 Km 20. Aceites, filtros, grasas y cambio de aceite para tu vehículo. Mirá precios y stock en línea y pedí por WhatsApp.",
+      "Lubricentro en San Lorenzo, sobre Tte. Benítez. Aceites, filtros, grasas y cambio de aceite para tu vehículo. Mirá precios y stock en línea y pedí por WhatsApp.",
   },
   "/catalogo": {
     title: "Catálogo de aceites, filtros y lubricantes | Lubrimec",
@@ -30,7 +30,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   "/cotizador": {
     title: "Cotizador de cambio de aceite y filtros | Lubrimec",
     description:
-      "Elegí tu vehículo y obtené al instante la cotización del cambio de aceite con filtros incluidos. Enviala por WhatsApp a Lubrimec, Capiatá.",
+      "Elegí tu vehículo y obtené al instante la cotización del cambio de aceite con filtros incluidos. Enviala por WhatsApp a Lubrimec, San Lorenzo.",
   },
   "/mayorista": {
     title: "Pedidos mayoristas de lubricantes y filtros | Lubrimec",
@@ -38,19 +38,19 @@ export const PAGE_META: Record<string, PageMeta> = {
       "Armá tu pedido por volumen de aceites, filtros y lubricantes con precio mayorista, revisá el stock y envialo por WhatsApp a Lubrimec.",
   },
   "/servicios": {
-    title: "Servicios de lubricentro en Capiatá | Lubrimec",
+    title: "Servicios de lubricentro en San Lorenzo | Lubrimec",
     description:
-      "Cambio de aceite y filtros, mantenimiento preventivo, cambio de líquidos y asesoría técnica para tu vehículo en Capiatá, Paraguay.",
+      "Cambio de aceite y filtros, mantenimiento preventivo, cambio de líquidos y asesoría técnica para tu vehículo en San Lorenzo, Paraguay.",
   },
   "/nosotros": {
-    title: "Nosotros | Lubrimec, lubricentro en Capiatá",
+    title: "Nosotros | Lubrimec, lubricentro en San Lorenzo",
     description:
-      "Conocé a Lubrimec: lubricentro de Capiatá especializado en lubricantes, filtros y mantenimiento automotriz con atención personalizada.",
+      "Conocé a Lubrimec: lubricentro de San Lorenzo especializado en lubricantes, filtros y mantenimiento automotriz con atención personalizada.",
   },
   "/contacto": {
-    title: "Contacto y ubicación | Lubrimec Capiatá",
+    title: "Contacto y ubicación | Lubrimec San Lorenzo",
     description:
-      "Encontranos en Ruta 2 Km 20, Capiatá. Escribinos por WhatsApp al +595 974 759 037, mirá los horarios de atención y cómo llegar.",
+      "Encontranos en Tte. Benítez, San Lorenzo. Escribinos por WhatsApp al +595 974 759 037, mirá los horarios de atención y cómo llegar.",
   },
   "/carrito": {
     title: "Mi pedido | Lubrimec",

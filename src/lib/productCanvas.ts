@@ -426,7 +426,7 @@ export async function buildProductCanvas(
   ctx.font = "22px Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("📍  Capitá, Ruta 2 Km 20  ·  www.lubrimec.shop", W / 2, y + 2 + (FOOTER_H - 2) / 2);
+  ctx.fillText("📍  Tte. Benítez, San Lorenzo  ·  www.lubrimec.shop", W / 2, y + 2 + (FOOTER_H - 2) / 2);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

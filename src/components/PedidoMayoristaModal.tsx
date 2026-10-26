@@ -194,7 +194,7 @@ export default function PedidoMayoristaModal({ isOpen, onClose }: Props) {
                         LUBRIMEC
                       </p>
                       <p className={`text-muted-foreground mt-1 ${c("text-[10px] sm:text-xs", "text-xs")}`}>
-                        Lubricantes y filtros · Capiatá, Paraguay
+                        Lubricantes y filtros · San Lorenzo, Paraguay
                       </p>
                     </div>
                   </div>

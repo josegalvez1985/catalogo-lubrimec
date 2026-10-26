@@ -677,10 +677,10 @@ const Index = () => {
               <div className="flex flex-col items-center md:items-start gap-2">
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <MapPin className="w-4 h-4 flex-shrink-0" />
-                  <span>Capiatá, Ruta 2 Km 20</span>
+                  <span>Tte. Benítez, San Lorenzo</span>
                 </div>
                 <a
-                  href="https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7"
+                  href="https://maps.app.goo.gl/ToZGjqegY1xgszex7"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Abrir ubicación en Google Maps"

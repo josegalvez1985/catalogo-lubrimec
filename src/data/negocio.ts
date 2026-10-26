@@ -4,7 +4,12 @@
 // todos lados.
 
 export const TELEFONO = "+595 974 759 037";
-export const DIRECCION = "Capiatá, Ruta 2 Km 20";
+export const DIRECCION = "Tte. Benítez, San Lorenzo";
+
+// El pin del local en Google Maps. `MAPA_EMBED_URL` es el mismo punto para el
+// iframe de Contacto (no necesita clave de API).
+export const MAPA_URL = "https://maps.app.goo.gl/ToZGjqegY1xgszex7";
+export const MAPA_EMBED_URL = "https://www.google.com/maps/embed?origin=mfe&pb=!1m3!2m1!1s-25.3496494,-57.5109256!6i17";
 
 // `short`: como se muestra en el footer (sin los días cerrados).
 export const HORARIOS = [

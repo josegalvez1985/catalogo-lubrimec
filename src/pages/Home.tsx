@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
 import lubriautoLogo from "@/assets/lubriauto-logo-sm.png";
+import { DIRECCION, MAPA_URL } from "@/data/negocio";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -60,7 +61,7 @@ const SERVICES = [
 const FEATURES = [
   { icon: Zap, label: "Servicio rápido", sub: "Express en 30 min" },
   { icon: Star, label: "Productos premium", sub: "Marcas reconocidas" },
-  { icon: MapPin, label: "Ubicación estratégica", sub: "Ruta 2 Km 20, Capiatá" },
+  { icon: MapPin, label: "Ubicación estratégica", sub: DIRECCION },
   { icon: Phone, label: "Atención personalizada", sub: "WhatsApp disponible" },
 ];
 
@@ -99,7 +100,7 @@ export default function Home() {
             custom={2}
             className="text-lg sm:text-xl md:text-2xl text-foreground/90 dark:text-white/85 font-light tracking-wide mb-3 dark:drop-shadow-[0_1px_8px_rgba(0,0,0,0.4)]"
           >
-            Tu lubricentro de confianza en Capiatá
+            Tu lubricentro de confianza en San Lorenzo
           </motion.p>
 
           <motion.p
@@ -336,12 +337,12 @@ export default function Home() {
             <div>
               <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">¿Dónde estamos?</p>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-                ENCONTRANOS EN CAPIATÁ
+                ENCONTRANOS EN SAN LORENZO
               </h2>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary shrink-0" />
-                  Ruta 2 Km 20, Capiatá, Paraguay
+                  {DIRECCION}, Paraguay
                 </p>
                 <p className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-primary shrink-0" />
@@ -351,7 +352,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <a
-                href="https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7"
+                href={MAPA_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all hover:scale-105"

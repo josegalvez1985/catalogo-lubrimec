@@ -697,7 +697,7 @@ function drawPostFormat(
   // Footer
   ctx.fillStyle = theme.textMuted;
   ctx.font = '14px Arial, sans-serif';
-  ctx.fillText('📍 Capitá, Ruta 2 Km 20 | +595 974 759 037', PAD, h - PAD - 20);
+  ctx.fillText('📍 Tte. Benítez, San Lorenzo | +595 974 759 037', PAD, h - PAD - 20);
 }
 
 function drawStoryFormat(
@@ -810,7 +810,7 @@ function drawStoryFormat(
   ctx.textAlign = 'center';
   ctx.fillStyle = theme.textMuted;
   ctx.font = '16px Arial, sans-serif';
-  ctx.fillText('📍 Capitá, Ruta 2 Km 20 | +595 974 759 037', w / 2, h - 60);
+  ctx.fillText('📍 Tte. Benítez, San Lorenzo | +595 974 759 037', w / 2, h - 60);
 
   // Marca de agua
   ctx.fillStyle = 'rgba(255,255,255,0.05)';

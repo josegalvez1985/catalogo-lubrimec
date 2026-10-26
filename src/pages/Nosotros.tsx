@@ -26,7 +26,7 @@ const VALUES = [
   {
     icon: Target,
     title: "Misión",
-    desc: "Brindar productos y servicios de mantenimiento automotriz de alta calidad, con atención personalizada y precios justos para todos nuestros clientes en Capiatá y alrededores.",
+    desc: "Brindar productos y servicios de mantenimiento automotriz de alta calidad, con atención personalizada y precios justos para todos nuestros clientes en San Lorenzo y alrededores.",
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-400/10",
   },
@@ -115,7 +115,7 @@ export default function Nosotros() {
             </h2>
             <div className="space-y-4 text-sm md:text-base text-muted-foreground leading-relaxed">
               <p>
-                <strong className="text-foreground">Lubrimec</strong> nació con un objetivo claro: ofrecer un servicio de lubricentro confiable, transparente y accesible para los conductores de Capiatá y zonas aledañas.
+                <strong className="text-foreground">Lubrimec</strong> nació con un objetivo claro: ofrecer un servicio de lubricentro confiable, transparente y accesible para los conductores de San Lorenzo y zonas aledañas.
               </p>
               <p>
                 Lo que comenzó como un pequeño taller familiar se convirtió en un punto de referencia gracias al compromiso con la calidad, el trato cercano y la atención técnica especializada.

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, Settings, MessageSquare, ClipboardList, Eye } from "lucide-react";
 import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
 import { useVisitas } from "@/hooks/useVisitas";
-import { HORARIOS } from "@/data/negocio";
+import { DIRECCION, HORARIOS, MAPA_URL } from "@/data/negocio";
 
 const formatNumero = (n: number) => n.toLocaleString("es-PY");
 
@@ -51,7 +51,7 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Tu lubricentro de confianza en Capiatá. Lubricantes, filtros, aceites y servicio de mantenimiento para tu vehículo.
+              Tu lubricentro de confianza en San Lorenzo. Lubricantes, filtros, aceites y servicio de mantenimiento para tu vehículo.
             </p>
             <a
               href="https://wa.me/595974759037"
@@ -97,9 +97,9 @@ export default function Footer() {
               <li className="flex items-start gap-2.5 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
                 <div>
-                  <p>Capiatá, Ruta 2 Km 20</p>
+                  <p>{DIRECCION}</p>
                   <a
-                    href="https://maps.app.goo.gl/yvJk2A8PbadJKpwQ7"
+                    href={MAPA_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline"
@@ -129,7 +129,7 @@ export default function Footer() {
           </p>
           <ContadorVisitas />
           <p className="text-xs text-muted-foreground">
-            Capiatá, Paraguay
+            San Lorenzo, Paraguay
           </p>
         </div>
       </div>
