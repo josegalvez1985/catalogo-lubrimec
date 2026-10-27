@@ -127,7 +127,7 @@ export default function Contacto() {
             custom={2}
             className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
           >
-            Escribinos, llamanos o visitanos. Cualquier consulta sobre productos o servicios — te respondemos rápido.
+            Escribinos, llamanos o visitanos. Cualquier consulta sobre productos, precios o pedidos — te respondemos rápido.
           </motion.p>
         </div>
       </section>
@@ -219,8 +219,8 @@ export default function Contacto() {
                 >
                   <option value="">Seleccioná un asunto...</option>
                   <option value="Consulta de producto">Consulta de producto</option>
-                  <option value="Cotización de servicio">Cotización de servicio</option>
-                  <option value="Agendar turno">Agendar turno</option>
+                  <option value="Pedido">Pedido</option>
+                  <option value="Cotización">Cotización</option>
                   <option value="Garantía">Garantía / Reclamo</option>
                   <option value="Otro">Otro</option>
                 </select>

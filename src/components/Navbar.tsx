@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone, Wrench, BookOpen, Home, Users, Settings, MessageSquare, ShoppingCart, ClipboardList } from "lucide-react";
+import { Menu, X, Phone, Wrench, BookOpen, Home, Users, MessageSquare, ShoppingCart, ClipboardList } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCart } from "@/hooks/useCart";
 import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
@@ -19,12 +19,6 @@ const navLinks = [
     description: "Historia, misión y equipo",
   },
   {
-    label: "Servicios",
-    href: "/servicios",
-    icon: Settings,
-    description: "Mantenimiento, cambio de aceite y más",
-  },
-  {
     label: "Catálogo",
     href: "/catalogo",
     icon: BookOpen,
@@ -34,7 +28,7 @@ const navLinks = [
     label: "Cotizador",
     href: "/cotizador",
     icon: Wrench,
-    description: "Cotizá el mantenimiento de tu auto",
+    description: "Cotizá el aceite y los filtros de tu auto",
   },
   {
     label: "Mayorista",

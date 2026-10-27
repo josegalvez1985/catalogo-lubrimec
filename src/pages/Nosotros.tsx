@@ -26,21 +26,21 @@ const VALUES = [
   {
     icon: Target,
     title: "Misión",
-    desc: "Brindar productos y servicios de mantenimiento automotriz de alta calidad, con atención personalizada y precios justos para todos nuestros clientes en San Lorenzo y alrededores.",
+    desc: "Ofrecer lubricantes, filtros y productos automotrices de alta calidad, con atención personalizada y precios justos para todos nuestros clientes en San Lorenzo y alrededores.",
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-400/10",
   },
   {
     icon: Eye,
     title: "Visión",
-    desc: "Ser el lubricentro de referencia en Paraguay, reconocido por la excelencia técnica, el compromiso con el cliente y la innovación en el cuidado de cada vehículo.",
+    desc: "Ser el lubricentro de referencia en Paraguay, reconocido por la calidad de sus productos, el compromiso con el cliente y la facilidad para comprar.",
     color: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-400/10",
   },
   {
     icon: Heart,
     title: "Valores",
-    desc: "Honestidad, calidad, compromiso y trato cercano. Cuidamos cada vehículo como si fuera nuestro, porque entendemos que tu auto es parte importante de tu día a día.",
+    desc: "Honestidad, calidad, compromiso y trato cercano. Te ayudamos a elegir el producto correcto para tu vehículo, porque entendemos que tu auto es parte importante de tu día a día.",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-400/10",
   },
@@ -49,10 +49,10 @@ const VALUES = [
 const REASONS = [
   "2.5 años de experiencia en el rubro",
   "Productos originales y de marcas reconocidas",
-  "Atención personalizada y asesoría técnica",
+  "Atención personalizada para elegir el producto correcto",
   "Precios competitivos y transparentes",
-  "Servicio express con turnos coordinados",
-  "Garantía en todos nuestros trabajos",
+  "Precio y stock en línea, pedidos por WhatsApp",
+  "Precio mayorista para compras por volumen",
 ];
 
 const STATS = [
@@ -95,7 +95,7 @@ export default function Nosotros() {
             custom={2}
             className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
           >
-            Un lubricentro nacido en Capiatá con la pasión de cuidar cada vehículo como si fuera propio. Te contamos quiénes somos.
+            Un lubricentro nacido en Capiatá con la pasión de ofrecer los mejores productos para tu vehículo. Te contamos quiénes somos.
           </motion.p>
         </div>
       </section>
@@ -111,17 +111,17 @@ export default function Nosotros() {
           >
             <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Nuestra historia</p>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-              MÁS DE UNA DÉCADA AL SERVICIO DE TU AUTO
+              CALIDAD Y CONFIANZA PARA TU AUTO
             </h2>
             <div className="space-y-4 text-sm md:text-base text-muted-foreground leading-relaxed">
               <p>
-                <strong className="text-foreground">Lubrimec</strong> nació con un objetivo claro: ofrecer un servicio de lubricentro confiable, transparente y accesible para los conductores de San Lorenzo y zonas aledañas.
+                <strong className="text-foreground">Lubrimec</strong> nació con un objetivo claro: ofrecer lubricantes y filtros de calidad, con precios transparentes y accesibles para los conductores de San Lorenzo y zonas aledañas.
               </p>
               <p>
-                Lo que comenzó como un pequeño taller familiar se convirtió en un punto de referencia gracias al compromiso con la calidad, el trato cercano y la atención técnica especializada.
+                Lo que comenzó como un pequeño negocio familiar se convirtió en un punto de referencia gracias al compromiso con la calidad, el trato cercano y el buen asesoramiento.
               </p>
               <p>
-                Hoy contamos con un catálogo completo de lubricantes, filtros, aceites y servicios de mantenimiento preventivo para autos, motos, pickups y camiones — siempre con productos originales y la garantía que nos caracteriza.
+                Hoy contamos con un catálogo completo de lubricantes, filtros, aceites, grasas y líquidos para autos, motos, pickups y camiones — siempre con productos originales de marcas reconocidas.
               </p>
             </div>
           </motion.div>
@@ -230,7 +230,7 @@ export default function Nosotros() {
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all hover:scale-105 shadow-md shadow-primary/20"
             >
               <Wrench className="w-4 h-4" />
-              Cotizá tu mantenimiento
+              Cotizá aceite y filtros
               <ChevronRight className="w-4 h-4" />
             </Link>
           </motion.div>
@@ -271,14 +271,14 @@ export default function Nosotros() {
               GENTE QUE LE PONE EL ALMA
             </h2>
             <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-              Un equipo capacitado, con experiencia técnica y la actitud de servicio que nos diferencia.
+              Un equipo que conoce los productos y te ayuda a elegir el correcto para tu vehículo.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
             {[
-              { name: "Equipo Técnico", role: "Mecánicos especialistas", emoji: "🔧" },
-              { name: "Atención al Cliente", role: "Asesores comerciales", emoji: "🤝" },
+              { name: "Ventas", role: "Asesores comerciales", emoji: "🤝" },
+              { name: "Atención al Cliente", role: "WhatsApp y local", emoji: "💬" },
               { name: "Logística", role: "Stock y abastecimiento", emoji: "📦" },
             ].map((member, i) => (
               <motion.div
@@ -315,7 +315,7 @@ export default function Nosotros() {
               ¿LISTO PARA CUIDAR TU AUTO?
             </h2>
             <p className="text-sm text-muted-foreground mb-8 max-w-lg mx-auto">
-              Visitá nuestro catálogo o cotizá tu mantenimiento. Estamos para ayudarte.
+              Visitá nuestro catálogo o cotizá el aceite y los filtros de tu vehículo. Estamos para ayudarte.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link

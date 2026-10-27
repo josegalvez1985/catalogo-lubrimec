@@ -1037,7 +1037,7 @@ export default function Cotizador() {
             </div>
           )}
 
-          {/* Tipo de servicio */}
+          {/* Tipo de aceite (motor o caja) */}
           {selected && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -1046,7 +1046,7 @@ export default function Cotizador() {
               className="mt-10"
             >
               <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <ListChecks className="w-5 h-5 text-primary" /> Tipo de servicio
+                <ListChecks className="w-5 h-5 text-primary" /> Tipo de aceite
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
                 ¿Para qué sistema necesitás el aceite?
@@ -1569,7 +1569,7 @@ export default function Cotizador() {
                   </p>
                   <p className="text-sm font-bold text-foreground">{selected}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Servicio:{" "}
+                    Aceite para:{" "}
                     <span className="text-primary font-semibold capitalize">
                       {tipoServicio}
                     </span>

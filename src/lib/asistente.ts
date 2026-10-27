@@ -19,7 +19,7 @@
 import { useSyncExternalStore } from "react";
 
 import { API_BASE, DESCUENTO_MAYORISTA, DESCUENTO_PORCENTAJE, WHATSAPP_NUMBER } from "@/lib/config";
-import { DIRECCION, HORARIOS, MAPA_URL, PREGUNTAS_FRECUENTES, SERVICIOS, TELEFONO } from "@/data/negocio";
+import { DIRECCION, HORARIOS, MAPA_URL, PREGUNTAS_FRECUENTES, TELEFONO } from "@/data/negocio";
 
 export const ASISTENTE_URL = `${API_BASE}/josegalvez/paginaweb/asistente`;
 export const DISPOSITIVO_KEY = "lubrimec_dispositivo";
@@ -189,33 +189,25 @@ export function reintentar(pantalla: string) {
 
 /**
  * Lo que la IA sabe del negocio y de cómo se usa el sitio. Se arma con los
- * mismos datos que muestran Contacto y Servicios (src/data/negocio.ts), así
- * que un cambio de horario o de precio llega con el deploy, sin tocar Oracle.
+ * mismos datos que muestran Contacto y el Footer (src/data/negocio.ts), así
+ * que un cambio de horario llega con el deploy, sin tocar Oracle.
  * Tiene que salir igual en cada pregunta: el backend la cachea.
  */
 export function armarGuia(): string {
   const horarios = HORARIOS.map((h) => `- ${h.day}: ${h.time}`).join("\n");
-  const servicios = SERVICIOS.map(
-    (s) =>
-      `- **${s.title}** (${s.priceFrom === "0" ? "sin costo" : `desde Gs. ${s.priceFrom}`}): ${s.desc} Incluye: ${s.includes.join(", ")}.`,
-  ).join("\n");
   const faq = PREGUNTAS_FRECUENTES.map((f) => `- ${f.q} ${f.a}`).join("\n");
 
   return `## El negocio
 
-LUBRIMEC es un lubricentro en ${DIRECCION} (Paraguay): venta de aceites, filtros, grasas y líquidos automotrices, y servicio de cambio de aceite y mantenimiento.
+LUBRIMEC es un lubricentro en ${DIRECCION} (Paraguay): venta de aceites, filtros, grasas y líquidos automotrices.
 
-- WhatsApp y teléfono: ${TELEFONO} (https://wa.me/${WHATSAPP_NUMBER}). Es el canal para pedidos, turnos y consultas.
+Por el momento solo vende: no hace cambio de aceite, colocación de filtros, mantenimiento ni ningún otro servicio de taller. Si alguien pregunta por un servicio, decilo con amabilidad y ofrecé ayudarle a elegir los productos.
+
+- WhatsApp y teléfono: ${TELEFONO} (https://wa.me/${WHATSAPP_NUMBER}). Es el canal para pedidos y consultas.
 - Cómo llegar: ${MAPA_URL}
 
 Horarios:
 ${horarios}
-
-## Servicios del taller
-
-Precios orientativos ("desde"); el precio final depende del vehículo y de los productos.
-
-${servicios}
 
 ## Preguntas frecuentes
 
@@ -226,8 +218,8 @@ ${faq}
 - [Catálogo](/catalogo): todos los productos con precio y stock. Se busca por texto y se filtra por rubro, marca y viscosidad. Un enlace a /catalogo?q=texto abre el catálogo ya buscando ese texto. Tocar un producto abre su detalle; "Agregar" lo suma al carrito.
 - Todos los precios del catálogo tienen ${DESCUENTO_PORCENTAJE}% de descuento sobre el precio de lista (se muestran los dos).
 - [Carrito](/carrito): el pedido armado desde el catálogo. "Enviar por WhatsApp" manda el pedido a LUBRIMEC, que confirma disponibilidad y coordina la entrega o el retiro. No hay pago en línea.
-- [Cotizador](/cotizador): se elige el vehículo, la viscosidad y la marca del aceite, y los filtros; arma la cotización del cambio de aceite con filtros incluidos, que se descarga como imagen o se envía por WhatsApp.
+- [Cotizador](/cotizador): se elige el vehículo, la viscosidad y la marca del aceite, y los filtros; arma la cotización del aceite y los filtros que lleva el vehículo (solo los productos), que se descarga como imagen o se envía por WhatsApp.
 - [Pedido mayorista](/mayorista): para compras por volumen. Lista compacta: se toca el producto y se escribe la cantidad; el pedido se descarga, se copia o se envía por WhatsApp. Descuento mayorista: ${DESCUENTO_MAYORISTA}%. Se puede pedir más que el stock: se confirma por WhatsApp.
-- [Servicios](/servicios), [Nosotros](/nosotros) y [Contacto](/contacto) (formulario que abre WhatsApp, mapa y preguntas frecuentes).
+- [Nosotros](/nosotros) y [Contacto](/contacto) (formulario que abre WhatsApp, mapa y preguntas frecuentes).
 - El stock que muestra el sitio es una referencia: la disponibilidad final se confirma por WhatsApp.`;
 }

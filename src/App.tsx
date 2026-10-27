@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -12,7 +12,6 @@ import { ASISTENTE_HABILITADO } from "@/lib/config";
 import heroBanner from "@/assets/hero-banner.jpg";
 import Home from "./pages/Home";
 import Nosotros from "./pages/Nosotros";
-import Servicios from "./pages/Servicios";
 import Catalogo from "./pages/Catalogo";
 import Cotizador from "./pages/Cotizador";
 import Contacto from "./pages/Contacto";
@@ -73,7 +72,8 @@ function Layout() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/nosotros" element={<Nosotros />} />
-          <Route path="/servicios" element={<Servicios />} />
+          {/* Por ahora solo venta, sin servicios de taller: los enlaces viejos van al catálogo */}
+          <Route path="/servicios" element={<Navigate to="/catalogo" replace />} />
           <Route path="/catalogo" element={<Catalogo />} />
           <Route path="/cotizador" element={<Cotizador />} />
           <Route path="/contacto" element={<Contacto />} />

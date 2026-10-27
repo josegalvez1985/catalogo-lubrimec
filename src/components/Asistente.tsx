@@ -1,6 +1,14 @@
 import { useLocation } from "react-router-dom";
 import { AlertTriangle, ArrowUp, Check, Copy, RotateCcw, SquarePen, Sparkles, X } from "lucide-react";
-import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { toast } from "sonner";
 
 import { Markdown } from "@/components/Markdown";
@@ -24,23 +32,36 @@ import { cn } from "@/lib/utils";
  * | --- | --- | --- |
  * | Celular (`< lg`) | abajo a la derecha (más arriba en /mayorista, por su barra) | hoja casi a pantalla completa |
  * | Escritorio (`≥ lg`) | abajo a la derecha | tarjeta flotante abajo a la derecha; sigue abierta al navegar |
+ *
+ * El botón se puede arrastrar cuando tapa algo: al soltarlo se pega al borde
+ * más cercano y la posición queda en `localStorage`.
  */
 export function Asistente() {
   const { abierto, pendiente } = useAsistente();
   const escritorio = useEscritorio();
   const { pathname } = useLocation();
+  const movible = useBotonMovible();
+
+  // En /mayorista del celular, la barra del pedido ocupa el fondo.
+  const minimo = pathname === "/mayorista" && !escritorio ? 96 : MARGEN;
 
   return (
     <>
       {!(escritorio && abierto) && (
         <button
           type="button"
-          onClick={() => abrirAsistente(true)}
+          {...movible.handlers}
+          onClick={() => {
+            if (!movible.fueArrastre()) abrirAsistente(true);
+          }}
           aria-label="Abrir el asistente"
-          title="Asistente"
+          title="Asistente (arrastralo para moverlo)"
+          style={movible.estilo(minimo)}
           className={cn(
-            "fixed right-5 z-40 grid size-14 place-items-center rounded-full bg-gradient-to-br from-primary to-amber-600 text-primary-foreground shadow-2xl shadow-primary/30 ring-1 ring-primary/20 transition-transform hover:scale-105 active:scale-95 lg:bottom-6",
-            pathname === "/mayorista" ? "bottom-24" : "bottom-6",
+            "fixed z-40 grid size-14 touch-none select-none place-items-center rounded-full bg-gradient-to-br from-primary to-amber-600 text-primary-foreground shadow-2xl shadow-primary/30 ring-1 ring-primary/20",
+            movible.arrastrando ? "scale-110 cursor-grabbing" : "transition-transform hover:scale-105 active:scale-95",
+            // Sin posición guardada, el lugar de siempre.
+            !movible.movido && ["right-5 lg:bottom-6", pathname === "/mayorista" ? "bottom-24" : "bottom-6"],
           )}
         >
           <Sparkles className="size-6" />
@@ -91,13 +112,126 @@ function useEscritorio() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* El botón movible                                                            */
+/* -------------------------------------------------------------------------- */
+
+const POSICION_KEY = "lubrimec_asistente_boton";
+/** `size-14` y `right-5`, en px. */
+const TAMANO = 56;
+const MARGEN = 20;
+/** Lo que ocupa el Navbar: el botón no sube más que eso. */
+const TOPE_ARRIBA = 80;
+/** Lo que se mueve el dedo antes de que deje de ser un toque. */
+const UMBRAL = 6;
+
+interface Posicion {
+  lado: "izq" | "der";
+  /** Distancia al borde de abajo, en px. */
+  abajo: number;
+}
+
+interface Toque {
+  x: number;
+  y: number;
+  /** Dónde se agarró el botón, respecto de su esquina. */
+  dx: number;
+  dy: number;
+  movio: boolean;
+}
+
+function leerPosicion(): Posicion | null {
+  try {
+    const p = JSON.parse(localStorage.getItem(POSICION_KEY) ?? "null");
+    return p && (p.lado === "izq" || p.lado === "der") && typeof p.abajo === "number" ? p : null;
+  } catch {
+    return null;
+  }
+}
+
+const limitar = (n: number, min: number, max: number) => Math.min(Math.max(n, min), Math.max(min, max));
+
+function useBotonMovible() {
+  const [posicion, setPosicion] = useState(leerPosicion);
+  // Esquina de arriba a la izquierda mientras se arrastra.
+  const [arrastre, setArrastre] = useState<{ x: number; y: number } | null>(null);
+  const toque = useRef<Toque | null>(null);
+  const arrastrado = useRef(false);
+
+  const punto = (e: ReactPointerEvent<HTMLButtonElement>, t: Toque) => ({
+    x: limitar(e.clientX - t.dx, 0, window.innerWidth - TAMANO),
+    y: limitar(e.clientY - t.dy, TOPE_ARRIBA, window.innerHeight - TAMANO),
+  });
+
+  const handlers = {
+    onPointerDown(e: ReactPointerEvent<HTMLButtonElement>) {
+      if (e.button !== 0) return;
+      const r = e.currentTarget.getBoundingClientRect();
+      toque.current = { x: e.clientX, y: e.clientY, dx: e.clientX - r.left, dy: e.clientY - r.top, movio: false };
+      arrastrado.current = false;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    onPointerMove(e: ReactPointerEvent<HTMLButtonElement>) {
+      const t = toque.current;
+      if (!t) return;
+      if (!t.movio && Math.hypot(e.clientX - t.x, e.clientY - t.y) < UMBRAL) return;
+      t.movio = true;
+      setArrastre(punto(e, t));
+    },
+    onPointerUp(e: ReactPointerEvent<HTMLButtonElement>) {
+      const t = toque.current;
+      toque.current = null;
+      if (!t?.movio) return;
+      const { x, y } = punto(e, t);
+      const nueva: Posicion = {
+        lado: x + TAMANO / 2 < window.innerWidth / 2 ? "izq" : "der",
+        abajo: Math.round(window.innerHeight - y - TAMANO),
+      };
+      arrastrado.current = true;
+      setArrastre(null);
+      setPosicion(nueva);
+      try {
+        localStorage.setItem(POSICION_KEY, JSON.stringify(nueva));
+      } catch {
+        // Sin almacenamiento, vale solo para esta visita.
+      }
+    },
+    onPointerCancel() {
+      toque.current = null;
+      setArrastre(null);
+    },
+  };
+
+  const estilo = (minimo: number): CSSProperties | undefined => {
+    if (arrastre) return { left: arrastre.x, top: arrastre.y };
+    if (!posicion) return undefined;
+    // El tope va en CSS: si la ventana se achica, el botón no queda afuera.
+    return {
+      [posicion.lado === "izq" ? "left" : "right"]: MARGEN,
+      bottom: `max(${minimo}px, min(${posicion.abajo}px, calc(100dvh - ${TAMANO + TOPE_ARRIBA}px)))`,
+    };
+  };
+
+  return {
+    handlers,
+    estilo,
+    arrastrando: arrastre !== null,
+    movido: arrastre !== null || posicion !== null,
+    /** El click que llega al soltar un arrastre no abre el chat. */
+    fueArrastre() {
+      const fue = arrastrado.current;
+      arrastrado.current = false;
+      return fue;
+    },
+  };
+}
+
+/* -------------------------------------------------------------------------- */
 /* El chat                                                                     */
 /* -------------------------------------------------------------------------- */
 
 const NOMBRE_PAGINA: Record<string, string> = {
   "/": "Inicio",
   "/nosotros": "Nosotros",
-  "/servicios": "Servicios",
   "/catalogo": "Catálogo",
   "/cotizador": "Cotizador",
   "/mayorista": "Pedido mayorista",
@@ -167,7 +301,7 @@ function PanelChat({ escritorio }: { escritorio: boolean }) {
         <div className="min-w-0 flex-1">
           <h2 className="text-[15px] leading-tight font-bold">Asistente Lubrimec</h2>
           <p className="truncate text-[11.5px] leading-tight text-muted-foreground">
-            Productos, precios, stock y servicios
+            Productos, precios, stock y pedidos
           </p>
         </div>
         {mensajes.length > 0 && (
@@ -260,7 +394,7 @@ function Bienvenida({ pagina, onElegir }: { pagina: string | null; onElegir: (t:
     pagina && pagina !== "Inicio" ? `¿Cómo se usa ${pagina}?` : null,
     "¿Qué aceites 20W50 tienen en stock?",
     "¿Qué filtros lleva un Toyota Hilux?",
-    "¿Cuánto sale un cambio de aceite?",
+    "¿Cómo hago un pedido?",
     "¿En qué horario atienden?",
   ].filter((s): s is string => !!s);
 
@@ -271,8 +405,8 @@ function Bienvenida({ pagina, onElegir }: { pagina: string | null; onElegir: (t:
       </span>
       <p className="mt-3 text-lg font-bold">¿En qué te ayudo?</p>
       <p className="mt-1 max-w-[19rem] text-[13px] text-muted-foreground">
-        Preguntame por productos, precios y stock, qué repuestos lleva tu vehículo, los servicios del
-        taller o cómo hacer un pedido.
+        Preguntame por productos, precios y stock, qué repuestos lleva tu vehículo o cómo hacer un
+        pedido.
       </p>
       <div className="mt-5 flex w-full flex-col gap-2">
         {sugerencias.map((s) => (

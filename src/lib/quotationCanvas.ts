@@ -312,7 +312,7 @@ function drawQuoteHeader(ctx: CanvasRenderingContext2D, data: QuotationData, h: 
   // Línea descriptiva debajo del modelo
   ctx.fillStyle = 'rgba(255,255,255,0.90)';
   ctx.font = '26px Arial, sans-serif';
-  ctx.fillText(`Presupuesto para cambio de aceite y filtros`, w / 2, h * 0.67);
+  ctx.fillText(`Presupuesto de aceite y filtros`, w / 2, h * 0.67);
 
   // Fecha y descuento
   const fecha = data.fecha || new Date().toLocaleDateString('es-PY');

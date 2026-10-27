@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, Settings, MessageSquare, ClipboardList, Eye } from "lucide-react";
+import { Phone, MapPin, Clock, BookOpen, Wrench, Home, Users, MessageSquare, ClipboardList, Eye } from "lucide-react";
 import lubrimecLogo from "@/assets/lubrimec-logo-sm.png";
 import { useVisitas } from "@/hooks/useVisitas";
 import { DIRECCION, HORARIOS, MAPA_URL } from "@/data/negocio";
@@ -27,7 +27,6 @@ function ContadorVisitas() {
 const navLinks = [
   { label: "Inicio", href: "/", icon: Home },
   { label: "Nosotros", href: "/nosotros", icon: Users },
-  { label: "Servicios", href: "/servicios", icon: Settings },
   { label: "Catálogo", href: "/catalogo", icon: BookOpen },
   { label: "Cotizador", href: "/cotizador", icon: Wrench },
   { label: "Pedido mayorista", href: "/mayorista", icon: ClipboardList },
@@ -51,7 +50,7 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Tu lubricentro de confianza en San Lorenzo. Lubricantes, filtros, aceites y servicio de mantenimiento para tu vehículo.
+              Tu lubricentro de confianza en San Lorenzo. Venta de lubricantes, filtros y aceites para tu vehículo.
             </p>
             <a
               href="https://wa.me/595974759037"

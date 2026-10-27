@@ -449,7 +449,7 @@ export default function QuotationModal({
                   <>
                     <p className={`font-extrabold text-foreground leading-tight ${capturing ? 'text-4xl' : 'text-base'}`}>{data.modelo}</p>
                     <p className={`text-muted-foreground ${capturing ? 'text-xl mt-2' : 'text-xs mt-0.5'}`}>
-                      Presupuesto para cambio de aceite y filtros de tu {data.modelo}.
+                      Presupuesto de aceite y filtros para tu {data.modelo}.
                     </p>
                   </>
                 )}

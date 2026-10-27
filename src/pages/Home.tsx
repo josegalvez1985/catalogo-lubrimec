@@ -27,39 +27,40 @@ const fadeUp = {
   }),
 };
 
-const SERVICES = [
+// Por el momento solo venta: sin cambio de aceite ni otros servicios de taller.
+const PRODUCTOS = [
   {
     icon: Droplets,
-    title: "Cambio de aceite",
-    desc: "Servicio express de cambio de aceite con productos de primera calidad para todos los vehículos.",
+    title: "Aceites",
+    desc: "Aceites de motor y de caja: mineral, semisintético y sintético, para autos, motos y camiones.",
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-400/10",
   },
   {
     icon: Filter,
-    title: "Cambio de filtros",
-    desc: "Filtros de aceite, aire y combustible originales. Revisión completa del sistema de filtrado.",
+    title: "Filtros",
+    desc: "Filtros de aceite, aire, combustible y caja. Buscá los que lleva tu vehículo en el cotizador.",
     color: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-400/10",
   },
   {
     icon: Settings,
-    title: "Mantenimiento preventivo",
-    desc: "Planes de mantenimiento personalizados según el tipo y kilometraje de tu vehículo.",
+    title: "Grasas y líquidos",
+    desc: "Grasas, líquido de frenos, refrigerante y más productos para tu vehículo.",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-400/10",
   },
   {
     icon: ShieldCheck,
-    title: "Garantía de calidad",
-    desc: "Todos nuestros trabajos cuentan con garantía. Usamos solo productos certificados.",
+    title: "Marcas reconocidas",
+    desc: "Productos originales de marcas de confianza, con precio y stock en línea.",
     color: "text-purple-600 dark:text-purple-400",
     bg: "bg-purple-400/10",
   },
 ];
 
 const FEATURES = [
-  { icon: Zap, label: "Servicio rápido", sub: "Express en 30 min" },
+  { icon: Zap, label: "Precios en línea", sub: "Stock y descuentos al día" },
   { icon: Star, label: "Productos premium", sub: "Marcas reconocidas" },
   { icon: MapPin, label: "Ubicación estratégica", sub: DIRECCION },
   { icon: Phone, label: "Atención personalizada", sub: "WhatsApp disponible" },
@@ -110,7 +111,7 @@ export default function Home() {
             custom={3}
             className="text-base text-muted-foreground dark:text-white/75 max-w-xl mx-auto mb-10 dark:drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)]"
           >
-            Lubricantes, filtros, aceites y mantenimiento preventivo para autos, motos y camiones. Productos premium, servicio express.
+            Lubricantes, filtros, aceites, grasas y líquidos para autos, motos y camiones. Mirá precios y stock en línea y pedí por WhatsApp.
           </motion.p>
 
           {/* CTA buttons */}
@@ -134,7 +135,7 @@ export default function Home() {
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-foreground/5 dark:bg-white/10 backdrop-blur-sm border border-border dark:border-white/30 text-foreground dark:text-white font-bold text-base hover:bg-foreground/10 dark:hover:bg-white/20 hover:border-primary/50 hover:scale-105 transition-all duration-200"
             >
               <Wrench className="w-5 h-5" />
-              Cotizá tu mantenimiento
+              Cotizá aceite y filtros
             </Link>
           </motion.div>
         </div>
@@ -216,7 +217,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== SERVICES ===== */}
+      {/* ===== PRODUCTOS ===== */}
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -226,17 +227,17 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-14"
           >
-            <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Nuestros servicios</p>
+            <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Nuestros productos</p>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
               TODO LO QUE TU AUTO NECESITA
             </h2>
             <p className="text-muted-foreground mt-3 max-w-xl mx-auto text-sm">
-              Desde el cambio de aceite hasta planes de mantenimiento completos. Confía en los expertos.
+              Aceites, filtros, grasas y líquidos de marcas reconocidas, con precio y stock en línea.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {SERVICES.map((s, i) => (
+            {PRODUCTOS.map((s, i) => (
               <motion.div
                 key={s.title}
                 variants={fadeUp}
@@ -306,10 +307,10 @@ export default function Home() {
                   <Wrench className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-2" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-                  COTIZADOR DE MANTENIMIENTO
+                  COTIZADOR DE ACEITE Y FILTROS
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-xs">
-                  Calculá el costo del mantenimiento para tu vehículo según el tipo, año y kilometraje. Recibí tu cotización por WhatsApp.
+                  Elegí tu vehículo y calculá el costo del aceite y los filtros que lleva. Recibí tu cotización por WhatsApp.
                 </p>
               </div>
               <Link

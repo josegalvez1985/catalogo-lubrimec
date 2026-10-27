@@ -20,7 +20,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   "/": {
     title: "Lubrimec | Lubricentro en San Lorenzo – Aceites y Filtros",
     description:
-      "Lubricentro en San Lorenzo, sobre Tte. Benítez. Aceites, filtros, grasas y cambio de aceite para tu vehículo. Mirá precios y stock en línea y pedí por WhatsApp.",
+      "Lubricentro en San Lorenzo, sobre Tte. Benítez. Venta de aceites, filtros, grasas y líquidos para tu vehículo. Mirá precios y stock en línea y pedí por WhatsApp.",
   },
   "/catalogo": {
     title: "Catálogo de aceites, filtros y lubricantes | Lubrimec",
@@ -28,24 +28,19 @@ export const PAGE_META: Record<string, PageMeta> = {
       "Precios y stock actualizados de aceites de motor, filtros, grasas y líquidos automotrices. Filtrá por marca, rubro y viscosidad y pedí por WhatsApp.",
   },
   "/cotizador": {
-    title: "Cotizador de cambio de aceite y filtros | Lubrimec",
+    title: "Cotizador de aceite y filtros | Lubrimec",
     description:
-      "Elegí tu vehículo y obtené al instante la cotización del cambio de aceite con filtros incluidos. Enviala por WhatsApp a Lubrimec, San Lorenzo.",
+      "Elegí tu vehículo y obtené al instante la cotización del aceite y los filtros que lleva. Enviala por WhatsApp a Lubrimec, San Lorenzo.",
   },
   "/mayorista": {
     title: "Pedidos mayoristas de lubricantes y filtros | Lubrimec",
     description:
       "Armá tu pedido por volumen de aceites, filtros y lubricantes con precio mayorista, revisá el stock y envialo por WhatsApp a Lubrimec.",
   },
-  "/servicios": {
-    title: "Servicios de lubricentro en San Lorenzo | Lubrimec",
-    description:
-      "Cambio de aceite y filtros, mantenimiento preventivo, cambio de líquidos y asesoría técnica para tu vehículo en San Lorenzo, Paraguay.",
-  },
   "/nosotros": {
     title: "Nosotros | Lubrimec, lubricentro en San Lorenzo",
     description:
-      "Conocé a Lubrimec: lubricentro de San Lorenzo especializado en lubricantes, filtros y mantenimiento automotriz con atención personalizada.",
+      "Conocé a Lubrimec: lubricentro de San Lorenzo especializado en la venta de lubricantes, filtros y productos automotrices con atención personalizada.",
   },
   "/contacto": {
     title: "Contacto y ubicación | Lubrimec San Lorenzo",

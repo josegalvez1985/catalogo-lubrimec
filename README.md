@@ -6,7 +6,7 @@ Sitio web e-commerce/catálogo de **LUBRIMEC**, lubricentro ubicado en San Loren
 
 ## Descripción
 
-Sitio web multi-página con landing, información institucional, catálogo de productos con búsqueda y filtros, carrito, armador de pedidos mayoristas, cotizador de mantenimiento, formulario de contacto y un asistente con chat. Consume datos remotos desde una API de Oracle APEX (ORDS) y usa un fallback local de rubros, marcas y viscosidades cuando la API no está disponible. Los pedidos y consultas se envían por WhatsApp: no hay pago en línea ni usuarios.
+Sitio web multi-página con landing, información institucional, catálogo de productos con búsqueda y filtros, carrito, armador de pedidos mayoristas, cotizador de aceite y filtros, formulario de contacto y un asistente con chat. Por el momento el negocio solo vende: no hay servicios de taller (cambio de aceite, mantenimiento) y el sitio no los menciona. Consume datos remotos desde una API de Oracle APEX (ORDS) y usa un fallback local de rubros, marcas y viscosidades cuando la API no está disponible. Los pedidos y consultas se envían por WhatsApp: no hay pago en línea ni usuarios.
 
 ## Tecnologías
 
@@ -22,11 +22,10 @@ Sitio web multi-página con landing, información institucional, catálogo de pr
 
 | Ruta | Página | Descripción |
 |------|--------|-------------|
-| `/` | **Inicio** | Landing con hero animado, servicios, CTAs y mapa |
+| `/` | **Inicio** | Landing con hero animado, productos, CTAs y mapa |
 | `/nosotros` | **Nosotros** | Historia, misión/visión/valores, stats, equipo |
-| `/servicios` | **Servicios** | 6 servicios con precios "desde", proceso de trabajo |
 | `/catalogo` | **Catálogo** | Listado de productos con búsqueda y filtros (rubro, marca, viscosidad) |
-| `/cotizador` | **Cotizador** | Formulario multi-paso para cotizar mantenimiento (envía a WhatsApp) |
+| `/cotizador` | **Cotizador** | Formulario multi-paso para cotizar el aceite y los filtros de un vehículo (envía a WhatsApp) |
 | `/mayorista` | **Pedido mayorista** | Armador de pedidos por volumen con imagen exportable |
 | `/carrito` | **Carrito** | Pedido minorista armado desde el catálogo (envía a WhatsApp) |
 | `/contacto` | **Contacto** | Formulario, métodos de contacto, mapa embed, horarios y FAQ |
@@ -54,9 +53,8 @@ src/
 ├── pages/
 │   ├── Home.tsx                 # Landing
 │   ├── Nosotros.tsx             # Acerca de la empresa
-│   ├── Servicios.tsx            # Detalle de servicios
 │   ├── Catalogo.tsx             # Catálogo de productos (búsqueda + filtros)
-│   ├── Cotizador.tsx            # Cotizador de mantenimiento (multi-paso)
+│   ├── Cotizador.tsx            # Cotizador de aceite y filtros (multi-paso)
 │   ├── Mayorista.tsx            # Armador de pedidos mayoristas
 │   ├── Carrito.tsx              # Carrito minorista
 │   ├── Contacto.tsx             # Contacto + FAQ
@@ -81,7 +79,7 @@ src/
 │   ├── imageCache.ts            # Caché en memoria de imágenes, solo para la pestaña abierta
 │   └── utils.ts
 └── data/
-    ├── negocio.ts               # Horarios, servicios y preguntas frecuentes (páginas + asistente)
+    ├── negocio.ts               # Dirección, horarios y preguntas frecuentes (páginas + asistente)
     ├── rubros.ts                # Fallback local de rubros
     ├── marcas.ts                # Fallback local de marcas
     ├── viscosidades.ts          # Fallback local de viscosidades
@@ -95,7 +93,9 @@ sql/                             # Scripts de Oracle (SQL Workshop > SQL Scripts
 
 ### Datos del negocio
 
-Horarios, servicios (con sus precios "desde") y preguntas frecuentes están en `src/data/negocio.ts`. Los usan Contacto, Servicios, el Footer y el asistente: un cambio ahí se ve en todos lados con el próximo deploy.
+Dirección, horarios y preguntas frecuentes están en `src/data/negocio.ts`. Los usan Contacto, el Footer y el asistente: un cambio ahí se ve en todos lados con el próximo deploy.
+
+La página `/servicios` se sacó mientras el negocio solo vende: la ruta redirige al catálogo para no romper enlaces viejos. Si vuelven los servicios, la página y sus datos están en el historial de git (commit `484686f`).
 
 ## Cómo ejecutar el proyecto
 
@@ -201,7 +201,7 @@ Todos bajo `${API_BASE}/josegalvez/paginaweb/`:
 
 ### Asistente (botón flotante, todas las páginas)
 
-Chat para clientes: productos, precios, stock, filtros por vehículo, servicios, horarios y cómo usar el sitio. En escritorio es una tarjeta abajo a la derecha que sigue abierta al navegar; en el celular, una hoja. Los enlaces de las respuestas (por ejemplo "ver en el catálogo") abren la página dentro del sitio.
+Chat para clientes: productos, precios, stock, filtros por vehículo, horarios y cómo usar el sitio. En escritorio es una tarjeta abajo a la derecha que sigue abierta al navegar; en el celular, una hoja. Los enlaces de las respuestas (por ejemplo "ver en el catálogo") abren la página dentro del sitio.
 
 **Cómo funciona**
 
@@ -266,7 +266,7 @@ Si se cambia un endpoint de `rubros` o `viscosidades`, o el SQL de productos o f
 - **React Query** con caché de 5 minutos (`staleTime`) y 10 en memoria (`gcTime`), sin recargar al volver a la pestaña: un producto nuevo cargado en APEX aparece a los ~5 minutos o al recargar.
 - Las imágenes de productos se guardan en memoria solo mientras la pestaña está abierta (`src/lib/imageCache.ts`).
 - **No hay Service Worker.** `public/sw.js` es un "kill switch" que se auto-desinstala y borra cualquier caché de PWA antigua en dispositivos que ya la tenían instalada; `src/main.tsx` también desregistra Service Workers previos y limpia `caches` al cargar.
-- En `localStorage` se guardan: el tema (`lubrimec-theme`), el carrito (`lubrimec_cart`), el pedido mayorista (`lubrimec_lista_mayorista` y `lubrimec_mayorista_cliente`) y el id del dispositivo para el asistente (`lubrimec_dispositivo`). En `sessionStorage`, si la visita ya se contó.
+- En `localStorage` se guardan: el tema (`lubrimec-theme`), el carrito (`lubrimec_cart`), el pedido mayorista (`lubrimec_lista_mayorista` y `lubrimec_mayorista_cliente`) el id del dispositivo para el asistente (`lubrimec_dispositivo`) y dónde se dejó el botón del asistente (`lubrimec_asistente_boton`). En `sessionStorage`, si la visita ya se contó.
 
 ## Despliegue
 
